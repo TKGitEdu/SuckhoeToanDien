@@ -4,15 +4,22 @@ import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { axiosApi } from "../lib/axios-api";
 
 type FormData = {
   fullName: string;
   email: string;
   phone: string;
+  username: string;
   password: string;
   confirmPassword: string;
+  address: string;
+  gender: 'male' | 'female' | 'other';
+  dateOfBirth: string;
+  bloodType: string;
+  emergencyPhoneNumber: string;
   termsAccepted: boolean;
 };
 
@@ -20,6 +27,7 @@ const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
   const navigate = useNavigate();
   
   const { 
@@ -33,17 +41,46 @@ const RegisterPage = () => {
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
+    setRegisterError(null);
+    
+    // Create registration payload based on API requirements
+    const registrationData = {
+      fullName: data.fullName,
+      email: data.email,
+      phone: data.phone,
+      username: data.username,
+      password: data.password,
+      roleId: "ROLE_3", // Role ID for Patient
+      address: data.address || "",
+      gender: data.gender || "",
+      dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString() : null,
+      specialization: "", // Not needed for patients
+      bloodType: data.bloodType || "",
+      emergencyPhoneNumber: data.emergencyPhoneNumber || ""
+    };
+    
     try {
-      // Giả lập API call
-      console.log("Registration data:", data);
+      console.log("Sending registration data:", registrationData);
       
-      // Giả lập đăng ký thành công
-      setTimeout(() => {
-        navigate('/login');
-        setIsLoading(false);
-      }, 1500);
+      // Call the API to register the user
+      await axiosApi.auth.register(registrationData);
+      
+      console.log("Registration successful");
+      
+      // Redirect to login page on success
+      navigate('/login', { 
+        state: { 
+          message: "Đăng ký thành công! Vui lòng đăng nhập bằng tài khoản của bạn." 
+        } 
+      });
     } catch (error) {
       console.error("Registration error:", error);
+      setRegisterError(
+        error instanceof Error 
+          ? error.message 
+          : "Đăng ký thất bại. Vui lòng kiểm tra lại thông tin và thử lại."
+      );
+    } finally {
       setIsLoading(false);
     }
   };
@@ -87,9 +124,14 @@ const RegisterPage = () => {
             <p className="text-gray-600 mt-2">
               Vui lòng điền thông tin để tạo tài khoản mới
             </p>
-          </div>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          </div>          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            {registerError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
+                <AlertCircle className="text-red-500 mr-3 h-5 w-5 mt-0.5" />
+                <p className="text-sm text-red-700">{registerError}</p>
+              </div>
+            )}
+            
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
                 Họ và tên
@@ -112,111 +154,236 @@ const RegisterPage = () => {
               )}
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                className={`w-full px-4 py-3 rounded-lg border ${errors.email ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                placeholder="youremail@example.com"
-                {...register("email", { 
-                  required: "Email là bắt buộc",
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: "Email không hợp lệ"
-                  }
-                })}
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                Số điện thoại
-              </label>
-              <input
-                id="phone"
-                type="tel"
-                className={`w-full px-4 py-3 rounded-lg border ${errors.phone ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                placeholder="0912345678"
-                {...register("phone", { 
-                  required: "Số điện thoại là bắt buộc",
-                  pattern: {
-                    value: /^(0|\+84)[3|5|7|8|9][0-9]{8}$/,
-                    message: "Số điện thoại không hợp lệ"
-                  }
-                })}
-              />
-              {errors.phone && (
-                <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Mật khẩu
-              </label>
-              <div className="relative">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
                 <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  className={`w-full px-4 py-3 rounded-lg border ${errors.password ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  placeholder="••••••••"
-                  {...register("password", { 
-                    required: "Mật khẩu là bắt buộc",
-                    minLength: {
-                      value: 8,
-                      message: "Mật khẩu phải có ít nhất 8 ký tự"
-                    },
+                  id="email"
+                  type="email"
+                  className={`w-full px-4 py-3 rounded-lg border ${errors.email ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  placeholder="youremail@example.com"
+                  {...register("email", { 
+                    required: "Email là bắt buộc",
                     pattern: {
-                      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-                      message: "Mật khẩu phải chứa chữ hoa, chữ thường, số và ký tự đặc biệt"
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: "Email không hợp lệ"
                     }
                   })}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                )}
               </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  Số điện thoại
+                </label>
+                <input
+                  id="phone"
+                  type="tel"
+                  className={`w-full px-4 py-3 rounded-lg border ${errors.phone ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  placeholder="0912345678"
+                  {...register("phone", { 
+                    required: "Số điện thoại là bắt buộc",
+                    pattern: {
+                      value: /^(0|\+84)[3|5|7|8|9][0-9]{8}$/,
+                      message: "Số điện thoại không hợp lệ"
+                    }
+                  })}
+                />
+                {errors.phone && (
+                  <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
+                )}
+              </div>
+            </div>
+            
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                Tên đăng nhập
+              </label>
+              <input
+                id="username"
+                type="text"
+                className={`w-full px-4 py-3 rounded-lg border ${errors.username ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                placeholder="username"
+                {...register("username", { 
+                  required: "Tên đăng nhập là bắt buộc",
+                  minLength: {
+                    value: 4,
+                    message: "Tên đăng nhập phải có ít nhất 4 ký tự"
+                  },
+                  pattern: {
+                    value: /^[a-zA-Z0-9_]+$/,
+                    message: "Tên đăng nhập chỉ được chứa chữ cái, số và dấu gạch dưới"
+                  }
+                })}
+              />
+              {errors.username && (
+                <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
               )}
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Mật khẩu
+                </label>
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    className={`w-full px-4 py-3 rounded-lg border ${errors.password ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    placeholder="••••••••"
+                    {...register("password", { 
+                      required: "Mật khẩu là bắt buộc",
+                      minLength: {
+                        value: 6,
+                        message: "Mật khẩu phải có ít nhất 6 ký tự"
+                      }
+                    })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                  Xác nhận mật khẩu
+                </label>
+                <div className="relative">
+                  <input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    className={`w-full px-4 py-3 rounded-lg border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    placeholder="••••••••"
+                    {...register("confirmPassword", { 
+                      required: "Xác nhận mật khẩu là bắt buộc",
+                      validate: value => value === password || "Mật khẩu không khớp"
+                    })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                  >
+                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+                {errors.confirmPassword && (
+                  <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
+                )}
+              </div>
+            </div>
+            
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Xác nhận mật khẩu
+              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                Địa chỉ
               </label>
-              <div className="relative">
+              <input
+                id="address"
+                type="text"
+                className={`w-full px-4 py-3 rounded-lg border ${errors.address ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                placeholder="Địa chỉ của bạn"
+                {...register("address")}
+              />
+              {errors.address && (
+                <p className="mt-1 text-sm text-red-600">{errors.address.message}</p>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
+                  Giới tính
+                </label>
+                <select
+                  id="gender"
+                  className={`w-full px-4 py-3 rounded-lg border ${errors.gender ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  {...register("gender")}
+                >
+                  <option value="">Chọn giới tính</option>
+                  <option value="male">Nam</option>
+                  <option value="female">Nữ</option>
+                  <option value="other">Khác</option>
+                </select>
+                {errors.gender && (
+                  <p className="mt-1 text-sm text-red-600">{errors.gender.message}</p>
+                )}
+              </div>
+              
+              <div>
+                <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-1">
+                  Ngày sinh
+                </label>
                 <input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  className={`w-full px-4 py-3 rounded-lg border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  placeholder="••••••••"
-                  {...register("confirmPassword", { 
-                    required: "Xác nhận mật khẩu là bắt buộc",
-                    validate: value => value === password || "Mật khẩu không khớp"
+                  id="dateOfBirth"
+                  type="date"
+                  className={`w-full px-4 py-3 rounded-lg border ${errors.dateOfBirth ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  {...register("dateOfBirth")}
+                />
+                {errors.dateOfBirth && (
+                  <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth.message}</p>
+                )}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="bloodType" className="block text-sm font-medium text-gray-700 mb-1">
+                  Nhóm máu
+                </label>
+                <select
+                  id="bloodType"
+                  className={`w-full px-4 py-3 rounded-lg border ${errors.bloodType ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  {...register("bloodType")}
+                >
+                  <option value="">Chọn nhóm máu</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                </select>
+                {errors.bloodType && (
+                  <p className="mt-1 text-sm text-red-600">{errors.bloodType.message}</p>
+                )}
+              </div>
+              
+              <div>
+                <label htmlFor="emergencyPhoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                  SĐT khẩn cấp
+                </label>
+                <input
+                  id="emergencyPhoneNumber"
+                  type="tel"
+                  className={`w-full px-4 py-3 rounded-lg border ${errors.emergencyPhoneNumber ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  placeholder="Số điện thoại người thân"
+                  {...register("emergencyPhoneNumber", {
+                    pattern: {
+                      value: /^(0|\+84)[3|5|7|8|9][0-9]{8}$/,
+                      message: "Số điện thoại không hợp lệ"
+                    }
                   })}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                >
-                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
+                {errors.emergencyPhoneNumber && (
+                  <p className="mt-1 text-sm text-red-600">{errors.emergencyPhoneNumber.message}</p>
+                )}
               </div>
-              {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
-              )}
             </div>
 
             <div className="flex items-start">

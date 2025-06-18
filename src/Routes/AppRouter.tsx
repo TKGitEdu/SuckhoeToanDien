@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Route, BrowserRouter as Router, Routes, Navigate } from "react-router-dom";
 import HomePage from "../pages/HomePage";
 import LoginPage from "../pages/login";
@@ -29,26 +29,24 @@ import AdminPatients from "../pages/admin/Patients";
 import AdminFeedbacks from "../pages/admin/Feedbacks";
 import NotFoundPage from "../pages/NotFoundPage";
 
-// Kiểm tra xem người dùng đã đăng nhập hay chưa
-const isAuthenticated = () => {
-  const token = localStorage.getItem('token');
-  return !!token;
-};
-
-// Kiểm tra vai trò của người dùng
-const getUserRole = () => {
-  const role = localStorage.getItem('userRole');
-  return role || 'guest';
-};
+import { isAuthenticated, getUserRole, logAuthState } from "../lib/auth";
 
 // Route bảo vệ cho bệnh nhân
 const PatientRoute = ({ children }: { children: React.ReactNode }) => {
+  // Log auth state in protected routes to help debug
+  useEffect(() => {
+    console.log('PatientRoute - Checking auth');
+    logAuthState();
+  }, []);
+
   if (!isAuthenticated()) {
+    console.log('PatientRoute - Not authenticated, redirecting to login');
     return <Navigate to="/login" />;
   }
   
   const role = getUserRole();
   if (role !== 'patient' && role !== 'admin') {
+    console.log(`PatientRoute - Unauthorized role: ${role}, redirecting to home`);
     return <Navigate to="/" />;
   }
   
@@ -57,12 +55,20 @@ const PatientRoute = ({ children }: { children: React.ReactNode }) => {
 
 // Route bảo vệ cho bác sĩ
 const DoctorRoute = ({ children }: { children: React.ReactNode }) => {
+  // Log auth state in protected routes to help debug
+  useEffect(() => {
+    console.log('DoctorRoute - Checking auth');
+    logAuthState();
+  }, []);
+
   if (!isAuthenticated()) {
+    console.log('DoctorRoute - Not authenticated, redirecting to login');
     return <Navigate to="/login" />;
   }
   
   const role = getUserRole();
   if (role !== 'doctor' && role !== 'admin') {
+    console.log(`DoctorRoute - Unauthorized role: ${role}, redirecting to home`);
     return <Navigate to="/" />;
   }
   
@@ -71,12 +77,20 @@ const DoctorRoute = ({ children }: { children: React.ReactNode }) => {
 
 // Route bảo vệ cho admin
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  // Log auth state in protected routes to help debug
+  useEffect(() => {
+    console.log('AdminRoute - Checking auth');
+    logAuthState();
+  }, []);
+
   if (!isAuthenticated()) {
+    console.log('AdminRoute - Not authenticated, redirecting to login');
     return <Navigate to="/login" />;
   }
   
   const role = getUserRole();
   if (role !== 'admin') {
+    console.log(`AdminRoute - Unauthorized role: ${role}, redirecting to home`);
     return <Navigate to="/" />;
   }
   

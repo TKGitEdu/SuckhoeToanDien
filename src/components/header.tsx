@@ -9,20 +9,43 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const location = useLocation();
-
   useEffect(() => {
+    // Check authentication status on route changes
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('userRole');
     setIsAuthenticated(!!token);
     setUserRole(role);
-  }, [location]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userRole');
-    setIsAuthenticated(false);
-    setUserRole(null);
-    window.location.href = '/';
+    
+    // Add a storage event listener to detect changes from other components
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'token' || event.key === null) { // null means localStorage.clear() was called
+        const newToken = localStorage.getItem('token');
+        const newRole = localStorage.getItem('userRole');
+        setIsAuthenticated(!!newToken);
+        setUserRole(newRole);
+      }
+    };
+    
+    // Add event listener for localStorage changes
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Clean up the event listener
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [location]);  const handleLogout = () => {
+    // Use the auth api logout function to clear all user data
+    import('../lib/axios-api').then(({ axiosApi }) => {
+      axiosApi.auth.logout();
+      
+      // Additional update of component state
+      setIsAuthenticated(false);
+      setUserRole(null);
+      setIsProfileMenuOpen(false); // Close the menu
+      
+      // Redirect to home page
+      window.location.href = '/';
+    });
   };
 
   const toggleMenu = () => {
