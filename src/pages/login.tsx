@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { authApi } from "../lib/api-axios";// dùng hàm login từ authApi trong api-axios.ts
 
 type FormData = {
   username: string;
@@ -22,28 +23,40 @@ const LoginPage = () => {
     formState: { errors }
   } = useForm<FormData>();
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     setLoginError(null);
 
-    setTimeout(() => {
-      // Fake login logic
-      if (data.username === "admin" && data.password === "123456") {
-        localStorage.setItem("userRole", "admin");
-        navigate("/admin/dashboard");
-      } else if (data.username === "doctor" && data.password === "123456") {
-        localStorage.setItem("userRole", "doctor");
-        navigate("/doctor/dashboard");
-      } else if (data.username === "patient" && data.password === "123456") {
-        localStorage.setItem("userRole", "patient");
-        navigate("/patient/dashboard");
-      } else {
-        setLoginError("Tên đăng nhập hoặc mật khẩu không chính xác.");
-      }
+    try {
+      const response = await authApi.login(data.username, data.password);
+      localStorage.setItem("token", response.token);// Lưu token vào localStorage
+      localStorage.setItem("user", JSON.stringify(response.user));// Lưu thông tin người dùng
+      localStorage.setItem("userRole", response.user.role.roleName);// Lưu vai trò người dùng sau này dùng để phân quyền
 
+      switch (response.user.role.roleName) {
+        case "admin":
+          navigate("/admin/dashboard");
+          break;
+        case "doctor":
+          navigate("/doctor/dashboard");
+          break;
+        case "patient":
+          navigate("/patient/dashboard");
+          break;
+        default:
+          navigate("/");
+      }
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        setLoginError("Tên đăng nhập hoặc mật khẩu không đúng.");
+      } else {
+        setLoginError("Đã có lỗi xảy ra. Vui lòng thử lại.");
+      }
+    } finally {
       setIsLoading(false);
-    }, 1000); // Simulate loading
+    }
   };
+
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
