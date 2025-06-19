@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { Route, BrowserRouter as Router, Routes, Navigate } from "react-router-dom";
+import React from "react";
+import { Route, BrowserRouter as Router, Routes, Navigate, useLocation } from "react-router-dom";
 import HomePage from "../pages/HomePage";
 import LoginPage from "../pages/login";
 import RegisterPage from "../pages/register";
@@ -28,7 +28,7 @@ import AdminDoctors from "../pages/admin/Doctors";
 import AdminPatients from "../pages/admin/Patients";
 import AdminFeedbacks from "../pages/admin/Feedbacks";
 import NotFoundPage from "../pages/NotFoundPage";
-
+import { useAuth } from "../contexts/AuthContext";
 
 
 const MainLayout = ({ children }: { children: React.ReactNode }) => (
@@ -39,6 +39,42 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => (
     </main>
     <Footer />
   </>
+);
+
+// Protected Route Component
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  allowedRoles?: string[];
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles = [] }) => {
+  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const userRole = localStorage.getItem('userRole');
+  
+  if (!isAuthenticated) {
+    // Redirect to login if not authenticated
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  
+  if (allowedRoles.length > 0 && !allowedRoles.includes(userRole || '')) {
+    // Redirect to homepage if authenticated but not authorized for this role
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+const PatientRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <ProtectedRoute allowedRoles={['patient']}>{children}</ProtectedRoute>
+);
+
+const DoctorRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <ProtectedRoute allowedRoles={['doctor']}>{children}</ProtectedRoute>
+);
+
+const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <ProtectedRoute allowedRoles={['admin']}>{children}</ProtectedRoute>
 );
 
 const AppRouter: React.FC = () => {
@@ -59,53 +95,106 @@ const AppRouter: React.FC = () => {
         
         {/* Patient Routes */}
         <Route path="/patient/dashboard" element={
-            <MainLayout><PatientDashboard /></MainLayout>
+            <MainLayout>
+              <PatientRoute>
+                <PatientDashboard />
+              </PatientRoute>
+            </MainLayout>
         } />
         <Route path="/patient/appointments" element={
-            <MainLayout><PatientAppointments /></MainLayout>
+            <MainLayout>
+              <PatientRoute>
+                <PatientAppointments />
+              </PatientRoute>
+            </MainLayout>
         } />
         <Route path="/patient/treatments" element={
-            <MainLayout><PatientTreatments /></MainLayout>
-        } />        <Route path="/patient/profile" element={
-            <MainLayout><PatientProfile /></MainLayout>
-        } />        <Route path="/patient/feedback" element={
-            <MainLayout><PatientFeedback /></MainLayout>
+            <MainLayout>
+              <PatientRoute>
+                <PatientTreatments />
+              </PatientRoute>
+            </MainLayout>
+        } />
+        <Route path="/patient/profile" element={
+            <MainLayout>
+              <PatientRoute>
+                <PatientProfile />
+              </PatientRoute>
+            </MainLayout>
+        } />
+        <Route path="/patient/feedback" element={
+            <MainLayout>
+              <PatientRoute>
+                <PatientFeedback />
+              </PatientRoute>
+            </MainLayout>
         } />
         <Route path="/patient/payments" element={
-            <MainLayout><PatientPayments /></MainLayout>
+            <MainLayout>
+              <PatientRoute>
+                <PatientPayments />
+              </PatientRoute>
+            </MainLayout>
         } />
         
         {/* Doctor Routes */}
         <Route path="/doctor/dashboard" element={
-            <MainLayout><DoctorDashboard /></MainLayout>
+            <MainLayout>
+              <DoctorRoute>
+                <DoctorDashboard />
+              </DoctorRoute>
+            </MainLayout>
         } />
         <Route path="/doctor/appointments" element={
-            <MainLayout><DoctorAppointments /></MainLayout>
+            <MainLayout>
+              <DoctorRoute>
+                <DoctorAppointments />
+              </DoctorRoute>
+            </MainLayout>
         } />
         <Route path="/doctor/patients" element={
-            <MainLayout><DoctorPatients /></MainLayout>
+            <MainLayout>
+              <DoctorRoute>
+                <DoctorPatients />
+              </DoctorRoute>
+            </MainLayout>
         } />
         <Route path="/doctor/treatment-records" element={
-            <MainLayout><DoctorTreatmentRecords /></MainLayout>
+            <MainLayout>
+              <DoctorRoute>
+                <DoctorTreatmentRecords />
+              </DoctorRoute>
+            </MainLayout>
         } />
         
         {/* Admin Routes */}
         <Route path="/admin/dashboard" element={
-            <MainLayout><AdminDashboard /></MainLayout>
+            <MainLayout>
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            </MainLayout>
         } />
-        {/* <Route path="/admin/services" element={
-          <AdminRoute>
-            <MainLayout><AdminServices /></MainLayout>
-          </AdminRoute>
-        } /> */}
         <Route path="/admin/doctors" element={
-            <MainLayout><AdminDoctors /></MainLayout>
+            <MainLayout>
+              <AdminRoute>
+                <AdminDoctors />
+              </AdminRoute>
+            </MainLayout>
         } />
         <Route path="/admin/patients" element={
-            <MainLayout><AdminPatients /></MainLayout>
+            <MainLayout>
+              <AdminRoute>
+                <AdminPatients />
+              </AdminRoute>
+            </MainLayout>
         } />
         <Route path="/admin/feedbacks" element={
-            <MainLayout><AdminFeedbacks /></MainLayout>
+            <MainLayout>
+              <AdminRoute>
+                <AdminFeedbacks />
+              </AdminRoute>
+            </MainLayout>
         } />
         
         <Route path="*" element={<MainLayout><NotFoundPage /></MainLayout>} />

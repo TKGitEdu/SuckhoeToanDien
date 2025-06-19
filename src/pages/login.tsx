@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { authApi } from "../lib/api-axios";// dùng hàm login từ authApi trong api-axios.ts
+import { useAuth } from "../contexts/AuthContext";
 
 type FormData = {
   username: string;
@@ -13,9 +13,10 @@ type FormData = {
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const navigate = useNavigate();
+  
+  const { login, loading: isLoading } = useAuth();
 
   const {
     register,
@@ -24,16 +25,13 @@ const LoginPage = () => {
   } = useForm<FormData>();
 
   const onSubmit = async (data: FormData) => {
-    setIsLoading(true);
     setLoginError(null);
 
     try {
-      const response = await authApi.login(data.username, data.password);
-      localStorage.setItem("token", response.token);// Lưu token vào localStorage
-      localStorage.setItem("user", JSON.stringify(response.user));// Lưu thông tin người dùng
-      localStorage.setItem("userRole", response.user.role.roleName);// Lưu vai trò người dùng sau này dùng để phân quyền
-
-      switch (response.user.role.roleName) {
+      const response = await login(data.username, data.password);
+      //đợi login thành công và lấy thông tin người dùng rồi navigate đến trang dashboard tương ứng
+      const roleName = response.user.role.roleName.toLowerCase();
+      switch (roleName) {
         case "admin":
           navigate("/admin/dashboard");
           break;
@@ -52,11 +50,8 @@ const LoginPage = () => {
       } else {
         setLoginError("Đã có lỗi xảy ra. Vui lòng thử lại.");
       }
-    } finally {
-      setIsLoading(false);
     }
   };
-
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">

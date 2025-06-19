@@ -15,6 +15,7 @@ import FeaturesSection from "../components/feature";
 import Footer from "../components/footer";
 import Header from "../components/header";
 import HeroSection from "../components/HeroSection";
+import { useAuth } from "../contexts/AuthContext";
 
 // Giả lập dữ liệu dịch vụ
 const services = [
@@ -95,6 +96,16 @@ const blogs = [
 ];
 
 const HomePage: React.FC = () => {
+  const { isAuthenticated, user } = useAuth();
+  const userRole = localStorage.getItem('userRole');
+
+  // Hàm lấy link dashboard dựa trên vai trò
+  const getDashboardLink = () => {
+    if (userRole === 'admin') return '/admin/dashboard';
+    if (userRole === 'doctor') return '/doctor/dashboard';
+    return '/patient/dashboard';
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
@@ -107,24 +118,51 @@ const HomePage: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                Mang lại cơ hội làm cha mẹ cho mọi gia đình
-              </h1>
-              <p className="text-lg text-gray-600 mb-8">
-                Với đội ngũ bác sĩ chuyên môn cao và trang thiết bị hiện đại, chúng tôi cung cấp các giải pháp điều trị hiếm muộn hiệu quả, mang lại hạnh phúc trọn vẹn cho gia đình bạn.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/booking">
-                  <Button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg hover:shadow-xl transition-all">
-                    Đặt lịch ngay
-                  </Button>
-                </Link>
-                <Link to="/services">
-                  <Button variant="outline" className="px-6 py-3 border-blue-600 text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
-                    Tìm hiểu dịch vụ
-                  </Button>
-                </Link>
-              </div>
+              {isAuthenticated ? (
+                // Hiển thị nội dung cá nhân hóa cho người dùng đã đăng nhập
+                <div>
+                  <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                    Xin chào, {user?.fullName || 'Bạn'}!
+                  </h1>
+                  <p className="text-lg text-gray-600 mb-8">
+                    Chúng tôi luôn sẵn sàng hỗ trợ bạn trong hành trình điều trị. Hãy khám phá các dịch vụ của chúng tôi hoặc kiểm tra lịch hẹn của bạn.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Link to="/booking">
+                      <Button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg hover:shadow-xl transition-all">
+                        Đặt lịch khám
+                      </Button>
+                    </Link>
+                    <Link to={getDashboardLink()}>
+                      <Button variant="outline" className="px-6 py-3 border-blue-600 text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                        Trang cá nhân
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                // Hiển thị nội dung mặc định cho người dùng chưa đăng nhập
+                <div>
+                  <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                    Mang lại cơ hội làm cha mẹ cho mọi gia đình
+                  </h1>
+                  <p className="text-lg text-gray-600 mb-8">
+                    Với đội ngũ bác sĩ chuyên môn cao và trang thiết bị hiện đại, chúng tôi cung cấp các giải pháp điều trị hiếm muộn hiệu quả, mang lại hạnh phúc trọn vẹn cho gia đình bạn.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Link to="/booking">
+                      <Button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg hover:shadow-xl transition-all">
+                        Đặt lịch ngay
+                      </Button>
+                    </Link>
+                    <Link to="/services">
+                      <Button variant="outline" className="px-6 py-3 border-blue-600 text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                        Tìm hiểu dịch vụ
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              )}
             </motion.div>
             <motion.div 
               className="md:w-1/2"
@@ -412,21 +450,42 @@ const HomePage: React.FC = () => {
             </Link>
           </div>
         </div>
-      </section>
-
-      {/* CTA Section */}
+      </section>      {/* CTA Section */}
       <section className="py-16 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h2 className="text-3xl font-bold mb-6">Bắt đầu hành trình làm cha mẹ ngay hôm nay</h2>
-            <p className="text-lg mb-8 max-w-3xl mx-auto">
-              Đặt lịch tư vấn để nhận được sự hỗ trợ chuyên nghiệp từ các bác sĩ của chúng tôi
-            </p>
-            <Link to="/booking">
-              <Button className="px-8 py-3 bg-white text-blue-600 hover:bg-blue-50 rounded-lg shadow-lg hover:shadow-xl transition-all text-lg">
-                Đặt lịch hẹn ngay
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <h2 className="text-3xl font-bold mb-6">Tiếp tục hành trình điều trị của bạn</h2>
+                <p className="text-lg mb-8 max-w-3xl mx-auto">
+                  Đặt lịch tư vấn hoặc kiểm tra lịch hẹn hiện tại của bạn
+                </p>
+                <div className="flex flex-col sm:flex-row justify-center gap-4">
+                  <Link to="/booking">
+                    <Button className="px-8 py-3 bg-white text-blue-600 hover:bg-blue-50 rounded-lg shadow-lg hover:shadow-xl transition-all text-lg">
+                      Đặt lịch mới
+                    </Button>
+                  </Link>
+                  <Link to={`${userRole?.toLowerCase() || 'patient'}/appointments`}>
+                    <Button variant="outline" className="px-8 py-3 bg-transparent border-white text-white hover:bg-blue-700 rounded-lg shadow-lg hover:shadow-xl transition-all text-lg">
+                      Xem lịch hẹn
+                    </Button>
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-3xl font-bold mb-6">Bắt đầu hành trình làm cha mẹ ngay hôm nay</h2>
+                <p className="text-lg mb-8 max-w-3xl mx-auto">
+                  Đặt lịch tư vấn để nhận được sự hỗ trợ chuyên nghiệp từ các bác sĩ của chúng tôi
+                </p>
+                <Link to="/booking">
+                  <Button className="px-8 py-3 bg-white text-blue-600 hover:bg-blue-50 rounded-lg shadow-lg hover:shadow-xl transition-all text-lg">
+                    Đặt lịch hẹn ngay
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </section>

@@ -1,13 +1,14 @@
 import AppRouter from './Routes/AppRouter';
-
+import { AuthProvider } from './contexts/AuthContext';
 
 const App: React.FC = () => {
   return (
-    <div className="App">
-      <AppRouter />
-      
-    </div>
+    <AuthProvider>
+      <div className="App">
+        <AppRouter />
+      </div>
+    </AuthProvider>
   );
 }
 
-export default App
+export default App;
