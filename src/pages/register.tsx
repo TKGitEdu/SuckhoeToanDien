@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { axiosApi } from "../lib/axios-api";
 
 type FormData = {
   fullName: string;
@@ -63,7 +62,6 @@ const RegisterPage = () => {
       console.log("Sending registration data:", registrationData);
       
       // Call the API to register the user
-      await axiosApi.auth.register(registrationData);
       
       console.log("Registration successful");
       

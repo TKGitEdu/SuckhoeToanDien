@@ -1,73 +1,13 @@
-import { useState, useEffect } from "react";
-import { Syringe, Menu, X, User, LogOut, Calendar, ClipboardList, LayoutDashboard } from "lucide-react";
+import { useState } from "react";
+import { Syringe, Menu, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 
 const Header: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const location = useLocation();
-  useEffect(() => {
-    // Check authentication status on route changes
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('userRole');
-    setIsAuthenticated(!!token);
-    setUserRole(role);
-    
-    // Add a storage event listener to detect changes from other components
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'token' || event.key === null) { // null means localStorage.clear() was called
-        const newToken = localStorage.getItem('token');
-        const newRole = localStorage.getItem('userRole');
-        setIsAuthenticated(!!newToken);
-        setUserRole(newRole);
-      }
-    };
-    
-    // Add event listener for localStorage changes
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Clean up the event listener
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [location]);  const handleLogout = () => {
-    // Use the auth api logout function to clear all user data
-    import('../lib/axios-api').then(({ axiosApi }) => {
-      axiosApi.auth.logout();
-      
-      // Additional update of component state
-      setIsAuthenticated(false);
-      setUserRole(null);
-      setIsProfileMenuOpen(false); // Close the menu
-      
-      // Redirect to home page
-      window.location.href = '/';
-    });
-  };
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
-
-  const toggleProfileMenu = () => {
-    setIsProfileMenuOpen(!isProfileMenuOpen);
-  };
-
-  const getDashboardLink = () => {
-    switch (userRole) {
-      case 'admin':
-        return '/admin/dashboard';
-      case 'doctor':
-        return '/doctor/dashboard';
-      case 'patient':
-        return '/patient/dashboard';
-      default:
-        return '/';
-    }
-  };
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   return (
     <header className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md shadow-sm">
@@ -103,96 +43,19 @@ const Header: React.FC = () => {
 
         {/* Actions - Desktop */}
         <div className="hidden md:flex items-center space-x-4">
-          {isAuthenticated ? (
-            <div className="relative">
-              <button
-                onClick={toggleProfileMenu}
-                className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors focus:outline-none"
-              >
-                <User size={20} />
-                <span>Tài khoản</span>
-              </button>
-              
-              {isProfileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-                  <Link
-                    to={getDashboardLink()}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                  >
-                    <LayoutDashboard size={16} className="mr-2" />
-                    Dashboard
-                  </Link>
-                  {userRole === 'patient' && (
-                    <>
-                      <Link
-                        to="/patient/appointments"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                      >
-                        <Calendar size={16} className="mr-2" />
-                        Lịch hẹn
-                      </Link>
-                      <Link
-                        to="/patient/treatments"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                      >
-                        <ClipboardList size={16} className="mr-2" />
-                        Điều trị
-                      </Link>
-                    </>
-                  )}
-                  {userRole === 'doctor' && (
-                    <>
-                      <Link
-                        to="/doctor/appointments"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                      >
-                        <Calendar size={16} className="mr-2" />
-                        Lịch hẹn
-                      </Link>
-                      <Link
-                        to="/doctor/patients"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                      >
-                        <User size={16} className="mr-2" />
-                        Bệnh nhân
-                      </Link>
-                    </>
-                  )}
-                  <button
-                    onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center"
-                  >
-                    <LogOut size={16} className="mr-2" />
-                    Đăng xuất
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <>
-              <Link
-                to="/login"
-                className="text-blue-600 font-semibold hover:text-blue-800 transition-colors"
-              >
-                Đăng nhập
-              </Link>
-              <Link to="/register">
-                <Button
-                  className="bg-blue-600 border-none hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all"
-                >
-                  Đăng ký ngay
-                </Button>
-              </Link>
-            </>
-          )}
+          <Link to="/login" className="text-blue-600 font-semibold hover:text-blue-800 transition-colors">
+            Đăng nhập
+          </Link>
+          <Link to="/register">
+            <Button className="bg-blue-600 border-none hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all">
+              Đăng ký ngay
+            </Button>
+          </Link>
         </div>
 
         {/* Mobile menu button */}
         <div className="md:hidden flex items-center">
-          <button
-            onClick={toggleMenu}
-            className="text-gray-500 hover:text-blue-600 focus:outline-none"
-          >
+          <button onClick={toggleMenu} className="text-gray-500 hover:text-blue-600 focus:outline-none">
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
@@ -217,33 +80,19 @@ const Header: React.FC = () => {
             <Link to="/booking" className="block py-2 text-base font-medium text-gray-700 hover:text-blue-600">
               Đặt lịch
             </Link>
-            
-            {isAuthenticated ? (
-              <>
-                <Link to={getDashboardLink()} className="block py-2 text-base font-medium text-gray-700 hover:text-blue-600">
-                  Dashboard
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="block w-full text-left py-2 text-base font-medium text-red-600 hover:text-red-800"
-                >
-                  Đăng xuất
-                </button>
-              </>
-            ) : (
-              <div className="pt-2 flex flex-col space-y-3">
-                <Link to="/login" className="w-full">
-                  <Button variant="outline" className="w-full">
-                    Đăng nhập
-                  </Button>
-                </Link>
-                <Link to="/register" className="w-full">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    Đăng ký ngay
-                  </Button>
-                </Link>
-              </div>
-            )}
+
+            <div className="pt-2 flex flex-col space-y-3">
+              <Link to="/login" className="w-full">
+                <Button variant="outline" className="w-full">
+                  Đăng nhập
+                </Button>
+              </Link>
+              <Link to="/register" className="w-full">
+                <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                  Đăng ký ngay
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       )}
