@@ -1,138 +1,73 @@
-// src/pages/register.tsx
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { motion } from "framer-motion";
-import { Eye, EyeOff, AlertCircle } from "lucide-react";
-import { Button } from "../components/ui/button";
-import { useRegis } from "../contexts/RegisContext";
-import type { RegisterRequest } from "../lib/api-axios";
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import type { SubmitHandler } from 'react-hook-form';
+import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
+import { register as registerUser } from '../lib/api-resgister';
+import type { RegisterRequest } from '../lib/api-resgister';
+import { Button } from '../components/ui/button';
+import { motion } from 'framer-motion';
+import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 
-// Interface cho form data
-interface RegisterFormData {
-  fullName: string;
-  email: string;
-  phone: string;
-  username: string; 
-  password: string;
+// Interface for the form data
+type RegisterFormData = RegisterRequest & {
   confirmPassword: string;
-  address: string;
-  gender: string;
-  dateOfBirth: string;
-  bloodType?: string;
-  emergencyPhoneNumber?: string;
-}
+};
 
-const RegisterPage = () => {
+const RegisterPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);  const [registerError, setRegisterError] = useState<string | null>(null);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
-  // Sử dụng RegisContext
-  const { register: registerUser, loading, error: contextError } = useRegis();
-    // ⭐ THÊM defaultValues để tránh "string"
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors }
-  } = useForm<RegisterFormData>({
-    mode: "onBlur", // Validate khi blur field
-    defaultValues: {
-      fullName: "",
-      email: "",
-      phone: "",
-      username: "",
-      password: "",
-      confirmPassword: "",
-      address: "",
-      gender: "",
-      dateOfBirth: "",
-      bloodType: "",
-      emergencyPhoneNumber: ""
-    }
-  });
+  const { 
+    register, 
+    handleSubmit, 
+    formState: { errors }, 
+    watch 
+  } = useForm<RegisterFormData>();
   
-  // Lấy giá trị password để so sánh với confirmPassword
-  const password = watch("password");  const onSubmit = async (data: RegisterFormData) => {
+  const password = watch("password");
+  const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
     try {
-      setRegisterError(null);
+      setLoading(true);
+      setError(null);
       
-      // ⭐ THÊM MỚI: In ra console để debug
-      console.log("Form data before submit:", data);
-      
-      // Loại bỏ confirmPassword
-      const { confirmPassword, ...registerData } = data;
-      
-      // Tạo dữ liệu đăng ký với định dạng phù hợp, tránh gửi "string" hoặc giá trị mặc định
+      // Chuyển đổi ngày sang ISO string nếu có
       const formattedData: RegisterRequest = {
-        username: registerData.username,
-        password: registerData.password,
-        email: registerData.email,
-        fullName: registerData.fullName || "",
-        phone: registerData.phone || "",
-        address: registerData.address || "",
-        gender: registerData.gender || "",
-        dateOfBirth: registerData.dateOfBirth ? new Date(registerData.dateOfBirth).toISOString() : null,
-        roleId: "ROLE_3", // Đặt mặc định cho role là Patient
-        bloodType: registerData.bloodType || null,
-        emergencyPhoneNumber: registerData.emergencyPhoneNumber || null
+        username: data.username,
+        password: data.password,
+        email: data.email,
+        fullName: data.fullName,
+        phone: data.phone,
+        address: data.address,
+        gender: data.gender,
+        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString() : undefined,
+        bloodType: data.bloodType,
+        emergencyPhoneNumber: data.emergencyPhoneNumber
       };
       
-      // ⭐ THÊM MỚI: In ra console để debug
-      console.log("Data to be sent:", formattedData);
-      
       // Gọi API đăng ký
-      const response = await registerUser(formattedData);
-      console.log("Registration response:", response);
-      
-      // Kiểm tra response
-      if (!response || !response.user) {
-        console.error("Received invalid response:", response);
-        setRegisterError("Server không trả về dữ liệu hợp lệ. Vui lòng thử lại sau.");
-        return;
-      }
-      
-      // ⚠️ QUAN TRỌNG: Đảm bảo không lưu token hoặc thông tin đăng nhập sau khi đăng ký
-      // Chỉ chuyển hướng người dùng đến trang đăng nhập
-      console.log("⚠️ Xóa bất kỳ token nào hiện có để tránh đăng nhập tự động");
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('userRole');
+      await registerUser(formattedData);
       
       // Hiển thị thông báo thành công
-      alert("Đăng ký tài khoản bệnh nhân thành công! Vui lòng đăng nhập để tiếp tục.");
+      alert("Đăng ký tài khoản thành công! Vui lòng đăng nhập để tiếp tục.");
       
-      // QUAN TRỌNG: Chuyển hướng đến trang đăng nhập mà không tự động đăng nhập
-      console.log("⚠️ Chuyển hướng đến trang đăng nhập sau 2 giây");
-      setTimeout(() => {
-        window.location.href = "/login";
-      }, 2000); // Tăng độ trễ lên 2 giây để đảm bảo mọi thứ đã xong
-      
-    } catch (error: any) {
-      console.error("Lỗi đăng ký:", error);
-      
-      // Hiển thị lỗi từ response API
-      if (error.response?.data) {
-        // Backend trả về message dạng string trực tiếp
-        if (typeof error.response.data === 'string') {
-          setRegisterError(error.response.data);
-        } 
-        // Backend trả về object có message
-        else if (error.response.data.message) {
-          setRegisterError(error.response.data.message);
-        } 
-        // Fallback
-        else {
-          setRegisterError("Đã có lỗi xảy ra khi đăng ký. Vui lòng thử lại.");
-        }
-      } else if (contextError) {
-        setRegisterError(contextError);
+      // Chuyển hướng đến trang đăng nhập
+      navigate("/login");
+    } catch (error) {
+      // Xử lý lỗi
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message || "Đã có lỗi xảy ra khi đăng ký";
+        setError(errorMessage);
       } else {
-        setRegisterError("Đã có lỗi xảy ra khi đăng ký. Vui lòng thử lại.");
+        setError("Đã có lỗi xảy ra khi đăng ký");
       }
+    } finally {
+      setLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left side image */}
@@ -173,10 +108,10 @@ const RegisterPage = () => {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {registerError && (
+            {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
                 <AlertCircle className="text-red-500 mr-3 h-5 w-5 mt-0.5" />
-                <p className="text-sm text-red-700">{registerError}</p>
+                <p className="text-sm text-red-700">{error}</p>
               </div>
             )}
 
@@ -189,10 +124,9 @@ const RegisterPage = () => {
                 id="fullName"
                 type="text"
                 className={`w-full px-4 py-3 rounded-lg border ${errors.fullName ? "border-red-500" : "border-gray-300"} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                placeholder="Nhập họ và tên"
-                {...register("fullName", { 
+                placeholder="Nhập họ và tên"                {...register("fullName", { 
                 required: "Họ và tên là bắt buộc",
-                validate: value => value !== 'string' && value.trim() !== '' || "Vui lòng nhập họ và tên"
+                validate: value => (value && value !== 'string' && value.trim() !== '') || "Vui lòng nhập họ và tên"
               })}
               />
               {errors.fullName && (
@@ -209,13 +143,14 @@ const RegisterPage = () => {
                 id="email"
                 type="email"
                 className={`w-full px-4 py-3 rounded-lg border ${errors.email ? "border-red-500" : "border-gray-300"} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                placeholder="example@email.com"                {...register("email", { 
+                placeholder="example@email.com"
+                {...register("email", { 
                   required: "Email là bắt buộc",
                   pattern: {
                     value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                     message: "Địa chỉ email không hợp lệ"
                   },
-                  validate: value => value !== 'string' && value.trim() !== '' || "Vui lòng nhập email hợp lệ"
+                  validate: value => (value && value !== 'string' && value.trim() !== '') || "Vui lòng nhập email hợp lệ"
                 })}
               />
               {errors.email && (
@@ -232,13 +167,14 @@ const RegisterPage = () => {
                 id="username"
                 type="text"
                 className={`w-full px-4 py-3 rounded-lg border ${errors.username ? "border-red-500" : "border-gray-300"} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                placeholder="Nhập tên đăng nhập"              {...register("username", { 
+                placeholder="Nhập tên đăng nhập"
+                {...register("username", { 
                   required: "Tên đăng nhập là bắt buộc",
                   minLength: {
                     value: 4,
                     message: "Tên đăng nhập phải có ít nhất 4 ký tự"
                   },
-                  validate: value => value !== 'string' && value.trim() !== '' || "Vui lòng nhập tên đăng nhập hợp lệ"
+                  validate: value => (value && value !== 'string' && value.trim() !== '') || "Vui lòng nhập tên đăng nhập hợp lệ"
                 })}
               />
               {errors.username && (
@@ -311,18 +247,18 @@ const RegisterPage = () => {
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                 Số điện thoại <span className="text-red-500">*</span>
-              </label>
-              <input
+              </label>              <input
                 id="phone"
                 type="tel"
                 className={`w-full px-4 py-3 rounded-lg border ${errors.phone ? "border-red-500" : "border-gray-300"} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                placeholder="0xxxxxxxxx"                {...register("phone", { 
+                placeholder="0xxxxxxxxx"
+                {...register("phone", { 
                   required: "Số điện thoại là bắt buộc",
                   pattern: {
                     value: /^[0-9]{10,11}$/,
                     message: "Số điện thoại không hợp lệ"
                   },
-                  validate: value => value !== 'string' && value.trim() !== '' || "Vui lòng nhập số điện thoại hợp lệ"
+                  validate: value => (value && value !== 'string' && value.trim() !== '') || "Vui lòng nhập số điện thoại hợp lệ"
                 })}
               />
               {errors.phone && (
@@ -402,7 +338,7 @@ const RegisterPage = () => {
               )}
             </div>
 
-            {/* Số điện thoại khẩn cấp - đổi tên từ emergencyContact sang emergencyPhoneNumber */}
+            {/* Số điện thoại khẩn cấp */}
             <div>
               <label htmlFor="emergencyPhoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
                 Số điện thoại khẩn cấp
@@ -471,7 +407,7 @@ const RegisterPage = () => {
             </div>
           </form>
         </motion.div>
-                </div>
+      </div>
     </div>
   );
 };
