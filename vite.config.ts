@@ -1,3 +1,4 @@
+//src/vite.config.ts
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -10,14 +11,13 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-  },
-  server: {
+  },  server: {
     proxy: {
       '/api': {
         target: 'https://localhost:7147',
         changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api/, '/api')
+        secure: false
+        // Bỏ hàm rewrite không cần thiết
       }
     }
   },

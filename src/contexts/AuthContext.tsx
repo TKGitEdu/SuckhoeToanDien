@@ -4,25 +4,7 @@ import { authApi } from '../lib/api-axios';
 
 // Import các interfaces từ api-axios.ts
 // Hoặc re-define chúng ở đây
-interface Role {
-  roleId: string | null;
-  roleName: string;
-}
-
-interface User {
-  userId: string;
-  fullName: string;
-  email: string;
-  phone: string | null;
-  username: string;
-  roleId: string;
-  address: string | null;
-  gender: string | null;
-  dateOfBirth: string | null;
-  role: Role;
-  doctor: any | null;
-  patients: any[];
-}
+import type { User } from '../lib/api-axios';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -100,10 +82,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     }
   };
-
   // Kiểm tra xác thực khi component mount
   useEffect(() => {
-    refreshAuthStatus();
+    const checkAuthentication = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+          console.log('AuthContext: Không tìm thấy token trong localStorage');
+          setIsAuthenticated(false);
+          setUser(null);
+          return;
+        }
+        
+        console.log('AuthContext: Đang kiểm tra tính hợp lệ của token');
+        // Sử dụng hàm checkAuth từ authApi
+        const isValid = await authApi.checkAuth();
+        
+        if (isValid) {
+          // Token hợp lệ, lấy thông tin user từ localStorage
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            setUser(JSON.parse(storedUser));
+            setIsAuthenticated(true);
+            console.log('AuthContext: Xác thực thành công');
+          } else {
+            handleLogout();
+            console.log('AuthContext: Không tìm thấy thông tin user');
+          }
+        } else {
+          // Token không hợp lệ, đăng xuất
+          handleLogout();
+          console.log('AuthContext: Token không hợp lệ');
+        }
+      } catch (error) {
+        console.error('AuthContext: Lỗi xác thực', error);
+        handleLogout();
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    // Hàm xử lý đăng xuất
+    const handleLogout = () => {
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('userRole');
+    };
+    
+    checkAuthentication();
   }, []);
 
   // Hàm login
