@@ -22,6 +22,21 @@ type LoginResponse = {
   user: User;
 };
 
+type RegisterPayload = {
+  username: string;
+  password: string;
+  email: string;
+  fullName: string;
+  phone: string;
+  address: string;
+  gender: string;
+  dateOfBirth: string; 
+  bloodType: string;
+  emergencyPhoneNumber: string;
+};
+
+
+
 export const authApi = {
   login: async (data: LoginPayload) =>{ 
    const response:LoginResponse  = await axiosClient.post("api/Auth/login", data)
@@ -30,7 +45,10 @@ export const authApi = {
 
     return response.user;
 
-  }
-//   register: (data: any) => axiosClient.post("/auth/register", data),
-//   logout: () => axiosClient.post("/auth/logout")
+  },
+  register: async (data: RegisterPayload) => {
+    const response = await axiosClient.post("api/Auth/register", data);
+    return response; 
+  },
+
 };

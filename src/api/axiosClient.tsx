@@ -8,9 +8,57 @@ const axiosClient = axios.create({
 });
 
 axiosClient.interceptors.response.use(
-  response => response.data,
-  error => {
-    return Promise.reject(error);
+ (response) => {
+    if (response.status === 200) {
+      return response.data;
+    }
+
+    return response;
+  },
+  (error) => {
+    const { response } = error;
+
+    if (!response) {
+      return Promise.reject({
+        message: "Không thể kết nối tới máy chủ. Vui lòng kiểm tra mạng.",
+      });
+    }
+
+    const status = response.status;
+
+    if (status === 400) {
+      return Promise.reject({
+        message: response.data,
+        status,
+      });
+    }
+
+    if (status === 401 || status === 403) {
+      return Promise.reject({
+        message: "Bạn không có quyền thực hiện hành động này.",
+        status,
+      });
+    }
+
+    if (status === 404) {
+      return Promise.reject({
+        message: "Không tìm thấy tài nguyên.",
+        status,
+      });
+    }
+
+    if (status === 500) {
+      return Promise.reject({
+        message:
+          response.data?.message ||
+          "Lỗi máy chủ. Vui lòng thử lại sau.",
+        status,
+      });
+    }
+    return Promise.reject({
+      message: "Lỗi không xác định.",
+      status,
+    });
   }
 );
 
