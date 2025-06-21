@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { authApi } from "../api/authenAPI";
 
 type FormData = {
   fullName: string;
@@ -22,12 +23,15 @@ type FormData = {
   termsAccepted: boolean;
 };
 
+
+
 const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
   const navigate = useNavigate();
+  
   
   const { 
     register, 
@@ -42,52 +46,40 @@ const RegisterPage = () => {
     setIsLoading(true);
     setRegisterError(null);
     
-    // Create registration payload based on API requirements
     const registrationData = {
-      fullName: data.fullName,
-      email: data.email,
-      phone: data.phone,
-      username: data.username,
-      password: data.password,
-      roleId: "ROLE_3", // Role ID for Patient
-      address: data.address || "",
-      gender: data.gender || "",
-      dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString() : null,
-      specialization: "", // Not needed for patients
-      bloodType: data.bloodType || "",
-      emergencyPhoneNumber: data.emergencyPhoneNumber || ""
-    };
-    
-    try {
-      console.log("Sending registration data:", registrationData);
-      
-      // Call the API to register the user
-      
-      console.log("Registration successful");
-      
-      // Redirect to login page on success
-      navigate('/login', { 
-        state: { 
-          message: "Đăng ký thành công! Vui lòng đăng nhập bằng tài khoản của bạn." 
-        } 
-      });
-    } catch (error) {
-      console.error("Registration error:", error);
-      setRegisterError(
-        error instanceof Error 
-          ? error.message 
-          : "Đăng ký thất bại. Vui lòng kiểm tra lại thông tin và thử lại."
-      );
-    } finally {
-      setIsLoading(false);
-    }
+    fullName: data.fullName,
+    email: data.email,
+    phone: data.phone,
+    username: data.username,
+    password: data.password,
+    address: data.address || "",
+    gender: data.gender || "",
+    dateOfBirth: data.dateOfBirth
+      ? new Date(data.dateOfBirth).toISOString()
+      : "",
+    bloodType: data.bloodType || "",
+    emergencyPhoneNumber: data.emergencyPhoneNumber || "",
   };
+    
+   try {
+  const message = await authApi.register(registrationData);
+  navigate("/success", {
+    state: { message }, 
+  });
+} catch (error: any) {
+  console.error("Lỗi đăng ký:", error);
+
+  const errorMessage = error.message || "Đăng ký thất bại.";
+  setRegisterError(errorMessage); 
+} finally {
+  setIsLoading(false);
+}
+  }
 
   return (
     <div>
         <Header></Header>
     <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Hero Image Section - Left */}
       <div className="hidden md:block md:w-1/2 bg-blue-600">
         <div className="h-full w-full bg-[url('/src/assets/xxx.jpg')] bg-cover bg-center relative">
           <div className="absolute inset-0 bg-blue-900/40 flex flex-col justify-center items-center text-white p-12">

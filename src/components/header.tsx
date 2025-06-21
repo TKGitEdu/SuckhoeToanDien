@@ -1,4 +1,4 @@
-import { Syringe, Menu, X } from "lucide-react";
+import { Syringe} from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";

@@ -34,6 +34,10 @@ import AdminPatients from "../pages/admin/Patients";
 import AdminFeedbacks from "../pages/admin/Feedbacks";
 import NotFoundPage from "../pages/NotFoundPage";
 import ProtectedRoute from "./ProtectedRouter";
+import RegisterSuccess from "../components/registerSuccess";
+
+
+
 
 const MainLayout = ({ children }: { children: React.ReactNode }) => (
   <>
@@ -57,6 +61,7 @@ const AppRouter: React.FC = () => {
         />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+         <Route path="/success" element={<RegisterSuccess />} />
         <Route
           path="/services"
           element={
