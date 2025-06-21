@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { authApi } from "../api/authenAPI"; 
 
 type FormData = {
   username: string;
@@ -22,27 +23,33 @@ const LoginPage = () => {
     formState: { errors }
   } = useForm<FormData>();
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     setLoginError(null);
 
-    setTimeout(() => {
-      // Fake login logic
-      if (data.username === "admin" && data.password === "123456") {
-        localStorage.setItem("userRole", "admin");
-        navigate("/admin/dashboard");
-      } else if (data.username === "doctor" && data.password === "123456") {
-        localStorage.setItem("userRole", "doctor");
-        navigate("/doctor/dashboard");
-      } else if (data.username === "patient" && data.password === "123456") {
-        localStorage.setItem("userRole", "patient");
-        navigate("/patient/dashboard");
-      } else {
-        setLoginError("Tên đăng nhập hoặc mật khẩu không chính xác.");
-      }
+    try {
+      const user = await authApi.login(data);
 
+      // Phân quyền và chuyển hướng
+      switch (user.role?.roleName) {
+        case "Admin":
+          navigate("/admin/dashboard");
+          break;
+        case "Doctor":
+          navigate("/doctor/dashboard");
+          break;
+        case "Patient":
+          navigate("/patient/dashboard");
+          break;
+        default:
+          setLoginError("Vai trò không xác định.");
+          break;
+      }
+    } catch (error: any) {
+      setLoginError("Tên đăng nhập hoặc mật khẩu không chính xác.");
+    } finally {
       setIsLoading(false);
-    }, 1000); // Simulate loading
+    }
   };
 
   return (

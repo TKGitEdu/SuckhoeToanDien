@@ -1,13 +1,29 @@
-import { useState } from "react";
 import { Syringe, Menu, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
+import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { logout } from "../utils/logout";
 
 const Header: React.FC = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
+  const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
+   useEffect(() => {
+    const storedUser = localStorage.getItem("userInfo");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+    const handleLogout = () => {
+    logout();
+    setUser(null);
+    navigate("/");
+  };
 
   return (
     <header className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md shadow-sm">
@@ -41,8 +57,15 @@ const Header: React.FC = () => {
           </Link>
         </nav>
 
-        {/* Actions - Desktop */}
-        <div className="hidden md:flex items-center space-x-4">
+        {user ? (
+          <div className="flex gap-4 items-center">
+            <span>Welcome <h2 className="text-red-500 font-bold">{user.fullName}</h2></span>
+            <Button onClick={handleLogout} className="bg-blue-600 border-none hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all">
+              Đăng xuất
+            </Button>
+          </div>
+        ) : (
+         <div className="hidden md:flex items-center space-x-4">
           <Link to="/login" className="text-blue-600 font-semibold hover:text-blue-800 transition-colors">
             Đăng nhập
           </Link>
@@ -52,50 +75,9 @@ const Header: React.FC = () => {
             </Button>
           </Link>
         </div>
+        )}
 
-        {/* Mobile menu button */}
-        <div className="md:hidden flex items-center">
-          <button onClick={toggleMenu} className="text-gray-500 hover:text-blue-600 focus:outline-none">
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
         </div>
-      </div>
-
-      {/* Mobile menu */}
-      {isMenuOpen && (
-        <div className="md:hidden bg-white shadow-lg">
-          <div className="px-4 pt-2 pb-4 space-y-3">
-            <Link to="/" className="block py-2 text-base font-medium text-gray-700 hover:text-blue-600">
-              Trang chủ
-            </Link>
-            <Link to="/services" className="block py-2 text-base font-medium text-gray-700 hover:text-blue-600">
-              Dịch vụ
-            </Link>
-            <Link to="/doctors" className="block py-2 text-base font-medium text-gray-700 hover:text-blue-600">
-              Bác sĩ
-            </Link>
-            <Link to="/blog" className="block py-2 text-base font-medium text-gray-700 hover:text-blue-600">
-              Blog
-            </Link>
-            <Link to="/booking" className="block py-2 text-base font-medium text-gray-700 hover:text-blue-600">
-              Đặt lịch
-            </Link>
-
-            <div className="pt-2 flex flex-col space-y-3">
-              <Link to="/login" className="w-full">
-                <Button variant="outline" className="w-full">
-                  Đăng nhập
-                </Button>
-              </Link>
-              <Link to="/register" className="w-full">
-                <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                  Đăng ký ngay
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   );
 };
