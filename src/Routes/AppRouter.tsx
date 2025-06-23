@@ -168,7 +168,7 @@ const AppRouter: React.FC = () => {
           }
         />
         <Route
-          path="/patient/appointments"
+          path="/patient/appointments/:bookingId"
           element={
             <ProtectedRoute allowedRoles={["Patient"]}>
               <MainLayout>
