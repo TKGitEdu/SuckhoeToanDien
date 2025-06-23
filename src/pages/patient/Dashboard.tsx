@@ -1,38 +1,18 @@
-import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Calendar, 
-  Clock, 
   FileText, 
   Users, 
   Bell, 
-  ArrowRight,
   CalendarCheck,
-  PieChart,
   Bookmark
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 
-// Giả lập dữ liệu
-const upcomingAppointments = [
-  {
-    id: 1,
-    service: "Thụ tinh trong tử cung (IUI)",
-    doctor: "TS. BS. Nguyễn Văn A",
-    date: "20/06/2025",
-    time: "09:30",
-    status: "confirmed"
-  },
-  {
-    id: 2,
-    service: "Khám theo dõi",
-    doctor: "BS. CKI. Phạm Thị D",
-    date: "05/07/2025",
-    time: "14:00",
-    status: "pending"
-  }
-];
+import { useState, useEffect } from "react";
+import { bookingApi } from "../../api/bookingAPI";
+import type { Booking } from "../../api/bookingAPI";
 
 const treatmentProgress = [
   {
@@ -48,41 +28,54 @@ const treatmentProgress = [
   }
 ];
 
-const recentActivities = [
-  {
-    id: 1,
-    type: "appointment",
-    title: "Đặt lịch tư vấn",
-    date: "10/06/2025",
-    description: "Bạn đã đặt lịch tư vấn với TS. BS. Nguyễn Văn A"
-  },
-  {
-    id: 2,
-    type: "treatment",
-    title: "Bắt đầu quy trình IUI",
-    date: "15/05/2025",
-    description: "Bạn đã bắt đầu quy trình điều trị IUI"
-  },
-  {
-    id: 3,
-    type: "result",
-    title: "Kết quả xét nghiệm",
-    date: "05/06/2025",
-    description: "Bác sĩ đã cập nhật kết quả xét nghiệm nội tiết của bạn"
-  }
-];
-
 const PatientDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [patientName, setPatientName] = useState("");
+  
+  // Custom hook để lấy danh sách booking
+  const useMyBookings = () => {
+    const [bookings, setBookings] = useState<Booking[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    
+    useEffect(() => {
+      const fetchBookings = async () => {        try {
+          setLoading(true);
+          // Gọi API từ bookingApi
+          const data = await bookingApi.getMyBookings();
+          setBookings(data);
+          setLoading(false);
+        } catch (err) {
+          console.error("Lỗi khi lấy danh sách đặt lịch:", err);
+          setError("Không thể lấy danh sách đặt lịch. Vui lòng thử lại sau.");
+          setLoading(false);
+        }
+      };
 
+      fetchBookings();
+    }, []);
+    
+    return { bookings, loading, error };
+  };
+  
+  // Lấy thông tin người dùng và lịch hẹn
   useEffect(() => {
-    // Giả lập API call
-    setTimeout(() => {
-      setPatientName("Nguyễn Thị A");
-      setLoading(false);
-    }, 500);
+    // Lấy thông tin người dùng từ localStorage
+    const userInfo = localStorage.getItem("userInfo");
+    if (userInfo) {
+      try {
+        const user = JSON.parse(userInfo);
+        setPatientName(user.fullName || user.username || "Bệnh nhân");
+      } catch (e) {
+        console.error("Error parsing userInfo:", e);
+        setPatientName("Bệnh nhân");
+      }
+    }
+    
+    setLoading(false);
   }, []);
+    // Sử dụng hook để lấy dữ liệu booking
+  const { bookings: upcomingAppointments } = useMyBookings();
 
   if (loading) {
     return (
@@ -181,64 +174,42 @@ const PatientDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
             className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
-          >
-            <div className="p-6 border-b border-gray-100">
+          >            <div className="p-6 border-b border-gray-100">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold text-gray-900">Lịch hẹn sắp tới</h2>
-                <Link to="/patient/appointments" className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center">
-                  Xem tất cả <ArrowRight className="ml-1 h-4 w-4" />
-                </Link>
               </div>
             </div>
-            
-            <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100">
               {upcomingAppointments.length > 0 ? (
-                upcomingAppointments.map((appointment) => (
-                  <div key={appointment.id} className="p-6">
+                upcomingAppointments.map((booking) => (
+                  <div key={booking.bookingId} className="p-6">
                     <div className="flex items-start">
                       <div className="mr-4">
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                          appointment.status === 'confirmed' 
-                            ? 'bg-green-100' 
-                            : 'bg-yellow-100'
-                        }`}>
-                          {appointment.status === 'confirmed' ? (
-                            <CalendarCheck className={`h-6 w-6 ${
-                              appointment.status === 'confirmed' 
-                                ? 'text-green-600' 
-                                : 'text-yellow-600'
-                            }`} />
-                          ) : (
-                            <Clock className="h-6 w-6 text-yellow-600" />
-                          )}
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-100">
+                          <CalendarCheck className="h-6 w-6 text-blue-600" />
                         </div>
                       </div>
                       <div className="flex-1">
                         <div className="flex justify-between items-start">
                           <div>
-                            <h3 className="text-lg font-semibold text-gray-900">{appointment.service}</h3>
-                            <p className="text-gray-600">{appointment.doctor}</p>
+                            <h3 className="text-lg font-semibold text-gray-900">{booking.service?.name || "Dịch vụ không xác định"}</h3>
+                            <p className="text-gray-600">{booking.doctor?.doctorName || "Bác sĩ không xác định"}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-gray-900 font-medium">{appointment.date}</p>
-                            <p className="text-gray-600">{appointment.time}</p>
+                            <p className="text-gray-900 font-medium">{new Date(booking.dateBooking).toLocaleDateString('vi-VN')}</p>
+                            <p className="text-gray-600">{booking.slot?.startTime} - {booking.slot?.endTime}</p>
                           </div>
                         </div>
                         <div className="mt-3 flex justify-between items-center">
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            appointment.status === 'confirmed' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {appointment.status === 'confirmed' ? 'Đã xác nhận' : 'Chờ xác nhận'}
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {booking.note ? booking.note : "Đã đặt lịch"}
                           </span>
                           <div className="flex space-x-2">
-                            <Button variant="outline" size="sm" className="text-sm border-gray-300 text-gray-700">
-                              Đổi lịch
-                            </Button>
-                            <Button size="sm" className="text-sm bg-blue-600 hover:bg-blue-700">
-                              Chi tiết
-                            </Button>
+                            <Link to={`/patient/appointments/${booking.bookingId}`}>
+                              <Button size="sm" className="text-sm bg-blue-600 hover:bg-blue-700">
+                                Chi tiết
+                              </Button>
+                            </Link>
                           </div>
                         </div>
                       </div>
@@ -264,40 +235,43 @@ const PatientDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
             className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
-          >
-            <div className="p-6 border-b border-gray-100">
+          >            <div className="p-6 border-b border-gray-100">
               <h2 className="text-xl font-bold text-gray-900">Hoạt động gần đây</h2>
             </div>
             
             <div className="divide-y divide-gray-100">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="p-4">
-                  <div className="flex">
-                    <div className="mr-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        activity.type === 'appointment' 
-                          ? 'bg-blue-100' 
-                          : activity.type === 'treatment' 
-                            ? 'bg-green-100' 
-                            : 'bg-purple-100'
-                      }`}>
-                        {activity.type === 'appointment' ? (
-                          <Calendar className="h-5 w-5 text-blue-600" />
-                        ) : activity.type === 'treatment' ? (
-                          <FileText className="h-5 w-5 text-green-600" />
-                        ) : (
-                          <PieChart className="h-5 w-5 text-purple-600" />
-                        )}
+              {upcomingAppointments.length > 0 ? (
+                // Sắp xếp theo thời gian tạo mới nhất và lấy 3 booking gần nhất
+                [...upcomingAppointments]
+                  .sort((a, b) => new Date(b.createAt).getTime() - new Date(a.createAt).getTime())
+                  .slice(0, 3)
+                  .map((booking) => (
+                    <div key={booking.bookingId} className="p-4">
+                      <div className="flex">
+                        <div className="mr-4">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-100">
+                            <Calendar className="h-5 w-5 text-blue-600" />
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-900">
+                            {booking.service?.name ? `Đặt lịch ${booking.service.name}` : "Đặt lịch dịch vụ"}
+                          </h3>
+                          <p className="text-xs text-gray-500 mb-1">
+                            {new Date(booking.createAt).toLocaleDateString('vi-VN')}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {booking.description || `Lịch hẹn với bác sĩ ${booking.doctor?.doctorName || "không xác định"}`}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-900">{activity.title}</h3>
-                      <p className="text-xs text-gray-500 mb-1">{activity.date}</p>
-                      <p className="text-sm text-gray-600">{activity.description}</p>
-                    </div>
-                  </div>
+                  ))
+              ) : (
+                <div className="p-4 text-center">
+                  <p className="text-gray-500">Không có hoạt động gần đây</p>
                 </div>
-              ))}
+              )}
             </div>
           </motion.div>
         </div>
@@ -308,13 +282,9 @@ const PatientDashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
           className="mt-8 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
-        >
-          <div className="p-6 border-b border-gray-100">
+        >          <div className="p-6 border-b border-gray-100">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900">Theo dõi điều trị</h2>
-              <Link to="/patient/treatments" className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center">
-                Xem tất cả <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
             </div>
           </div>
           
