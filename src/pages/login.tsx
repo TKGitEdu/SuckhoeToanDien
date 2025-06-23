@@ -4,7 +4,9 @@ import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { useAuth } from "../contexts/AuthContext";
+
+import { authApi } from "../api/authenAPI";
+
 
 type FormData = {
   username: string;
@@ -14,42 +16,42 @@ type FormData = {
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  
   const navigate = useNavigate();
   
-  const { login, loading: isLoading } = useAuth();
 
   const {
     register,
     handleSubmit,
-    formState: { errors }
+    formState: { errors },
   } = useForm<FormData>();
 
   const onSubmit = async (data: FormData) => {
+    setIsLoading(true);
     setLoginError(null);
 
     try {
-      const response = await login(data.username, data.password);
-      //đợi login thành công và lấy thông tin người dùng rồi navigate đến trang dashboard tương ứng
-      const roleName = response.user.role.roleName.toLowerCase();
-      switch (roleName) {
-        case "admin":
+      const user = await authApi.login(data);
+
+      // Phân quyền và chuyển hướng
+      switch (user.role?.roleName) {
+        case "Admin":
           navigate("/admin/dashboard");
           break;
-        case "doctor":
+        case "Doctor":
           navigate("/doctor/dashboard");
           break;
-        case "patient":
+        case "Patient":
           navigate("/patient/dashboard");
           break;
         default:
-          navigate("/");
+          setLoginError("Vai trò không xác định.");
+          break;
       }
     } catch (error: any) {
-      if (error.response?.status === 401) {
-        setLoginError("Tên đăng nhập hoặc mật khẩu không đúng.");
-      } else {
-        setLoginError("Đã có lỗi xảy ra. Vui lòng thử lại.");
-      }
+      setLoginError("Tên đăng nhập hoặc mật khẩu không chính xác.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -65,9 +67,12 @@ const LoginPage = () => {
               transition={{ duration: 0.5 }}
               className="max-w-md text-center"
             >
-              <h1 className="text-3xl font-bold mb-4">Chào mừng quay trở lại</h1>
+              <h1 className="text-3xl font-bold mb-4">
+                Chào mừng quay trở lại
+              </h1>
               <p className="mb-6">
-                Đăng nhập để tiếp tục hành trình mang lại hạnh phúc gia đình của bạn cùng FertilityCare
+                Đăng nhập để tiếp tục hành trình mang lại hạnh phúc gia đình của
+                bạn cùng FertilityCare
               </p>
             </motion.div>
           </div>
@@ -76,6 +81,7 @@ const LoginPage = () => {
 
       {/* Right side form */}
       <div className="flex-1 flex items-center justify-center p-8">
+        
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -84,7 +90,9 @@ const LoginPage = () => {
         >
           <div className="text-center mb-8">
             <Link to="/" className="inline-block">
-              <h1 className="text-2xl font-bold text-blue-600">FertilityCare</h1>
+              <h1 className="text-2xl font-bold text-blue-600">
+                FertilityCare
+              </h1>
             </Link>
             <h2 className="text-2xl font-bold text-gray-900 mt-6">Đăng nhập</h2>
             <p className="text-gray-600 mt-2">
@@ -101,37 +109,51 @@ const LoginPage = () => {
             )}
 
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Tên đăng nhập
               </label>
               <input
                 id="username"
                 type="text"
-                className={`w-full px-4 py-3 rounded-lg border ${errors.username ? "border-red-500" : "border-gray-300"} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                className={`w-full px-4 py-3 rounded-lg border ${
+                  errors.username ? "border-red-500" : "border-gray-300"
+                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 placeholder="Nhập tên đăng nhập"
-                {...register("username", { required: "Tên đăng nhập là bắt buộc" })}
+                {...register("username", {
+                  required: "Tên đăng nhập là bắt buộc",
+                })}
               />
               {errors.username && (
-                <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.username.message}
+                </p>
               )}
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Mật khẩu
               </label>
               <div className="relative">
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  className={`w-full px-4 py-3 rounded-lg border ${errors.password ? "border-red-500" : "border-gray-300"} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  className={`w-full px-4 py-3 rounded-lg border ${
+                    errors.password ? "border-red-500" : "border-gray-300"
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   placeholder="••••••••"
                   {...register("password", {
                     required: "Mật khẩu là bắt buộc",
                     minLength: {
                       value: 6,
-                      message: "Mật khẩu phải có ít nhất 6 ký tự"
-                    }
+                      message: "Mật khẩu phải có ít nhất 6 ký tự",
+                    },
                   })}
                 />
                 <button
@@ -143,7 +165,9 @@ const LoginPage = () => {
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.password.message}
+                </p>
               )}
             </div>
 
@@ -153,9 +177,14 @@ const LoginPage = () => {
                   type="checkbox"
                   className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                 />
-                <span className="ml-2 text-sm text-gray-700">Ghi nhớ đăng nhập</span>
+                <span className="ml-2 text-sm text-gray-700">
+                  Ghi nhớ đăng nhập
+                </span>
               </label>
-              <Link to="/forgot-password" className="text-sm font-medium text-blue-600 hover:text-blue-500">
+              <Link
+                to="/forgot-password"
+                className="text-sm font-medium text-blue-600 hover:text-blue-500"
+              >
                 Quên mật khẩu?
               </Link>
             </div>
@@ -171,7 +200,10 @@ const LoginPage = () => {
             <div className="text-center">
               <p className="text-sm text-gray-600">
                 Chưa có tài khoản?{" "}
-                <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
+                <Link
+                  to="/register"
+                  className="font-medium text-blue-600 hover:text-blue-500"
+                >
                   Đăng ký ngay
                 </Link>
               </p>

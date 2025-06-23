@@ -1,25 +1,24 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import type { SubmitHandler } from 'react-hook-form';
-import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
-import { register as registerUser } from '../lib/api-resgister';
-import type { RegisterRequest } from '../lib/api-resgister';
-import { Button } from '../components/ui/button';
-import { motion } from 'framer-motion';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+
+// src/pages/RegisterPage.tsx
+import Header from "../components/header"
+import { useState } from "react"
+import { Link, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { motion } from "framer-motion";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Button } from "../components/ui/button";
+import { authApi } from "../api/authenAPI";
 
 // Interface for the form data
 type RegisterFormData = RegisterRequest & {
   confirmPassword: string;
 };
 
-const RegisterPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+
+const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
   
   const { 
     register, 
@@ -29,48 +28,45 @@ const RegisterPage: React.FC = () => {
   } = useForm<RegisterFormData>();
   
   const password = watch("password");
-  const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Chuyển đổi ngày sang ISO string nếu có
-      const formattedData: RegisterRequest = {
-        username: data.username,
-        password: data.password,
-        email: data.email,
-        fullName: data.fullName,
-        phone: data.phone,
-        address: data.address,
-        gender: data.gender,
-        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString() : undefined,
-        bloodType: data.bloodType,
-        emergencyPhoneNumber: data.emergencyPhoneNumber
-      };
-      
-      // Gọi API đăng ký
-      await registerUser(formattedData);
-      
-      // Hiển thị thông báo thành công
-      alert("Đăng ký tài khoản thành công! Vui lòng đăng nhập để tiếp tục.");
-      
-      // Chuyển hướng đến trang đăng nhập
-      navigate("/login");
-    } catch (error) {
-      // Xử lý lỗi
-      if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data?.message || "Đã có lỗi xảy ra khi đăng ký";
-        setError(errorMessage);
-      } else {
-        setError("Đã có lỗi xảy ra khi đăng ký");
-      }
-    } finally {
-      setLoading(false);
-    }
+
+
+  const onSubmit = async (data: FormData) => {
+    setIsLoading(true);
+    setRegisterError(null);
+    
+    const registrationData = {
+    fullName: data.fullName,
+    email: data.email,
+    phone: data.phone,
+    username: data.username,
+    password: data.password,
+    address: data.address || "",
+    gender: data.gender || "",
+    dateOfBirth: data.dateOfBirth
+      ? new Date(data.dateOfBirth).toISOString()
+      : "",
+    bloodType: data.bloodType || "",
+    emergencyPhoneNumber: data.emergencyPhoneNumber || "",
   };
+    
+   try {
+  const message = await authApi.register(registrationData);
+  navigate("/success", {
+    state: { message }, 
+  });
+} catch (error: any) {
+  console.error("Lỗi đăng ký:", error);
+
+  const errorMessage = error.message || "Đăng ký thất bại.";
+  setRegisterError(errorMessage); 
+} finally {
+  setIsLoading(false);
+}
+  }
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Left side image */}
+
       <div className="hidden md:block md:w-1/2 bg-blue-600">
         <div className="h-full w-full bg-[url('/src/assets/vvv.webp')] bg-cover bg-center relative">
           <div className="absolute inset-0 bg-blue-900/40 flex flex-col justify-center items-center text-white p-12">

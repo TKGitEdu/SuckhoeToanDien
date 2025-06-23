@@ -1,5 +1,11 @@
-import React from "react";
-import { Route, BrowserRouter as Router, Routes, Navigate, useLocation } from "react-router-dom";
+
+import React, { useEffect } from "react";
+import {
+  Route,
+  BrowserRouter as Router,
+  Routes,
+  Navigate,
+} from "react-router-dom";
 import HomePage from "../pages/HomePage";
 import LoginPage from "../pages/login";
 import RegisterPage from "../pages/register";
@@ -28,15 +34,17 @@ import AdminDoctors from "../pages/admin/Doctors";
 import AdminPatients from "../pages/admin/Patients";
 import AdminFeedbacks from "../pages/admin/Feedbacks";
 import NotFoundPage from "../pages/NotFoundPage";
-import { useAuth } from "../contexts/AuthContext";
+
+import ProtectedRoute from "./ProtectedRouter";
+import RegisterSuccess from "../components/registerSuccess";
+
+
 
 
 const MainLayout = ({ children }: { children: React.ReactNode }) => (
   <>
     <Header />
-    <main className="min-h-screen pt-16">
-      {children}
-    </main>
+    <main className="min-h-screen pt-16">{children}</main>
     <Footer />
   </>
 );
@@ -81,123 +89,224 @@ const AppRouter: React.FC = () => {
   return (
     <Router>
       <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<MainLayout><HomePage /></MainLayout>} />
+        <Route
+          path="/"
+          element={
+            <MainLayout>
+              <HomePage />
+            </MainLayout>
+          }
+        />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/services" element={<MainLayout><ServicesPage /></MainLayout>} />
-        <Route path="/services/:id" element={<MainLayout><ServiceDetailPage /></MainLayout>} />
-        <Route path="/doctors" element={<MainLayout><DoctorsPage /></MainLayout>} />
-        <Route path="/doctors/:id" element={<MainLayout><DoctorDetailPage /></MainLayout>} />
-        <Route path="/blog" element={<MainLayout><BlogPage /></MainLayout>} />
-        <Route path="/blog/:id" element={<MainLayout><BlogDetailPage /></MainLayout>} />
-        <Route path="/booking" element={<MainLayout><BookingPage /></MainLayout>} />
-        
-        {/* Patient Routes */}
-        <Route path="/patient/dashboard" element={
+
+         <Route path="/success" element={<RegisterSuccess />} />
+        <Route
+          path="/services"
+          element={
             <MainLayout>
-              <PatientRoute>
+              <ServicesPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/services/:id"
+          element={
+            <MainLayout>
+              <ServiceDetailPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/doctors"
+          element={
+            <MainLayout>
+              <DoctorsPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/doctors/:id"
+          element={
+            <MainLayout>
+              <DoctorDetailPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/blog"
+          element={
+            <MainLayout>
+              <BlogPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/blog/:id"
+          element={
+            <MainLayout>
+              <BlogDetailPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/booking"
+          element={
+            <MainLayout>
+              <BookingPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/patient/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["Patient"]}>
+              <MainLayout>
                 <PatientDashboard />
-              </PatientRoute>
-            </MainLayout>
-        } />
-        <Route path="/patient/appointments" element={
-            <MainLayout>
-              <PatientRoute>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/patient/appointments"
+          element={
+            <ProtectedRoute allowedRoles={["Patient"]}>
+              <MainLayout>
                 <PatientAppointments />
-              </PatientRoute>
-            </MainLayout>
-        } />
-        <Route path="/patient/treatments" element={
-            <MainLayout>
-              <PatientRoute>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/patient/treatments"
+          element={
+            <ProtectedRoute allowedRoles={["Patient"]}>
+              <MainLayout>
                 <PatientTreatments />
-              </PatientRoute>
-            </MainLayout>
-        } />
-        <Route path="/patient/profile" element={
-            <MainLayout>
-              <PatientRoute>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/patient/profile"
+          element={
+            <ProtectedRoute allowedRoles={["Patient"]}>
+              <MainLayout>
                 <PatientProfile />
-              </PatientRoute>
-            </MainLayout>
-        } />
-        <Route path="/patient/feedback" element={
-            <MainLayout>
-              <PatientRoute>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/patient/feedback"
+          element={
+            <ProtectedRoute allowedRoles={["Patient"]}>
+              <MainLayout>
                 <PatientFeedback />
-              </PatientRoute>
-            </MainLayout>
-        } />
-        <Route path="/patient/payments" element={
-            <MainLayout>
-              <PatientRoute>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/patient/payments"
+          element={
+            <ProtectedRoute allowedRoles={["Patient"]}>
+              <MainLayout>
                 <PatientPayments />
-              </PatientRoute>
-            </MainLayout>
-        } />
-        
-        {/* Doctor Routes */}
-        <Route path="/doctor/dashboard" element={
-            <MainLayout>
-              <DoctorRoute>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        {/* Doctor */}
+        <Route
+          path="/doctor/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["Doctor"]}>
+              <MainLayout>
                 <DoctorDashboard />
-              </DoctorRoute>
-            </MainLayout>
-        } />
-        <Route path="/doctor/appointments" element={
-            <MainLayout>
-              <DoctorRoute>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/doctor/appointments"
+          element={
+            <ProtectedRoute allowedRoles={["Doctor"]}>
+              <MainLayout>
                 <DoctorAppointments />
-              </DoctorRoute>
-            </MainLayout>
-        } />
-        <Route path="/doctor/patients" element={
-            <MainLayout>
-              <DoctorRoute>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/doctor/patients"
+          element={
+            <ProtectedRoute allowedRoles={["Doctor"]}>
+              <MainLayout>
                 <DoctorPatients />
-              </DoctorRoute>
-            </MainLayout>
-        } />
-        <Route path="/doctor/treatment-records" element={
-            <MainLayout>
-              <DoctorRoute>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/doctor/treatment-records"
+          element={
+            <ProtectedRoute allowedRoles={["Doctor"]}>
+              <MainLayout>
                 <DoctorTreatmentRecords />
-              </DoctorRoute>
-            </MainLayout>
-        } />
-        
-        {/* Admin Routes */}
-        <Route path="/admin/dashboard" element={
-            <MainLayout>
-              <AdminRoute>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        {/* Admin */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <MainLayout>
                 <AdminDashboard />
-              </AdminRoute>
-            </MainLayout>
-        } />
-        <Route path="/admin/doctors" element={
-            <MainLayout>
-              <AdminRoute>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/doctors"
+          element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <MainLayout>
                 <AdminDoctors />
-              </AdminRoute>
-            </MainLayout>
-        } />
-        <Route path="/admin/patients" element={
-            <MainLayout>
-              <AdminRoute>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/patients"
+          element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <MainLayout>
                 <AdminPatients />
-              </AdminRoute>
-            </MainLayout>
-        } />
-        <Route path="/admin/feedbacks" element={
-            <MainLayout>
-              <AdminRoute>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/feedbacks"
+          element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <MainLayout>
                 <AdminFeedbacks />
-              </AdminRoute>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="*"
+          element={
+            <MainLayout>
+              <NotFoundPage />
             </MainLayout>
-        } />
-        
-        <Route path="*" element={<MainLayout><NotFoundPage /></MainLayout>} />
+          }
+        />
       </Routes>
     </Router>
   );
