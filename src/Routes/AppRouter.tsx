@@ -49,41 +49,6 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => (
   </>
 );
 
-// Protected Route Component
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-  allowedRoles?: string[];
-}
-
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles = [] }) => {
-  const { isAuthenticated } = useAuth();
-  const location = useLocation();
-  const userRole = localStorage.getItem('userRole');
-  
-  if (!isAuthenticated) {
-    // Redirect to login if not authenticated
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-  
-  if (allowedRoles.length > 0 && !allowedRoles.includes(userRole || '')) {
-    // Redirect to homepage if authenticated but not authorized for this role
-    return <Navigate to="/" replace />;
-  }
-
-  return <>{children}</>;
-};
-
-const PatientRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ProtectedRoute allowedRoles={['patient']}>{children}</ProtectedRoute>
-);
-
-const DoctorRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ProtectedRoute allowedRoles={['doctor']}>{children}</ProtectedRoute>
-);
-
-const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ProtectedRoute allowedRoles={['admin']}>{children}</ProtectedRoute>
-);
 
 const AppRouter: React.FC = () => {
   return (

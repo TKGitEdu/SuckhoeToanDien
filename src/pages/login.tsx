@@ -15,6 +15,7 @@ type FormData = {
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   
   const navigate = useNavigate();

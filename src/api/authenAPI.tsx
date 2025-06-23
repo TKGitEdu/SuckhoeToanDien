@@ -31,8 +31,6 @@ type RegisterPayload = {
   address: string;
   gender: string;
   dateOfBirth: string; 
-  bloodType: string;
-  emergencyPhoneNumber: string;
 };
 
 
