@@ -58,8 +58,12 @@ const Header: React.FC = () => {
         </nav>
 
         {user ? (
-          <div className="flex gap-4 items-center">
-            <span>Welcome <h2 className="text-red-500 font-bold">{user.fullName}</h2></span>
+          <div className="flex gap-4 items-center">            <Link to="/patient/dashboard">
+              <div className="flex items-center px-4 py-2 rounded-lg hover:bg-gray-50 transition-all cursor-pointer">
+                <span className="text-gray-700">Welcome </span>
+                <h2 className="text-red-500 font-bold ml-1">{user.fullName}</h2>
+              </div>
+            </Link>
             <Button onClick={handleLogout} className="bg-blue-600 border-none hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all">
               Đăng xuất
             </Button>
