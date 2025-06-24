@@ -1,77 +1,170 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { motion } from "framer-motion";
 import ReactDatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { CalendarDays, Clock, User, Phone, Mail, FileText, CheckCircle } from "lucide-react";
+import { CalendarDays, Clock, User, Phone, Mail, FileText, CheckCircle, Loader2 } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { Link } from "react-router-dom";
-
-// Giả lập dữ liệu dịch vụ
-const services = [
-  { id: 1, name: "Thụ tinh trong tử cung (IUI)", price: "15,000,000 VNĐ" },
-  { id: 2, name: "Thụ tinh trong ống nghiệm (IVF)", price: "60,000,000 VNĐ" },
-  { id: 3, name: "Bảo quản trứng", price: "30,000,000 VNĐ" },
-  { id: 4, name: "Bảo quản tinh trùng", price: "20,000,000 VNĐ" },
-  { id: 5, name: "Tư vấn di truyền", price: "5,000,000 VNĐ" }
-];
-
-// Giả lập dữ liệu bác sĩ
-const doctors = [
-  { id: 1, name: "TS. BS. Nguyễn Văn A", specialty: "Chuyên gia IVF" },
-  { id: 2, name: "PGS. TS. Trần Thị B", specialty: "Sản phụ khoa" },
-  { id: 3, name: "TS. BS. Lê Văn C", specialty: "Nội tiết sinh sản" },
-  { id: 4, name: "BS. CKI. Phạm Thị D", specialty: "Hiếm muộn nam" }
-];
-
-// Giả lập khung giờ
-const timeSlots = [
-  "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", 
-  "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"
-];
+import { Link, useNavigate } from "react-router-dom";
+import { bookingApiForBookingPage} from "../api/bookingApiForBookingPage";
+import type { Service, Doctor, Slot, BookingRequest } from "../api/bookingApiForBookingPage";
 
 type FormData = {
   fullName: string;
   email: string;
   phone: string;
-  serviceId: number;
-  doctorId: number;
+  serviceId: string;
+  doctorId: string;
   appointmentDate: Date | null;
   appointmentTime: string;
   message: string;
+  slotId: string;
 };
 
 const BookingPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [bookingComplete, setBookingComplete] = useState(false);
   const [bookingId, setBookingId] = useState("");
+  const [services, setServices] = useState<Service[]>([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<Slot[]>([]);
+  const [loading, setLoading] = useState({
+    services: true,
+    doctors: true,
+    slots: false,
+    booking: false
+  });
+  const [error, setError] = useState({
+    services: "",
+    doctors: "",
+    slots: "",
+    booking: ""
+  });
   
+  const navigate = useNavigate();
+
+  // Get services data
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const data = await bookingApiForBookingPage.getAllServices();
+        setServices(data);
+        setLoading(prev => ({ ...prev, services: false }));
+      } catch (err) {
+        console.error("Error fetching services:", err);
+        setError(prev => ({ ...prev, services: "Không thể tải dữ liệu dịch vụ. Vui lòng thử lại sau." }));
+        setLoading(prev => ({ ...prev, services: false }));
+      }
+    };
+
+    fetchServices();
+  }, []);
+
+  // Get doctors data
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const data = await bookingApiForBookingPage.getAllDoctors();
+        setDoctors(data);
+        setLoading(prev => ({ ...prev, doctors: false }));
+      } catch (err) {
+        console.error("Error fetching doctors:", err);
+        setError(prev => ({ ...prev, doctors: "Không thể tải dữ liệu bác sĩ. Vui lòng thử lại sau." }));
+        setLoading(prev => ({ ...prev, doctors: false }));
+      }
+    };
+
+    fetchDoctors();
+  }, []);
+
   const { 
     register, 
     handleSubmit, 
     control,
     watch,
+    setValue,
     formState: { errors, isValid }
   } = useForm<FormData>({
     defaultValues: {
-      serviceId: 0,
-      doctorId: 0,
+      serviceId: "",
+      doctorId: "",
       appointmentDate: null,
-      appointmentTime: ""
+      appointmentTime: "",
+      slotId: ""
     }
   });
 
   const selectedServiceId = watch("serviceId");
   const selectedDoctorId = watch("doctorId");
   const selectedDate = watch("appointmentDate");
+  const selectedSlotId = watch("slotId");
 
-  const onSubmit = (data: FormData) => {
-    console.log("Form data:", data);
-    // Giả lập API call
-    setTimeout(() => {
-      setBookingId(`BK${Math.floor(Math.random() * 10000)}`);
+  // Fetch available slots when doctor and date are selected
+  useEffect(() => {
+    if (selectedDoctorId && selectedDate) {
+      const fetchAvailableSlots = async () => {
+        setLoading(prev => ({ ...prev, slots: true }));
+        try {
+          // Format date as YYYY-MM-DD
+          const formattedDate = selectedDate.toISOString().split('T')[0];
+          const data = await bookingApiForBookingPage.getAvailableSlots(selectedDoctorId, formattedDate);
+          setAvailableSlots(data);
+          setLoading(prev => ({ ...prev, slots: false }));
+        } catch (err) {
+          console.error("Error fetching available slots:", err);
+          setError(prev => ({ ...prev, slots: "Không thể tải dữ liệu khung giờ. Vui lòng thử lại sau." }));
+          setLoading(prev => ({ ...prev, slots: false }));
+        }
+      };
+
+      fetchAvailableSlots();
+    } else {
+      setAvailableSlots([]);
+    }
+  }, [selectedDoctorId, selectedDate]);
+
+  // Handle slot selection
+  const handleSlotSelection = (slotId: string, time: string) => {
+    setValue("slotId", slotId);
+    setValue("appointmentTime", time);
+  };
+
+  const onSubmit = async (data: FormData) => {
+    setLoading(prev => ({ ...prev, booking: true }));
+    try {
+      // Get user ID from localStorage (assuming it's stored there after login)
+      const patientId = localStorage.getItem("userInfo") || "";
+      
+      if (!patientId) {
+        throw new Error("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.");
+      }
+
+      // Format date as ISO string
+      const dateString = data.appointmentDate 
+        ? data.appointmentDate.toISOString()
+        : new Date().toISOString();
+
+      const bookingData: BookingRequest = {
+        patientId: patientId,
+        serviceId: data.serviceId,
+        paymentId: "pending", // Default value or can be handled differently based on your system
+        doctorId: data.doctorId,
+        slotId: data.slotId,
+        dateBooking: dateString,
+        description: data.message || "Không có mô tả",
+        note: `Đặt lịch bởi ${data.fullName}, SĐT: ${data.phone}, Email: ${data.email}`
+      };
+
+      const response = await bookingApiForBookingPage.createBooking(bookingData);
+      setBookingId(response.bookingId);
       setBookingComplete(true);
-    }, 1500);
+      setLoading(prev => ({ ...prev, booking: false }));
+    } catch (err) {
+      console.error("Error creating booking:", err);
+      setError(prev => ({ ...prev, booking: "Đã xảy ra lỗi khi đặt lịch. Vui lòng thử lại sau." }));
+      setLoading(prev => ({ ...prev, booking: false }));
+    }
   };
 
   const nextStep = () => {
@@ -82,8 +175,14 @@ const BookingPage = () => {
     setCurrentStep(currentStep - 1);
   };
 
-  const selectedService = services.find(service => service.id === parseInt(String(selectedServiceId)));
-  const selectedDoctor = doctors.find(doctor => doctor.id === parseInt(String(selectedDoctorId)));
+  const selectedService = services.find(service => service.serviceId === selectedServiceId);
+  const selectedDoctor = doctors.find(doctor => doctor.doctorId === selectedDoctorId);
+  const selectedSlot = availableSlots.find(slot => slot.slotId === selectedSlotId);
+
+  // Format price for display
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+  };
 
   return (
     <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
@@ -148,40 +247,59 @@ const BookingPage = () => {
               >
                 <h2 className="text-xl font-semibold text-gray-900 mb-6">Chọn dịch vụ bạn quan tâm</h2>
                 
-                <div className="grid grid-cols-1 gap-4">
-                  {services.map((service) => (
-                    <label
-                      key={service.id}
-                      className={`relative block p-6 border rounded-lg cursor-pointer ${
-                        parseInt(String(selectedServiceId)) === service.id
-                          ? 'border-blue-600 bg-blue-50'
-                          : 'border-gray-200 hover:border-blue-300'
-                      }`}
+                {loading.services ? (
+                  <div className="flex justify-center items-center py-10">
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                    <span className="ml-2 text-gray-600">Đang tải dữ liệu dịch vụ...</span>
+                  </div>
+                ) : error.services ? (
+                  <div className="text-center py-10">
+                    <p className="text-red-600">{error.services}</p>
+                    <Button 
+                      type="button" 
+                      onClick={() => window.location.reload()}
+                      className="mt-4 bg-blue-600 hover:bg-blue-700"
                     >
-                      <input
-                        type="radio"
-                        value={service.id}
-                        {...register("serviceId", { required: true })}
-                        className="sr-only"
-                      />
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h3 className="text-lg font-medium text-gray-900">{service.name}</h3>
-                          <p className="text-blue-600 font-medium mt-1">{service.price}</p>
+                      Thử lại
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4">
+                    {services.map((service) => (
+                      <label
+                        key={service.serviceId}
+                        className={`relative block p-6 border rounded-lg cursor-pointer ${
+                          selectedServiceId === service.serviceId
+                            ? 'border-blue-600 bg-blue-50'
+                            : 'border-gray-200 hover:border-blue-300'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          value={service.serviceId}
+                          {...register("serviceId", { required: true })}
+                          className="sr-only"
+                        />
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h3 className="text-lg font-medium text-gray-900">{service.name}</h3>
+                            <p className="text-sm text-gray-600 mt-1">{service.description}</p>
+                            <p className="text-blue-600 font-medium mt-1">{formatPrice(service.price)}</p>
+                          </div>
+                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                            selectedServiceId === service.serviceId
+                              ? 'border-blue-600'
+                              : 'border-gray-300'
+                          }`}>
+                            {selectedServiceId === service.serviceId && (
+                              <div className="w-3 h-3 rounded-full bg-blue-600" />
+                            )}
+                          </div>
                         </div>
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                          parseInt(String(selectedServiceId)) === service.id
-                            ? 'border-blue-600'
-                            : 'border-gray-300'
-                        }`}>
-                          {parseInt(String(selectedServiceId)) === service.id && (
-                            <div className="w-3 h-3 rounded-full bg-blue-600" />
-                          )}
-                        </div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
 
                 {errors.serviceId && (
                   <p className="mt-2 text-sm text-red-600">Vui lòng chọn dịch vụ</p>
@@ -191,7 +309,7 @@ const BookingPage = () => {
                   <Button 
                     type="button" 
                     onClick={nextStep}
-                    disabled={!selectedServiceId}
+                    disabled={!selectedServiceId || loading.services}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
                     Tiếp tục
@@ -211,46 +329,64 @@ const BookingPage = () => {
               >
                 <h2 className="text-xl font-semibold text-gray-900 mb-6">Chọn bác sĩ và lịch hẹn</h2>
                 
-                <div className="mb-8">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Chọn bác sĩ</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {doctors.map((doctor) => (
-                      <label
-                        key={doctor.id}
-                        className={`relative block p-4 border rounded-lg cursor-pointer ${
-                          parseInt(String(selectedDoctorId)) === doctor.id
-                            ? 'border-blue-600 bg-blue-50'
-                            : 'border-gray-200 hover:border-blue-300'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          value={doctor.id}
-                          {...register("doctorId", { required: true })}
-                          className="sr-only"
-                        />
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h4 className="text-base font-medium text-gray-900">{doctor.name}</h4>
-                            <p className="text-sm text-gray-500">{doctor.specialty}</p>
-                          </div>
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                            parseInt(String(selectedDoctorId)) === doctor.id
-                              ? 'border-blue-600'
-                              : 'border-gray-300'
-                          }`}>
-                            {parseInt(String(selectedDoctorId)) === doctor.id && (
-                              <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />
-                            )}
-                          </div>
-                        </div>
-                      </label>
-                    ))}
+                {loading.doctors ? (
+                  <div className="flex justify-center items-center py-10">
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                    <span className="ml-2 text-gray-600">Đang tải dữ liệu bác sĩ...</span>
                   </div>
-                  {errors.doctorId && (
-                    <p className="mt-2 text-sm text-red-600">Vui lòng chọn bác sĩ</p>
-                  )}
-                </div>
+                ) : error.doctors ? (
+                  <div className="text-center py-10">
+                    <p className="text-red-600">{error.doctors}</p>
+                    <Button 
+                      type="button" 
+                      onClick={() => window.location.reload()}
+                      className="mt-4 bg-blue-600 hover:bg-blue-700"
+                    >
+                      Thử lại
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Chọn bác sĩ</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {doctors.map((doctor) => (
+                        <label
+                          key={doctor.doctorId}
+                          className={`relative block p-4 border rounded-lg cursor-pointer ${
+                            selectedDoctorId === doctor.doctorId
+                              ? 'border-blue-600 bg-blue-50'
+                              : 'border-gray-200 hover:border-blue-300'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            value={doctor.doctorId}
+                            {...register("doctorId", { required: true })}
+                            className="sr-only"
+                          />
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <h4 className="text-base font-medium text-gray-900">{doctor.doctorName}</h4>
+                              <p className="text-sm text-gray-500">{doctor.specialization}</p>
+                            </div>
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                              selectedDoctorId === doctor.doctorId
+                                ? 'border-blue-600'
+                                : 'border-gray-300'
+                            }`}>
+                              {selectedDoctorId === doctor.doctorId && (
+                                <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                              )}
+                            </div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                    {errors.doctorId && (
+                      <p className="mt-2 text-sm text-red-600">Vui lòng chọn bác sĩ</p>
+                    )}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -271,6 +407,7 @@ const BookingPage = () => {
                             dateFormat="dd/MM/yyyy"
                             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholderText="Chọn ngày"
+                            disabled={!selectedDoctorId || loading.doctors}
                           />
                         )}
                       />
@@ -282,24 +419,42 @@ const BookingPage = () => {
 
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 mb-4">Chọn giờ</h3>
-                    <div className="relative">
-                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                        <Clock size={20} />
+                    {loading.slots ? (
+                      <div className="flex items-center h-12 mt-2">
+                        <Loader2 className="w-5 h-5 text-blue-600 animate-spin mr-2" />
+                        <span className="text-gray-600">Đang tải khung giờ...</span>
                       </div>
-                      <select
-                        {...register("appointmentTime", { required: true })}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
-                        disabled={!selectedDate}
-                      >
-                        <option value="">Chọn giờ</option>
-                        {timeSlots.map((time) => (
-                          <option key={time} value={time}>
-                            {time}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {errors.appointmentTime && (
+                    ) : selectedDoctorId && selectedDate ? (
+                      availableSlots.length > 0 ? (
+                        <div className="grid grid-cols-3 gap-2">
+                          {availableSlots.map((slot) => (
+                            <div
+                              key={slot.slotId}
+                              onClick={() => handleSlotSelection(slot.slotId, `${slot.startTime} - ${slot.endTime}`)}
+                              className={`p-2 text-center border rounded cursor-pointer ${
+                                selectedSlotId === slot.slotId
+                                  ? 'bg-blue-600 text-white'
+                                  : 'hover:bg-blue-50'
+                              }`}
+                            >
+                              {slot.startTime} - {slot.endTime}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-red-600 mt-2">Không có khung giờ nào khả dụng cho ngày đã chọn</p>
+                      )
+                    ) : (
+                      <p className="text-gray-500 mt-2">Vui lòng chọn bác sĩ và ngày trước</p>
+                    )}
+                    
+                    {/* Hidden field for slot ID */}
+                    <input type="hidden" {...register("slotId", { required: true })} />
+                    
+                    {/* Hidden field for appointment time display */}
+                    <input type="hidden" {...register("appointmentTime", { required: true })} />
+                    
+                    {errors.slotId && (
                       <p className="mt-2 text-sm text-red-600">Vui lòng chọn giờ hẹn</p>
                     )}
                   </div>
@@ -317,7 +472,7 @@ const BookingPage = () => {
                   <Button 
                     type="button" 
                     onClick={nextStep}
-                    disabled={!selectedDoctorId || !selectedDate || !watch("appointmentTime")}
+                    disabled={!selectedDoctorId || !selectedDate || !selectedSlotId || loading.slots}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
                     Tiếp tục
@@ -437,7 +592,7 @@ const BookingPage = () => {
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Bác sĩ</p>
-                      <p className="font-medium">{selectedDoctor?.name}</p>
+                      <p className="font-medium">{selectedDoctor?.doctorName}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Ngày hẹn</p>
@@ -449,8 +604,18 @@ const BookingPage = () => {
                       <p className="text-sm text-gray-500">Giờ hẹn</p>
                       <p className="font-medium">{watch("appointmentTime")}</p>
                     </div>
+                    <div className="md:col-span-2">
+                      <p className="text-sm text-gray-500">Giá dịch vụ</p>
+                      <p className="font-medium text-blue-600">{selectedService ? formatPrice(selectedService.price) : ''}</p>
+                    </div>
                   </div>
                 </div>
+
+                {error.booking && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-600">
+                    {error.booking}
+                  </div>
+                )}
 
                 <div className="mt-8 flex justify-between">
                   <Button 
@@ -463,9 +628,17 @@ const BookingPage = () => {
                   </Button>
                   <Button 
                     type="submit"
+                    disabled={loading.booking}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
-                    Xác nhận đặt lịch
+                    {loading.booking ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Đang xử lý...
+                      </>
+                    ) : (
+                      'Xác nhận đặt lịch'
+                    )}
                   </Button>
                 </div>
               </motion.div>
@@ -498,15 +671,13 @@ const BookingPage = () => {
                 Về trang chủ
               </Button>
             </Link>
-            <Link to="/patient/appointments">
+            <Link to="/patient/dashboard">
               <Button className="bg-blue-600 hover:bg-blue-700">
                 Xem lịch hẹn của tôi
               </Button>
             </Link>
-          </div>
-        </motion.div>
-      )}
-    </div>
+          </div>        </motion.div>
+      )}    </div>
   );
 };
 

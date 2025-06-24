@@ -1,3 +1,4 @@
+// src/api/bookingAPI.tsx
 import axios from 'axios';
 
 // Tạo instance axios với cấu hình xác thực
@@ -91,8 +92,7 @@ export interface Booking {
 // trong file này chỉ cần gọi get myBookings để lấy danh sách booking của người dùng hiện tại
 // Định nghĩa kiểu dữ liệu cho phản hồi khi tạo booking
 // Export bookingApi object với các phương thức
-export const bookingApi = {
-  // GET: api/Booking/mybookings
+export const bookingApi = {  // GET: api/Booking/mybookings
   getMyBookings: async (): Promise<Booking[]> => {
     try {
       const response = await bookingAxios.get("api/Booking/mybookings");

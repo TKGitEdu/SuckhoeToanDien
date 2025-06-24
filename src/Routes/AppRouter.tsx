@@ -143,7 +143,7 @@ const AppRouter: React.FC = () => {
           }
         />
         <Route
-          path="/patient/treatments"
+          path="/patient/treatments/:treatmentPlanId"
           element={
             <ProtectedRoute allowedRoles={["Patient"]}>
               <MainLayout>

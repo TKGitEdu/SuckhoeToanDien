@@ -1,3 +1,4 @@
+// src/components/PatientTreatments.tsx
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -21,303 +22,171 @@ import {
   Info
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
+import treatmentPlanAPI from "../../api/treatmentPlanAPI";
+import type { TreatmentPlan, TreatmentProcess } from "../../api/treatmentPlanAPI";
+import { bookingApi } from "../../api/bookingAPI";
+import type { Booking } from "../../api/bookingAPI";
 
-// Giả lập dữ liệu quá trình điều trị
-const treatmentsData = [
-  {
-    id: "TR001",
-    type: "IUI",
-    startDate: "15/05/2025",
-    doctor: "TS. BS. Nguyễn Văn A",
-    status: "in-progress", // in-progress, completed, cancelled
-    progress: 30,
-    currentStage: "Tiêm kích thích buồng trứng",
-    nextStage: "Theo dõi sự phát triển của nang trứng",
-    nextDate: "22/06/2025",
-    notes: "Đang phản ứng tốt với thuốc kích thích buồng trứng",
-    medications: [
-      {
-        name: "Gonal-F",
-        dosage: "75 IU",
-        frequency: "Mỗi ngày",
-        startDate: "15/05/2025",
-        endDate: "21/06/2025",
-        instructions: "Tiêm dưới da vào buổi tối"
-      },
-      {
-        name: "Orgalutran",
-        dosage: "0.25 mg",
-        frequency: "Mỗi ngày",
-        startDate: "18/05/2025",
-        endDate: "21/06/2025",
-        instructions: "Tiêm dưới da vào buổi sáng"
-      }
-    ],
-    appointments: [
-      {
-        id: "AP006",
-        date: "22/06/2025",
-        time: "09:00",
-        purpose: "Siêu âm theo dõi nang trứng",
-        status: "upcoming"
-      },
-      {
-        id: "AP007",
-        date: "25/06/2025",
-        time: "09:00",
-        purpose: "Siêu âm theo dõi nang trứng",
-        status: "upcoming"
-      }
-    ],
-    testResults: [
-      {
-        date: "15/05/2025",
-        type: "Xét nghiệm hormone",
-        result: "Bình thường",
-        details: "FSH: 6.5 mIU/mL, LH: 5.2 mIU/mL, E2: 45 pg/mL, AMH: 2.8 ng/mL"
-      }
-    ],
-    stages: [
-      {
-        name: "Kích thích buồng trứng",
-        startDate: "15/05/2025",
-        endDate: null,
-        status: "current",
-        description: "Sử dụng thuốc để kích thích buồng trứng sản xuất nhiều trứng"
-      },
-      {
-        name: "Theo dõi nang trứng",
-        startDate: null,
-        endDate: null,
-        status: "upcoming",
-        description: "Siêu âm thường xuyên để theo dõi sự phát triển của nang trứng"
-      },
-      {
-        name: "Tiêm thuốc kích trứng rụng",
-        startDate: null,
-        endDate: null,
-        status: "upcoming",
-        description: "Tiêm hCG để kích hoạt sự rụng trứng"
-      },
-      {
-        name: "Bơm tinh trùng vào tử cung",
-        startDate: null,
-        endDate: null,
-        status: "upcoming",
-        description: "Đưa tinh trùng đã xử lý vào tử cung"
-      },
-      {
-        name: "Theo dõi kết quả",
-        startDate: null,
-        endDate: null,
-        status: "upcoming",
-        description: "Xét nghiệm hCG để xác định thai kỳ"
-      }
-    ]
-  },
-  {
-    id: "TR002",
-    type: "IVF",
-    startDate: "01/03/2025",
-    endDate: "15/04/2025",
-    doctor: "PGS. TS. Trần Thị B",
-    status: "completed",
-    progress: 100,
-    currentStage: "Hoàn thành",
-    result: "Thành công",
-    notes: "Đã có thai. Hiện đang trong quá trình theo dõi thai kỳ.",
-    medications: [
-      {
-        name: "Gonal-F",
-        dosage: "150 IU",
-        frequency: "Mỗi ngày",
-        startDate: "01/03/2025",
-        endDate: "12/03/2025",
-        instructions: "Tiêm dưới da vào buổi tối"
-      },
-      {
-        name: "Cetrotide",
-        dosage: "0.25 mg",
-        frequency: "Mỗi ngày",
-        startDate: "05/03/2025",
-        endDate: "12/03/2025",
-        instructions: "Tiêm dưới da vào buổi sáng"
-      },
-      {
-        name: "Ovitrelle",
-        dosage: "250 mcg",
-        frequency: "Một lần",
-        startDate: "13/03/2025",
-        endDate: "13/03/2025",
-        instructions: "Tiêm dưới da vào tối ngày 13/03/2025"
-      },
-      {
-        name: "Utrogestan",
-        dosage: "200 mg",
-        frequency: "3 lần/ngày",
-        startDate: "17/03/2025",
-        endDate: "15/04/2025",
-        instructions: "Đặt âm đạo"
-      }
-    ],
-    appointments: [
-      {
-        id: "AP008",
-        date: "05/03/2025",
-        time: "09:00",
-        purpose: "Siêu âm theo dõi nang trứng",
-        status: "completed"
-      },
-      {
-        id: "AP009",
-        date: "08/03/2025",
-        time: "09:00",
-        purpose: "Siêu âm theo dõi nang trứng",
-        status: "completed"
-      },
-      {
-        id: "AP010",
-        date: "12/03/2025",
-        time: "09:00",
-        purpose: "Siêu âm theo dõi nang trứng",
-        status: "completed"
-      },
-      {
-        id: "AP011",
-        date: "15/03/2025",
-        time: "08:00",
-        purpose: "Chọc hút trứng",
-        status: "completed"
-      },
-      {
-        id: "AP012",
-        date: "18/03/2025",
-        time: "10:00",
-        purpose: "Chuyển phôi",
-        status: "completed"
-      },
-      {
-        id: "AP013",
-        date: "01/04/2025",
-        time: "09:00",
-        purpose: "Xét nghiệm hCG",
-        status: "completed"
-      },
-      {
-        id: "AP014",
-        date: "15/04/2025",
-        time: "10:00",
-        purpose: "Siêu âm thai",
-        status: "completed"
-      }
-    ],
-    testResults: [
-      {
-        date: "01/03/2025",
-        type: "Xét nghiệm hormone",
-        result: "Bình thường",
-        details: "FSH: 7.2 mIU/mL, LH: 4.8 mIU/mL, E2: 42 pg/mL, AMH: 2.5 ng/mL"
-      },
-      {
-        date: "15/03/2025",
-        type: "Chọc hút trứng",
-        result: "Tốt",
-        details: "Thu được 12 trứng"
-      },
-      {
-        date: "16/03/2025",
-        type: "Thụ tinh",
-        result: "Tốt",
-        details: "8 trứng được thụ tinh thành công"
-      },
-      {
-        date: "18/03/2025",
-        type: "Chuyển phôi",
-        result: "Tốt",
-        details: "Chuyển 2 phôi chất lượng tốt, 4 phôi được trữ đông"
-      },
-      {
-        date: "01/04/2025",
-        type: "Xét nghiệm hCG",
-        result: "Dương tính",
-        details: "hCG: 245 mIU/mL"
-      },
-      {
-        date: "15/04/2025",
-        type: "Siêu âm thai",
-        result: "Tốt",
-        details: "Thai 6 tuần, tim thai đập tốt"
-      }
-    ],
-    stages: [
-      {
-        name: "Kích thích buồng trứng",
-        startDate: "01/03/2025",
-        endDate: "13/03/2025",
-        status: "completed",
-        description: "Sử dụng thuốc để kích thích buồng trứng sản xuất nhiều trứng"
-      },
-      {
-        name: "Chọc hút trứng",
-        startDate: "15/03/2025",
-        endDate: "15/03/2025",
-        status: "completed",
-        description: "Thu trứng từ buồng trứng"
-      },
-      {
-        name: "Thụ tinh trong phòng thí nghiệm",
-        startDate: "15/03/2025",
-        endDate: "16/03/2025",
-        status: "completed",
-        description: "Kết hợp trứng và tinh trùng trong phòng thí nghiệm"
-      },
-      {
-        name: "Nuôi cấy phôi",
-        startDate: "16/03/2025",
-        endDate: "18/03/2025",
-        status: "completed",
-        description: "Nuôi cấy phôi trong môi trường đặc biệt"
-      },
-      {
-        name: "Chuyển phôi",
-        startDate: "18/03/2025",
-        endDate: "18/03/2025",
-        status: "completed",
-        description: "Chuyển phôi vào tử cung"
-      },
-      {
-        name: "Theo dõi kết quả",
-        startDate: "18/03/2025",
-        endDate: "15/04/2025",
-        status: "completed",
-        description: "Theo dõi kết quả thụ thai và thai kỳ ban đầu"
-      }
-    ]
-  }
-];
+// Interface cho dữ liệu điều trị (tương tự mock data)
+interface Medication {
+  name: string;
+  dosage: string;
+  frequency: string;
+  startDate: string;
+  endDate: string;
+  instructions: string;
+}
+
+interface Appointment {
+  id: string;
+  date: string;
+  time: string;
+  purpose: string;
+  status: string;
+}
+
+interface TestResult {
+  date: string;
+  type: string;
+  result: string;
+  details: string;
+}
+
+interface Stage {
+  name: string;
+  startDate: string | null;
+  endDate: string | null;
+  status: string;
+  description: string;
+}
+
+interface Treatment {
+  id: string;
+  type: string;
+  startDate: string;
+  endDate?: string;
+  doctor: string;
+  status: string;
+  progress: number;
+  currentStage?: string;
+  nextStage?: string;
+  nextDate?: string;
+  notes: string;
+  result?: string;
+  medications: Medication[];
+  appointments: Appointment[];
+  testResults: TestResult[];
+  stages: Stage[];
+}
 
 const PatientTreatments = () => {
-  const [treatments, setTreatments] = useState<any[]>([]);
+  const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTreatment, setSelectedTreatment] = useState<any>(null);
+  const [selectedTreatment, setSelectedTreatment] = useState<Treatment | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
-  
+
+  // Hàm ánh xạ TreatmentPlan và Booking sang Treatment
+  const mapToTreatment = (plan: TreatmentPlan, bookings: Booking[]): Treatment => {
+    // Xác định tiến độ dựa trên trạng thái và số giai đoạn hoàn thành
+    const completedProcesses = plan.treatmentProcesses.filter(p => p.status === "Completed").length;
+    const totalProcesses = plan.treatmentProcesses.length;
+    const progress = totalProcesses > 0 ? Math.round((completedProcesses / totalProcesses) * 100) : 0;
+
+    // Lấy giai đoạn hiện tại và tiếp theo
+    const currentProcess = plan.treatmentProcesses.find(p => p.status === "InProgress");
+    const nextProcess = plan.treatmentProcesses.find(p => p.status === "Pending");
+
+    // Ánh xạ bookings thành appointments
+    const appointments: Appointment[] = bookings
+      .filter(b => b.doctorId === plan.doctorId && b.dateBooking >= plan.startDate)
+      .map(b => ({
+        id: b.bookingId,
+        date: b.dateBooking,
+        time: b.slot?.startTime || "N/A",
+        purpose: b.description || b.service?.name || "Tư vấn",
+        status: b.examination?.status || "upcoming"
+      }));
+
+    // Dữ liệu giả cho medications, testResults (vì API không cung cấp)
+    const medications: Medication[] = []; // Cần API bổ sung
+    const testResults: TestResult[] = []; // Cần API bổ sung
+
+    // Ánh xạ treatmentProcesses thành stages
+    const stages: Stage[] = plan.treatmentProcesses.map(p => ({
+      name: p.method,
+      startDate: p.actualDate || p.scheduledDate,
+      endDate: p.status === "Completed" ? p.actualDate : null,
+      status: p.status === "InProgress" ? "current" : p.status === "Completed" ? "completed" : "upcoming",
+      description: p.result || `Giai đoạn ${p.method}`
+    }));
+
+    return {
+      id: plan.treatmentPlanId,
+      type: plan.method,
+      startDate: plan.startDate,
+      endDate: plan.endDate,
+      doctor: plan.doctor.doctorName,
+      status: plan.status.toLowerCase(),
+      progress,
+      currentStage: currentProcess?.method,
+      nextStage: nextProcess?.method,
+      nextDate: nextProcess?.scheduledDate,
+      notes: plan.treatmentDescription || "Không có ghi chú",
+      result: plan.treatmentProcesses.find(p => p.result)?.result,
+      medications,
+      appointments,
+      testResults,
+      stages
+    };
+  };
+
   useEffect(() => {
-    // Giả lập API call
-    setTimeout(() => {
-      setTreatments(treatmentsData);
-      setSelectedTreatment(treatmentsData[0]);
-      setLoading(false);
-    }, 500);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Giả sử userId được lưu trong localStorage
+        const currentUser = localStorage.getItem("userInfo");
+        const userId = currentUser ? JSON.parse(currentUser).userId : null;
+        if (!userId) {
+          throw new Error("Vui lòng đăng nhập để xem thông tin điều trị");
+        }
+
+        // Lấy patientId từ userId
+        const patientId = await treatmentPlanAPI.getPatientIdFromUserId(userId);
+        console.log("Patient ID:", patientId);
+
+        // Lấy danh sách TreatmentPlan
+        const treatmentPlans = await treatmentPlanAPI.getAllTreatmentPlansByPatient(patientId);
+        console.log("Treatment Plans:", treatmentPlans);
+
+        // Lấy danh sách Booking
+        const bookings = await bookingApi.getMyBookings();
+        console.log("Bookings:", bookings);
+
+        // Ánh xạ dữ liệu sang định dạng Treatment
+        const mappedTreatments = treatmentPlans.map(plan => mapToTreatment(plan, bookings));
+        setTreatments(mappedTreatments);
+        setSelectedTreatment(mappedTreatments[0] || null);
+      } catch (err) {
+        setError("Không thể tải dữ liệu điều trị. Vui lòng thử lại sau.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
-  
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Filtering is done in filteredTreatments
   };
-  
+
   // Filter treatments
   const filteredTreatments = treatments.filter(treatment => {
     const matchesSearch = 
@@ -327,13 +196,19 @@ const PatientTreatments = () => {
     
     const matchesFilter = 
       activeFilter === "all" || 
-      (activeFilter === "in-progress" && treatment.status === "in-progress") ||
-      (activeFilter === "completed" && treatment.status === "completed") ||
-      (activeFilter === "cancelled" && treatment.status === "cancelled");
+      treatment.status === activeFilter;
     
     return matchesSearch && matchesFilter;
   });
-  
+
+  if (error) {
+    return (
+      <div className="py-20 flex justify-center items-center">
+        <p className="text-red-600">{error}</p>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="py-20 flex justify-center items-center">
@@ -341,7 +216,8 @@ const PatientTreatments = () => {
       </div>
     );
   }
-  
+
+  // Giữ nguyên phần render của component, chỉ thay đổi dữ liệu đầu vào
   return (
     <div className="py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -752,7 +628,7 @@ const PatientTreatments = () => {
                         
                         {selectedTreatment.medications.length > 0 ? (
                           <div className="space-y-4">
-                            {selectedTreatment.medications.map((medication: any, index: number) => (
+                            {selectedTreatment.medications.map((medication, index) => (
                               <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
                                 <div className="flex items-center mb-2">
                                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
@@ -815,7 +691,7 @@ const PatientTreatments = () => {
                         
                         {selectedTreatment.appointments.length > 0 ? (
                           <div className="space-y-4">
-                            {selectedTreatment.appointments.map((appointment: any, index: number) => (
+                            {selectedTreatment.appointments.map((appointment, index) => (
                               <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
                                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                                   <div className="flex items-center mb-3 md:mb-0">
@@ -873,7 +749,7 @@ const PatientTreatments = () => {
                         
                         {selectedTreatment.testResults.length > 0 ? (
                           <div className="space-y-4">
-                            {selectedTreatment.testResults.map((result: any, index: number) => (
+                            {selectedTreatment.testResults.map((result, index) => (
                               <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
                                 <div className="flex items-center mb-3">
                                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
@@ -925,11 +801,10 @@ const PatientTreatments = () => {
                         
                         {selectedTreatment.stages.length > 0 ? (
                           <div className="relative">
-                            {/* Timeline line */}
                             <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200"></div>
                             
                             <div className="space-y-6">
-                              {selectedTreatment.stages.map((stage: any, index: number) => (
+                              {selectedTreatment.stages.map((stage, index) => (
                                 <div key={index} className="relative flex items-start">
                                   <div className={`absolute left-0 w-10 h-10 rounded-full flex items-center justify-center z-10 ${
                                     stage.status === 'completed'

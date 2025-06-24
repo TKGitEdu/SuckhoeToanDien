@@ -6,31 +6,18 @@ import {
   Users, 
   Bell, 
   CalendarCheck,
-  Bookmark
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 
 import { useState, useEffect } from "react";
 import { bookingApi } from "../../api/bookingAPI";
 import type { Booking } from "../../api/bookingAPI";
+import ComponentTrackingTRM from "./componentTrackingTRM";
 
-const treatmentProgress = [
-  {
-    id: 1,
-    type: "IUI",
-    startDate: "15/05/2025",
-    currentStage: "Tiêm kích thích buồng trứng",
-    nextStage: "Theo dõi sự phát triển của nang trứng",
-    nextDate: "22/06/2025",
-    progress: 30,
-    doctor: "TS. BS. Nguyễn Văn A",
-    notes: "Đang phản ứng tốt với thuốc kích thích buồng trứng"
-  }
-];
-
-const PatientDashboard = () => {
+const PatientDashboard = () => {  
   const [loading, setLoading] = useState(true);
   const [patientName, setPatientName] = useState("");
+  const [patientId, setPatientId] = useState("");
   
   // Custom hook để lấy danh sách booking
   const useMyBookings = () => {
@@ -57,22 +44,25 @@ const PatientDashboard = () => {
     
     return { bookings, loading, error };
   };
-  
-  // Lấy thông tin người dùng và lịch hẹn
+    // Lấy thông tin người dùng và lịch hẹn
   useEffect(() => {
     // Lấy thông tin người dùng từ localStorage
     const userInfo = localStorage.getItem("userInfo");
+    
     if (userInfo) {
       try {
         const user = JSON.parse(userInfo);
         setPatientName(user.fullName || user.username || "Bệnh nhân");
+        setPatientId(user.patientId || "");
+        setLoading(false);
       } catch (e) {
         console.error("Error parsing userInfo:", e);
         setPatientName("Bệnh nhân");
+        setLoading(false);
       }
+    } else {
+      setLoading(false);
     }
-    
-    setLoading(false);
   }, []);
     // Sử dụng hook để lấy dữ liệu booking
   const { bookings: upcomingAppointments } = useMyBookings();
@@ -125,9 +115,8 @@ const PatientDashboard = () => {
               <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mr-4">
                 <FileText className="h-6 w-6 text-green-600" />
               </div>
-              <div>
-                <p className="text-sm text-gray-500">Điều trị đang thực hiện</p>
-                <p className="text-2xl font-bold text-gray-900">{treatmentProgress.length}</p>
+              <div>                <p className="text-sm text-gray-500">Điều trị đang thực hiện</p>
+                <p className="text-2xl font-bold text-gray-900">-</p>
               </div>
             </div>
           </motion.div>
@@ -273,89 +262,8 @@ const PatientDashboard = () => {
                 </div>
               )}
             </div>
-          </motion.div>
-        </div>
-
-        {/* Treatment Progress */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-          className="mt-8 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
-        >          <div className="p-6 border-b border-gray-100">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">Theo dõi điều trị</h2>
-            </div>
-          </div>
-          
-          {treatmentProgress.length > 0 ? (
-            <div className="divide-y divide-gray-100">
-              {treatmentProgress.map((treatment) => (
-                <div key={treatment.id} className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-                    <div>
-                      <div className="flex items-center">
-                        <Bookmark className="h-5 w-5 text-blue-600 mr-2" />
-                        <h3 className="text-lg font-semibold text-gray-900">Điều trị {treatment.type}</h3>
-                      </div>
-                      <p className="text-gray-600 mt-1">Bác sĩ: {treatment.doctor}</p>
-                    </div>
-                    <div className="mt-2 md:mt-0">
-                      <p className="text-sm text-gray-500">Ngày bắt đầu: {treatment.startDate}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium text-gray-700">Tiến độ điều trị</span>
-                      <span className="text-sm font-medium text-gray-700">{treatment.progress}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div 
-                        className="bg-blue-600 h-2.5 rounded-full" 
-                        style={{ width: `${treatment.progress}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-500 mb-1">Giai đoạn hiện tại</p>
-                      <p className="font-medium text-gray-900">{treatment.currentStage}</p>
-                    </div>
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-500 mb-1">Giai đoạn tiếp theo</p>
-                      <p className="font-medium text-gray-900">{treatment.nextStage}</p>
-                      <p className="text-sm text-blue-600 mt-1">Ngày: {treatment.nextDate}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-yellow-50 p-4 rounded-lg mb-4">
-                    <p className="text-sm text-gray-700 font-medium mb-1">Ghi chú từ bác sĩ:</p>
-                    <p className="text-gray-600">{treatment.notes}</p>
-                  </div>
-                  
-                  <div className="flex justify-end">
-                    <Link to={`/patient/treatments/${treatment.id}`}>
-                      <Button className="bg-blue-600 hover:bg-blue-700">
-                        Xem chi tiết điều trị
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-6 text-center">
-              <p className="text-gray-500">Bạn chưa có quá trình điều trị nào</p>
-              <Link to="/services" className="mt-2 inline-block">
-                <Button className="bg-blue-600 hover:bg-blue-700 mt-2">
-                  Tìm hiểu dịch vụ
-                </Button>
-              </Link>
-            </div>
-          )}
-        </motion.div>
+          </motion.div>        </div>        {/* Treatment Progress */}
+        <ComponentTrackingTRM patientId={patientId} />
 
         {/* Recommended Services */}
         <motion.div
