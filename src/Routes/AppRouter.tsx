@@ -1,10 +1,9 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import {
   Route,
   BrowserRouter as Router,
   Routes,
-  Navigate,
 } from "react-router-dom";
 import HomePage from "../pages/HomePage";
 import LoginPage from "../pages/login";
@@ -34,7 +33,7 @@ import AdminDoctors from "../pages/admin/Doctors";
 import AdminPatients from "../pages/admin/Patients";
 import AdminFeedbacks from "../pages/admin/Feedbacks";
 import NotFoundPage from "../pages/NotFoundPage";
-
+import AdminLayout from "../layout/adminLayout";
 import ProtectedRoute from "./ProtectedRouter";
 import RegisterSuccess from "../components/registerSuccess";
 
@@ -228,9 +227,9 @@ const AppRouter: React.FC = () => {
           path="/admin/dashboard"
           element={
             <ProtectedRoute allowedRoles={["Admin"]}>
-              <MainLayout>
+              <AdminLayout>
                 <AdminDashboard />
-              </MainLayout>
+              </AdminLayout>
             </ProtectedRoute>
           }
         />
@@ -238,9 +237,9 @@ const AppRouter: React.FC = () => {
           path="/admin/doctors"
           element={
             <ProtectedRoute allowedRoles={["Admin"]}>
-              <MainLayout>
+              <AdminLayout>
                 <AdminDoctors />
-              </MainLayout>
+              </AdminLayout>
             </ProtectedRoute>
           }
         />
@@ -248,9 +247,9 @@ const AppRouter: React.FC = () => {
           path="/admin/patients"
           element={
             <ProtectedRoute allowedRoles={["Admin"]}>
-              <MainLayout>
+              <AdminLayout>
                 <AdminPatients />
-              </MainLayout>
+              </AdminLayout>
             </ProtectedRoute>
           }
         />
@@ -258,9 +257,9 @@ const AppRouter: React.FC = () => {
           path="/admin/feedbacks"
           element={
             <ProtectedRoute allowedRoles={["Admin"]}>
-              <MainLayout>
+              <AdminLayout>
                 <AdminFeedbacks />
-              </MainLayout>
+              </AdminLayout>
             </ProtectedRoute>
           }
         />
