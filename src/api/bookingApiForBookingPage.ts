@@ -98,12 +98,6 @@ export interface BookingResponse {
   slot?: Slot;
 }
 
-// Availability check response
-export interface AvailabilityResponse {
-  isAvailable: boolean;
-  message?: string;
-}
-
 // API functions for booking page
 export const bookingApiForBookingPage = {
   // Service-related functions
@@ -151,7 +145,7 @@ export const bookingApiForBookingPage = {
   // Slot-related functions
   getAllSlots: async (): Promise<Slot[]> => {
     try {
-      const response = await bookingAxios.get<Slot[]>('/api/Slot');
+      const response = await bookingAxios.get<Slot[]>('/api/Booking/slots');
       return response.data;
     } catch (error) {
       console.error('Error fetching slots:', error);
@@ -161,7 +155,7 @@ export const bookingApiForBookingPage = {
 
   getAvailableSlots: async (doctorId: string, date: string): Promise<Slot[]> => {
     try {
-      const response = await bookingAxios.get<Slot[]>('/api/Slot/available', {
+      const response = await bookingAxios.get<Slot[]>('/api/Booking/available-slots', {
         params: { doctorId, date }
       });
       return response.data;
@@ -174,24 +168,11 @@ export const bookingApiForBookingPage = {
   // Booking-related functions
   createBooking: async (bookingData: BookingRequest): Promise<BookingResponse> => {
     try {
-      const response = await bookingAxios.post<BookingResponse>('/api/Booking', bookingData);
+      const response = await bookingAxios.post<BookingResponse>('/api/Booking/create', bookingData);
       return response.data;
     } catch (error) {
       console.error('Error creating booking:', error);
       throw error;
     }
-  },
-
-  checkBookingAvailability: async (doctorId: string, slotId: string, date: string): Promise<AvailabilityResponse> => {
-    try {
-      const response = await bookingAxios.get<AvailabilityResponse>('/api/Booking/check-availability', {
-        params: { doctorId, slotId, date }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error checking booking availability:', error);
-      throw error;
-    }
   }
-  
 };

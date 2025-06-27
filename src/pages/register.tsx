@@ -63,7 +63,7 @@ const RegisterPage = () => {
     
    try {
   const message = await authApi.register(registrationData);
-  navigate("/success", {
+  navigate("/login", {
     state: { message }, 
   });
 } catch (error: any) {

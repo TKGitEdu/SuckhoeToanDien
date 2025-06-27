@@ -121,7 +121,7 @@ export function addStatusToBooking(booking: Booking): BookingWithStatus {
 export const appointmentApi = {
   getBookingById: async (bookingId: string): Promise<Booking> => {
     try {
-      const response = await bookingAxios.get(`api/Booking/${bookingId}`);
+      const response = await bookingAxios.get(`/api/Booking/details/${bookingId}`);
       return response.data;
     } catch (error) {
       console.error("Lỗi khi lấy chi tiết booking:", error);
