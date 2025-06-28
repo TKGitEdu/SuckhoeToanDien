@@ -8,6 +8,7 @@ import { Button } from "../components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { bookingApiForBookingPage} from "../api/bookingApiForBookingPage";
 import type { Service, Doctor, Slot, BookingRequest } from "../api/bookingApiForBookingPage";
+import { useRef } from "react";
 
 type FormData = {
   fullName: string;
@@ -178,7 +179,26 @@ const BookingPage = () => {
   const selectedService = services.find(service => service.serviceId === selectedServiceId);
   const selectedDoctor = doctors.find(doctor => doctor.doctorId === selectedDoctorId);
   const selectedSlot = availableSlots.find(slot => slot.slotId === selectedSlotId);
+  const userInfoSet = useRef(false);
 
+  useEffect(() => {
+    if (currentStep === 3 && !userInfoSet.current) {
+      const userInfoRaw = localStorage.getItem("userInfo");
+      if (userInfoRaw) {
+        try {
+          const userInfo = JSON.parse(userInfoRaw);
+          if (userInfo.fullName) setValue("fullName", userInfo.fullName);
+          if (userInfo.email) setValue("email", userInfo.email);
+          if (userInfo.phone) setValue("phone", userInfo.phone);
+        } catch (e) {
+          // Nếu lỗi parse thì bỏ qua
+        }
+      }
+      userInfoSet.current = true;
+    }
+    // Reset flag nếu quay lại step trước
+    if (currentStep !== 3) userInfoSet.current = false;
+  }, [currentStep, setValue]);
   // Format price for display
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
@@ -482,88 +502,90 @@ const BookingPage = () => {
             )}
 
             {/* Step 3: Personal Information */}
-            {currentStep === 3 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className="max-w-3xl mx-auto p-6"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  <div className="md:col-span-2">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-6">Thông tin của bạn</h2>
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-                      Họ và tên
-                    </label>
-                    <div className="relative">
-                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                        <User size={20} />
-                      </div>
-                      <input
-                        id="fullName"
-                        type="text"
-                        {...register("fullName", { required: true })}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Nguyễn Văn A"
-                      />
+          {currentStep === 3 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="max-w-3xl mx-auto p-6"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="md:col-span-2">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Thông tin của bạn</h2>
+                </div>
+                
+                <div>
+                  <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+                    Họ và tên
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                      <User size={20} />
                     </div>
-                    {errors.fullName && (
-                      <p className="mt-1 text-sm text-red-600">Vui lòng nhập họ tên</p>
-                    )}
+                    <input
+                      id="fullName"
+                      type="text"
+                      {...register("fullName", { required: true })}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Nguyễn Văn A"
+                      readOnly // thêm dòng này nếu muốn không cho sửa
+                    />
                   </div>
+                  {errors.fullName && (
+                    <p className="mt-1 text-sm text-red-600">Vui lòng nhập họ tên</p>
+                  )}
+                </div>
 
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                      Số điện thoại
-                    </label>
-                    <div className="relative">
-                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                        <Phone size={20} />
-                      </div>
-                      <input
-                        id="phone"
-                        type="tel"
-                        {...register("phone", { 
-                          required: true,
-                          pattern: /^(0|\+84)[3|5|7|8|9][0-9]{8}$/
-                        })}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="0912345678"
-                      />
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                    Số điện thoại
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                      <Phone size={20} />
                     </div>
-                    {errors.phone && (
-                      <p className="mt-1 text-sm text-red-600">Vui lòng nhập số điện thoại hợp lệ</p>
-                    )}
+                    <input
+                      id="phone"
+                      type="tel"
+                      {...register("phone", { 
+                        required: true,
+                        pattern: /^(0|\+84)[3|5|7|8|9][0-9]{8}$/
+                      })}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="0912345678"
+                      readOnly // thêm dòng này nếu muốn không cho sửa
+                    />
                   </div>
+                  {errors.phone && (
+                    <p className="mt-1 text-sm text-red-600">Vui lòng nhập số điện thoại hợp lệ</p>
+                  )}
+                </div>
 
-                  <div className="md:col-span-2">
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
-                    </label>
-                    <div className="relative">
-                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                        <Mail size={20} />
-                      </div>
-                      <input
-                        id="email"
-                        type="email"
-                        {...register("email", { 
-                          required: true,
-                          pattern: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i
-                        })}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="youremail@example.com"
-                      />
+                <div className="md:col-span-2">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                      <Mail size={20} />
                     </div>
-                    {errors.email && (
-                      <p className="mt-1 text-sm text-red-600">Vui lòng nhập email hợp lệ</p>
-                    )}
+                    <input
+                      id="email"
+                      type="email"
+                      {...register("email", { 
+                        required: true,
+                        pattern: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i
+                      })}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="youremail@example.com"
+                      readOnly // thêm dòng này nếu muốn không cho sửa
+                    />
                   </div>
-
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600">Vui lòng nhập email hợp lệ</p>
+                  )}
+                </div>
                   <div className="md:col-span-2">
                     <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
                       Ghi chú (không bắt buộc)
