@@ -77,9 +77,11 @@ export interface Booking {
   serviceId: string;
   paymentId: string;
   doctorId: string;
-  slotId: string;  dateBooking: string;
+  slotId: string;  
+  dateBooking: string;
   description: string;
   note: string;
+  status: string;
   createAt: string;
   doctor?: Doctor;
   patient?: Patient;
@@ -103,4 +105,23 @@ export const bookingApi = {  // GET: api/Booking/mybookings
     }
   }
 };
-``
+// Cập nhật thông tin đặt lịch (ví dụ: hủy lịch hẹn)
+export const cancelUpdateBooking = async (bookingId: string, updateData: Partial<Booking>): Promise<Booking> => {
+  try {
+    const response = await bookingAxios.put(`/api/Booking/update/${bookingId}`, updateData);
+    return response.data;
+  } catch (error) {
+    console.error(`Lỗi khi cập nhật booking ${bookingId}:`, error);
+    throw error;
+  }
+  
+};
+export const getPatientDetailIdByPatientId = async (patientId: string): Promise<string> => {
+  try {
+    const response = await bookingAxios.get(`/api/PatientDetail/Patient/${patientId}/PatientDetailId`);
+    return response.data;
+  } catch (error) {
+    console.error(`Lỗi khi lấy patientDetailId cho patientId ${patientId}:`, error);
+    throw error;
+  }
+};

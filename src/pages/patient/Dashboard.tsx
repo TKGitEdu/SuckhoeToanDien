@@ -6,9 +6,9 @@ import {
   Users, 
   Bell, 
   CalendarCheck,
+  XCircle,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
-
 import { useState, useEffect } from "react";
 import { bookingApi } from "../../api/bookingAPI";
 import type { Booking } from "../../api/bookingAPI";
@@ -26,9 +26,9 @@ const PatientDashboard = () => {
     const [error, setError] = useState<string | null>(null);
     
     useEffect(() => {
-      const fetchBookings = async () => {        try {
+      const fetchBookings = async () => {        
+        try {
           setLoading(true);
-          // Gọi API từ bookingApi
           const data = await bookingApi.getMyBookings();
           setBookings(data);
           setLoading(false);
@@ -44,9 +44,9 @@ const PatientDashboard = () => {
     
     return { bookings, loading, error };
   };
-    // Lấy thông tin người dùng và lịch hẹn
+
+  // Lấy thông tin người dùng và lịch hẹn
   useEffect(() => {
-    // Lấy thông tin người dùng từ localStorage
     const userInfo = localStorage.getItem("userInfo");
     
     if (userInfo) {
@@ -64,13 +64,38 @@ const PatientDashboard = () => {
       setLoading(false);
     }
   }, []);
-    // Sử dụng hook để lấy dữ liệu booking
-  const { bookings: upcomingAppointments } = useMyBookings();
 
-  if (loading) {
+  function countUniqueDoctors(bookings: Booking[]): number {
+    const uniqueDoctorIds = Array.from(
+      new Set(bookings.map(b => b.doctorId).filter(Boolean))
+    );
+    return uniqueDoctorIds.length;
+  }
+  
+  const { bookings, loading: bookingsLoading, error } = useMyBookings();
+  
+  // Lọc lịch hẹn sắp tới (chưa hủy) và đã hủy
+  const upcomingAppointments = bookings.filter(
+    booking => booking.status !== "Đã hủy" && booking.status !== "cancelled"
+  );
+  const cancelledAppointments = bookings.filter(
+    booking => booking.status === "Đã hủy" || booking.status === "cancelled"
+  );
+
+  if (loading || bookingsLoading) {
     return (
       <div className="py-20 flex justify-center items-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-20 flex justify-center items-center">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
       </div>
     );
   }
@@ -115,8 +140,9 @@ const PatientDashboard = () => {
               <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mr-4">
                 <FileText className="h-6 w-6 text-green-600" />
               </div>
-              <div>                <p className="text-sm text-gray-500">Điều trị đang thực hiện</p>
-                <p className="text-2xl font-bold text-gray-900">-</p>
+              <div>                
+                <p className="text-sm text-gray-500">Điều trị đang thực hiện</p>
+                <p className="text-2xl font-bold text-gray-900">{upcomingAppointments.length}</p>
               </div>
             </div>
           </motion.div>
@@ -133,7 +159,7 @@ const PatientDashboard = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Bác sĩ của bạn</p>
-                <p className="text-2xl font-bold text-gray-900">2</p>
+                <p className="text-2xl font-bold text-gray-900">{countUniqueDoctors(upcomingAppointments)}</p>
               </div>
             </div>
           </motion.div>
@@ -150,7 +176,7 @@ const PatientDashboard = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Thông báo mới</p>
-                <p className="text-2xl font-bold text-gray-900">3</p>
+                <p className="text-2xl font-bold text-gray-900">{upcomingAppointments.length}</p>
               </div>
             </div>
           </motion.div>
@@ -163,12 +189,13 @@ const PatientDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
             className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
-          >            <div className="p-6 border-b border-gray-100">
+          >
+            <div className="p-6 border-b border-gray-100">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold text-gray-900">Lịch hẹn sắp tới</h2>
               </div>
             </div>
-              <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-100">
               {upcomingAppointments.length > 0 ? (
                 upcomingAppointments.map((booking) => (
                   <div key={booking.bookingId} className="p-6">
@@ -186,12 +213,12 @@ const PatientDashboard = () => {
                           </div>
                           <div className="text-right">
                             <p className="text-gray-900 font-medium">{new Date(booking.dateBooking).toLocaleDateString('vi-VN')}</p>
-                            <p className="text-gray-600">{booking.slot?.startTime} - {booking.slot?.endTime}</p>
+                            <p className="text-gray-600">{booking.slot?.startTime || 'N/A'} - {booking.slot?.endTime || 'N/A'}</p>
                           </div>
                         </div>
                         <div className="mt-3 flex justify-between items-center">
                           <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {booking.note ? booking.note : "Đã đặt lịch"}
+                            {booking.status || "Đã đặt lịch"}
                           </span>
                           <div className="flex space-x-2">
                             <Link to={`/patient/appointments/${booking.bookingId}`}>
@@ -218,20 +245,76 @@ const PatientDashboard = () => {
             </div>
           </motion.div>
 
+          {/* Cancelled Appointments */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+            className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+          >
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-900">Lịch hẹn đã hủy</h2>
+              </div>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {cancelledAppointments.length > 0 ? (
+                cancelledAppointments.map((booking) => (
+                  <div key={booking.bookingId} className="p-6">
+                    <div className="flex items-start">
+                      <div className="mr-4">
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center bg-red-100">
+                          <XCircle className="h-6 w-6 text-red-600" />
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">{booking.service?.name || "Dịch vụ không xác định"}</h3>
+                            <p className="text-gray-600">{booking.doctor?.doctorName || "Bác sĩ không xác định"}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-gray-900 font-medium">{new Date(booking.dateBooking).toLocaleDateString('vi-VN')}</p>
+                            <p className="text-gray-600">{booking.slot?.startTime || 'N/A'} - {booking.slot?.endTime || 'N/A'}</p>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex justify-between items-center">
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            Đã hủy
+                          </span>
+                          <div className="flex space-x-2">
+                            <Link to={`/patient/appointments/${booking.bookingId}`}>
+                              <Button size="sm" className="text-sm bg-blue-600 hover:bg-blue-700">
+                                Chi tiết
+                              </Button>
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-6 text-center">
+                  <p className="text-gray-500">Bạn không có lịch hẹn nào đã hủy</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+
           {/* Recent Activities */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
             className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
-          >            <div className="p-6 border-b border-gray-100">
+          >
+            <div className="p-6 border-b border-gray-100">
               <h2 className="text-xl font-bold text-gray-900">Hoạt động gần đây</h2>
             </div>
-            
             <div className="divide-y divide-gray-100">
-              {upcomingAppointments.length > 0 ? (
-                // Sắp xếp theo thời gian tạo mới nhất và lấy 3 booking gần nhất
-                [...upcomingAppointments]
+              {bookings.length > 0 ? (
+                [...bookings]
                   .sort((a, b) => new Date(b.createAt).getTime() - new Date(a.createAt).getTime())
                   .slice(0, 3)
                   .map((booking) => (
@@ -250,7 +333,7 @@ const PatientDashboard = () => {
                             {new Date(booking.createAt).toLocaleDateString('vi-VN')}
                           </p>
                           <p className="text-sm text-gray-600">
-                            {booking.description || `Lịch hẹn với bác sĩ ${booking.doctor?.doctorName || "không xác định"}`}
+                            {booking.description || `Lịch hẹn với bác sĩ ${booking.doctor?.doctorName || "không xác định"} `}
                           </p>
                         </div>
                       </div>
@@ -262,8 +345,11 @@ const PatientDashboard = () => {
                 </div>
               )}
             </div>
-          </motion.div>        </div>        {/* Treatment Progress */}
-        <ComponentTrackingTRM patientId={patientId} />
+          </motion.div>
+        </div>
+
+        {/* Treatment Progress */}
+        <ComponentTrackingTRM/>
 
         {/* Recommended Services */}
         <motion.div
@@ -277,7 +363,6 @@ const PatientDashboard = () => {
             <p className="text-gray-600 mb-4">
               Dựa trên thông tin của bạn, chúng tôi đề xuất các dịch vụ sau để hỗ trợ quá trình điều trị của bạn
             </p>
-            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white p-4 rounded-lg shadow-sm">
                 <h3 className="font-semibold text-gray-900 mb-1">Tư vấn dinh dưỡng</h3>
@@ -286,7 +371,6 @@ const PatientDashboard = () => {
                   Tìm hiểu thêm
                 </Link>
               </div>
-              
               <div className="bg-white p-4 rounded-lg shadow-sm">
                 <h3 className="font-semibold text-gray-900 mb-1">Yoga cho thai kỳ</h3>
                 <p className="text-sm text-gray-600 mb-2">Tập luyện yoga nhẹ nhàng, hỗ trợ tăng khả năng thụ thai</p>
@@ -294,7 +378,6 @@ const PatientDashboard = () => {
                   Tìm hiểu thêm
                 </Link>
               </div>
-              
               <div className="bg-white p-4 rounded-lg shadow-sm">
                 <h3 className="font-semibold text-gray-900 mb-1">Tư vấn tâm lý</h3>
                 <p className="text-sm text-gray-600 mb-2">Hỗ trợ tâm lý trong quá trình điều trị hiếm muộn</p>

@@ -1,38 +1,81 @@
-//src/pages/patient/Appointments.tsx
 import { useParams, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { appointmentApi, addStatusToBooking } from '../../api/appointmentAPI';
-import type { BookingWithStatus } from '../../api/appointmentAPI';
+import { bookingApi, cancelUpdateBooking } from '../../api/bookingAPI';
+import type { Booking } from '../../api/bookingAPI';
 
 const AppointmentDetail = () => {
-  const { bookingId } = useParams();
-  const [booking, setBooking] = useState<BookingWithStatus | null>(null);
+  const { bookingId } = useParams<{ bookingId: string }>();
+  const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [cancelLoading, setCancelLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  
+
+  // Ánh xạ trạng thái từ database sang hiển thị tiếng Việt
+  const mapStatusToDisplay = (status: string): string => {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'Đã đặt lịch';
+      case 'cancelled':
+      case 'đã hủy':
+        return 'Đã hủy';
+      case 'chờ thanh toán':
+        return 'Chờ thanh toán';
+      case 'đã quá hạn':
+        return 'Đã quá hạn';
+      case 'đã khám':
+        return 'Đã khám';
+      default:
+        return status;
+    }
+  };
+
   useEffect(() => {
     const fetchBookingDetail = async () => {
       try {
         setLoading(true);
-        if (!bookingId) return;
-        
-        const bookingData = await appointmentApi.getBookingById(bookingId);
-        // Thêm trạng thái tính toán vào booking
-        const bookingWithStatus = addStatusToBooking(bookingData);
-        setBooking(bookingWithStatus);
-      } catch (error) {
+        if (!bookingId) {
+          throw new Error('Không tìm thấy ID lịch hẹn');
+        }
+
+        // Lấy danh sách booking và tìm booking theo bookingId
+        const bookings = await bookingApi.getMyBookings();
+        const bookingData = bookings.find(b => b.bookingId === bookingId);
+        if (!bookingData) {
+          throw new Error('Không tìm thấy dữ liệu lịch hẹn');
+        }
+
+        setBooking(bookingData);
+      } catch (error: any) {
         console.error("Lỗi khi lấy chi tiết lịch hẹn:", error);
-        setError("Không thể lấy thông tin chi tiết lịch hẹn. Vui lòng thử lại sau.");
+        setError(error.message || "Không thể lấy thông tin chi tiết lịch hẹn. Vui lòng thử lại sau.");
       } finally {
         setLoading(false);
       }
     };
-    
-    if (bookingId) {
-      fetchBookingDetail();
-    }
+
+    fetchBookingDetail();
   }, [bookingId]);
-  
+
+  const handleCancelBooking = async () => {
+    if (!booking) return;
+
+    if (!window.confirm("Bạn có chắc chắn muốn hủy lịch hẹn này?")) return;
+
+    try {
+      setCancelLoading(true);
+      await cancelUpdateBooking(booking.bookingId, { status: "Đã hủy" });
+      
+      // Cập nhật trạng thái cục bộ
+      setBooking(prev => prev ? { ...prev, status: "Đã hủy" } : null);
+      alert("Hủy lịch hẹn thành công!");
+    } catch (err: any) {
+      console.error("Lỗi khi hủy lịch hẹn:", err);
+      alert(err.message || "Hủy lịch hẹn thất bại. Vui lòng thử lại sau.");
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -40,7 +83,7 @@ const AppointmentDetail = () => {
       </div>
     );
   }
-  
+
   if (error) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -53,7 +96,7 @@ const AppointmentDetail = () => {
       </div>
     );
   }
-  
+
   if (!booking) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -67,6 +110,11 @@ const AppointmentDetail = () => {
     );
   }
 
+  const canCancelBooking = booking.status !== "Đã khám" && 
+                         booking.status !== "cancelled" && 
+                         booking.status !== "Đã hủy" && 
+                         new Date(booking.dateBooking) > new Date();
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-4">
@@ -74,10 +122,10 @@ const AppointmentDetail = () => {
           ← Quay lại Dashboard
         </Link>
       </div>
-      
+
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <h1 className="text-2xl font-bold mb-6">Chi tiết lịch hẹn</h1>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <h2 className="text-lg font-semibold mb-4">Thông tin lịch hẹn</h2>
@@ -97,13 +145,14 @@ const AppointmentDetail = () => {
               <div>
                 <span className="font-medium">Trạng thái:</span> 
                 <span className={`ml-2 px-2 py-1 rounded-full text-sm ${
-                  booking.status === "Đã khám" ? "bg-green-100 text-green-800" :
-                  booking.status === "Đã thanh toán" ? "bg-blue-100 text-blue-800" :
+                  booking.status.toLowerCase() === "pending" ? "bg-green-100 text-green-800" :
+                  booking.status.toLowerCase() === "cancelled" || booking.status === "Đã hủy" ? "bg-red-100 text-red-800" :
                   booking.status === "Chờ thanh toán" ? "bg-yellow-100 text-yellow-800" :
                   booking.status === "Đã quá hạn" ? "bg-red-100 text-red-800" :
+                  booking.status === "Đã khám" ? "bg-blue-100 text-blue-800" :
                   "bg-gray-100 text-gray-800"
                 }`}>
-                  {booking.status}
+                  {mapStatusToDisplay(booking.status)}
                 </span>
               </div>
               <div>
@@ -116,37 +165,37 @@ const AppointmentDetail = () => {
               </div>
             </div>
           </div>
-          
+
           <div>
             <h2 className="text-lg font-semibold mb-4">Thông tin dịch vụ và bác sĩ</h2>
             <div className="space-y-3">
               <div>
                 <span className="font-medium">Dịch vụ:</span> 
-                <span className="ml-2">{booking.service?.name}</span>
+                <span className="ml-2">{booking.service?.name || "Không có thông tin"}</span>
               </div>
               <div>
                 <span className="font-medium">Giá dịch vụ:</span> 
-                <span className="ml-2">{booking.service?.price?.toLocaleString('vi-VN')} VND</span>
+                <span className="ml-2">{booking.service?.price?.toLocaleString('vi-VN') || "N/A"} VND</span>
               </div>
               <div>
                 <span className="font-medium">Bác sĩ:</span> 
-                <span className="ml-2">{booking.doctor?.doctorName}</span>
+                <span className="ml-2">{booking.doctor?.doctorName || "Không có thông tin"}</span>
               </div>
               <div>
                 <span className="font-medium">Chuyên môn:</span> 
-                <span className="ml-2">{booking.doctor?.specialization}</span>
+                <span className="ml-2">{booking.doctor?.specialization || "Không có thông tin"}</span>
               </div>
               <div>
                 <span className="font-medium">Liên hệ bác sĩ:</span> 
                 <div className="mt-1">
-                  <div>Email: {booking.doctor?.email}</div>
-                  <div>Điện thoại: {booking.doctor?.phone}</div>
+                  <div>Email: {booking.doctor?.email || "Không có thông tin"}</div>
+                  <div>Điện thoại: {booking.doctor?.phone || "Không có thông tin"}</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        
+
         {booking.payment && (
           <div className="mt-6 border-t pt-6">
             <h2 className="text-lg font-semibold mb-4">Thông tin thanh toán</h2>
@@ -157,11 +206,11 @@ const AppointmentDetail = () => {
               </div>
               <div>
                 <span className="font-medium">Số tiền:</span> 
-                <span className="ml-2">{booking.payment.totalAmount?.toLocaleString('vi-VN')} VND</span>
+                <span className="ml-2">{booking.payment.totalAmount?.toLocaleString('vi-VN') || "N/A"} VND</span>
               </div>
               <div>
                 <span className="font-medium">Phương thức:</span> 
-                <span className="ml-2">{booking.payment.method}</span>
+                <span className="ml-2">{booking.payment.method || "Không có thông tin"}</span>
               </div>
               <div>
                 <span className="font-medium">Trạng thái thanh toán:</span> 
@@ -172,13 +221,13 @@ const AppointmentDetail = () => {
                 }`}>
                   {booking.payment.status === "Paid" ? "Đã thanh toán" : 
                    booking.payment.status === "Pending" ? "Chờ thanh toán" : 
-                   booking.payment.status}
+                   booking.payment.status || "Không có thông tin"}
                 </span>
               </div>
             </div>
           </div>
         )}
-        
+
         {booking.examination && (
           <div className="mt-6 border-t pt-6">
             <h2 className="text-lg font-semibold mb-4">Thông tin khám bệnh</h2>
@@ -210,13 +259,13 @@ const AppointmentDetail = () => {
                   {booking.examination.status === "Completed" ? "Đã hoàn thành" : 
                    booking.examination.status === "In Progress" ? "Đang tiến hành" :
                    booking.examination.status === "Scheduled" ? "Đã lên lịch" :
-                   booking.examination.status}
+                   booking.examination.status || "Không có thông tin"}
                 </span>
               </div>
             </div>
           </div>
         )}
-        
+
         <div className="mt-8 flex justify-end space-x-4">
           <Link 
             to="/patient/dashboard"
@@ -224,17 +273,16 @@ const AppointmentDetail = () => {
           >
             Quay lại
           </Link>
-          
-          {/* Chỉ hiển thị nút này nếu lịch hẹn chưa diễn ra và chưa khám */}
-          {booking.status !== "Đã khám" && new Date(booking.dateBooking) > new Date() && (
+
+          {canCancelBooking && (
             <button 
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              onClick={() => {
-                // Xử lý hủy lịch hẹn - có thể thêm xác nhận
-                alert("Chức năng hủy lịch sẽ được thực hiện ở đây");
-              }}
+              className={`px-4 py-2 rounded-md text-white ${
+                cancelLoading ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
+              }`}
+              onClick={handleCancelBooking}
+              disabled={cancelLoading}
             >
-              Hủy lịch hẹn
+              {cancelLoading ? "Đang hủy..." : "Hủy lịch hẹn"}
             </button>
           )}
         </div>
@@ -244,6 +292,3 @@ const AppointmentDetail = () => {
 }
 
 export default AppointmentDetail;
-
-
-

@@ -59,6 +59,7 @@ export interface TreatmentProcess {
 export interface TreatmentPlan {
   treatmentPlanId: string;
   doctorId: string;
+  serviceId: string;
   method: string;
   patientDetailId: string;
   startDate: string;
