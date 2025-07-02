@@ -7,17 +7,23 @@ import {
   Bell, 
   CalendarCheck,
   XCircle,
+  Check
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useState, useEffect } from "react";
 import { bookingApi } from "../../api/bookingAPI";
 import type { Booking } from "../../api/bookingAPI";
+import { getPatientNotifications, markNotificationAsRead, markAllNotificationsAsRead } from "../../api/patientApi/dashboardAPI";
+import type { Notification } from "../../api/patientApi/dashboardAPI";
 import ComponentTrackingTRM from "./componentTrackingTRM";
 
 const PatientDashboard = () => {  
   const [loading, setLoading] = useState(true);
   const [patientName, setPatientName] = useState("");
-  const [patientId, setPatientId] = useState("");
+  const [userId, setUserId] = useState("");
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
   
   // Custom hook để lấy danh sách booking
   const useMyBookings = () => {
@@ -53,8 +59,13 @@ const PatientDashboard = () => {
       try {
         const user = JSON.parse(userInfo);
         setPatientName(user.fullName || user.username || "Bệnh nhân");
-        setPatientId(user.patientId || "");
+        setUserId(user.userId || "");
         setLoading(false);
+
+        // Nếu có userId, lấy thông báo của người dùng
+        if (user.userId) {
+          fetchNotifications(user.userId);
+        }
       } catch (e) {
         console.error("Error parsing userInfo:", e);
         setPatientName("Bệnh nhân");
@@ -64,6 +75,51 @@ const PatientDashboard = () => {
       setLoading(false);
     }
   }, []);
+
+  // Hàm lấy thông báo
+  const fetchNotifications = async (userId: string) => {
+    try {
+      setNotificationsLoading(true);
+      const data = await getPatientNotifications(userId, 20, false);
+      setNotifications(data);
+      setNotificationsLoading(false);
+    } catch (error) {
+      console.error("Lỗi khi lấy thông báo:", error);
+      setNotificationsLoading(false);
+    }
+  };
+
+  // Hàm đánh dấu một thông báo đã đọc
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await markNotificationAsRead(notificationId);
+      // Cập nhật lại danh sách thông báo
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notification => 
+          notification.notificationId === notificationId 
+            ? { ...notification, patientIsRead: true } 
+            : notification
+        )
+      );
+    } catch (error) {
+      console.error("Lỗi khi đánh dấu thông báo đã đọc:", error);
+    }
+  };
+
+  // Hàm đánh dấu tất cả thông báo đã đọc
+  const handleMarkAllAsRead = async () => {
+    if (!userId) return;
+    
+    try {
+      await markAllNotificationsAsRead(userId);
+      // Cập nhật lại danh sách thông báo
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notification => ({ ...notification, patientIsRead: true }))
+      );
+    } catch (error) {
+      console.error("Lỗi khi đánh dấu tất cả thông báo đã đọc:", error);
+    }
+  };
 
   function countUniqueDoctors(bookings: Booking[]): number {
     const uniqueDoctorIds = Array.from(
@@ -168,17 +224,85 @@ const PatientDashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.3 }}
-            className="bg-white p-6 rounded-xl shadow-sm border border-gray-100"
+            className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative"
           >
             <div className="flex items-center">
-              <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center mr-4">
+              <div 
+                className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center mr-4 cursor-pointer"
+                onClick={() => setShowNotifications(!showNotifications)}
+              >
                 <Bell className="h-6 w-6 text-yellow-600" />
+                {notifications.filter(n => !n.patientIsRead).length > 0 && (
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {notifications.filter(n => !n.patientIsRead).length}
+                  </span>
+                )}
               </div>
               <div>
                 <p className="text-sm text-gray-500">Thông báo mới</p>
-                <p className="text-2xl font-bold text-gray-900">{upcomingAppointments.length}</p>
+                <p className="text-2xl font-bold text-gray-900">{notifications.filter(n => !n.patientIsRead).length}</p>
               </div>
             </div>
+            
+            {/* Dropdown Panel for Notifications */}
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg z-10 max-h-96 overflow-y-auto border border-gray-200">
+                <div className="p-3 border-b border-gray-200 flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-gray-800">Thông báo</h3>
+                  {notifications.filter(n => !n.patientIsRead).length > 0 && (
+                    <button 
+                      onClick={handleMarkAllAsRead}
+                      className="text-xs text-blue-600 hover:text-blue-800"
+                    >
+                      Đánh dấu tất cả đã đọc
+                    </button>
+                  )}
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {notificationsLoading ? (
+                    <div className="p-4 text-center text-gray-500">
+                      <div className="animate-spin inline-block h-4 w-4 border-t-2 border-blue-600 rounded-full mr-2"></div>
+                      Đang tải thông báo...
+                    </div>
+                  ) : notifications.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">
+                      Không có thông báo nào
+                    </div>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div 
+                        key={notification.notificationId} 
+                        className={`p-3 hover:bg-gray-50 cursor-pointer ${notification.patientIsRead ? 'bg-gray-50' : 'bg-white'}`}
+                        onClick={() => handleMarkAsRead(notification.notificationId)}
+                      >
+                        <div className="flex items-start">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${notification.patientIsRead ? 'bg-gray-200' : 'bg-blue-100'}`}>
+                            <Bell className={`h-4 w-4 ${notification.patientIsRead ? 'text-gray-500' : 'text-blue-600'}`} />
+                          </div>
+                          <div className="flex-1">
+                            <p className={`text-sm font-medium ${notification.patientIsRead ? 'text-gray-600' : 'text-gray-900'}`}>
+                              {notification.doctorName ? `Từ bác sĩ ${notification.doctorName}` : notification.type}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(notification.time).toLocaleDateString('vi-VN')}
+                            </p>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {notification.message}
+                            </p>
+                          </div>
+                          {notification.patientIsRead ? (
+                            <span className="text-xs text-green-600 flex items-center">
+                              <Check className="h-3 w-3 mr-1" />
+                              Đã đọc
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </motion.div>
         </div>
 
@@ -297,6 +421,79 @@ const PatientDashboard = () => {
               ) : (
                 <div className="p-6 text-center">
                   <p className="text-gray-500">Bạn không có lịch hẹn nào đã hủy</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Notifications Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+            className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+          >
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-900">Thông báo</h2>
+                {notifications.filter(n => !n.patientIsRead).length > 0 && (
+                  <button 
+                    onClick={handleMarkAllAsRead}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Đánh dấu tất cả đã đọc
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {notificationsLoading ? (
+                <div className="p-6 text-center">
+                  <div className="animate-spin inline-block h-6 w-6 border-t-2 border-b-2 border-blue-600 rounded-full mr-2"></div>
+                  <span className="text-gray-500">Đang tải thông báo...</span>
+                </div>
+              ) : notifications.length > 0 ? (
+                notifications.slice(0, 5).map((notification) => (
+                  <div 
+                    key={notification.notificationId} 
+                    className={`p-4 hover:bg-gray-50 cursor-pointer ${notification.patientIsRead ? 'bg-gray-50' : 'bg-white'}`}
+                    onClick={() => handleMarkAsRead(notification.notificationId)}
+                  >
+                    <div className="flex items-start">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${notification.patientIsRead ? 'bg-gray-200' : 'bg-blue-100'}`}>
+                        <Bell className={`h-5 w-5 ${notification.patientIsRead ? 'text-gray-500' : 'text-blue-600'}`} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start mb-1">
+                          <h3 className={`text-sm font-semibold ${notification.patientIsRead ? 'text-gray-600' : 'text-gray-900'}`}>
+                            {notification.doctorName ? `Từ bác sĩ ${notification.doctorName}` : notification.type}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {new Date(notification.time).toLocaleDateString('vi-VN')}
+                          </p>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {notification.message}
+                        </p>
+                        {!notification.patientIsRead && (
+                          <span className="inline-block mt-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                            Chưa đọc
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-6 text-center">
+                  <p className="text-gray-500">Không có thông báo nào</p>
+                </div>
+              )}
+              {notifications.length > 5 && (
+                <div className="p-4 text-center">
+                  <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    Xem tất cả thông báo
+                  </button>
                 </div>
               )}
             </div>

@@ -420,9 +420,9 @@ const Dashboard: React.FC = () => {
           <h2 className="text-lg font-medium">Thông báo</h2>
           <div className="relative">
             <Bell className="h-5 w-5 text-gray-500" />
-            {notifications.filter(n => !n.isRead).length > 0 && (
+            {notifications.filter(n => !n.doctorIsRead).length > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                {notifications.filter(n => !n.isRead).length}
+                {notifications.filter(n => !n.doctorIsRead).length}
               </span>
             )}
           </div>
@@ -432,8 +432,8 @@ const Dashboard: React.FC = () => {
             {notifications.map((notification) => (
               <div 
                 key={notification.notificationId} 
-                className={`flex items-start justify-between py-3 ${!notification.isRead ? 'bg-blue-50' : ''} cursor-pointer hover:bg-gray-50`}
-                onClick={() => !notification.isRead && handleMarkNotificationAsRead(notification.notificationId)}
+                className={`flex items-start justify-between py-3 ${!notification.doctorIsRead ? 'bg-blue-50' : ''} cursor-pointer hover:bg-gray-50`}
+                onClick={() => !notification.doctorIsRead && handleMarkNotificationAsRead(notification.notificationId)}
               >
                 <div className="flex-1">
                   <div className="flex items-start">
@@ -460,7 +460,7 @@ const Dashboard: React.FC = () => {
                   >
                     {notification.type}
                   </span>
-                  {!notification.isRead && (
+                  {!notification.doctorIsRead && (
                     <Button
                       variant="ghost"
                       size="sm"

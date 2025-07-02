@@ -81,7 +81,8 @@ export interface DoctorNotification {
   type: string;
   message: string;
   time: string;
-  isRead: boolean;
+  doctorIsRead: boolean;
+  patientIsRead?: boolean;
   bookingDate: string;
   bookingStatus: string;
   treatmentStatus: string;
