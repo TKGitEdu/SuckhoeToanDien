@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom"; // Add useNavigate for navigation
-import { getDoctorByUserId, getDoctorBookingsbyUserId } from "../../api/doctorApi/dashboardAPI";
+import { getDoctorByUserId, getDoctorBookingsbyUserId, getDoctorNotifications, markNotificationAsRead } from "../../api/doctorApi/dashboardAPI";
+import type { DoctorNotification } from "../../api/doctorApi/dashboardAPI"; // Import as a type
 import { Button } from "../../components/ui/button"; // Import Button component
+import { Bell, CheckCircle } from "lucide-react"; // Import Bell and CheckCircle icons
 
 // Define interface for user info from localStorage
 interface UserInfo {
@@ -31,11 +33,12 @@ interface DoctorBasicDTO {
   doctorName: string;
 }
 
-interface NotificationDTO {
-  id: string;
-  message: string;
-  type: string;
-}
+// Using the imported DoctorNotification interface instead
+// interface NotificationDTO {
+//   id: string;
+//   message: string;
+//   type: string;
+// }
 
 interface TreatmentUpdateDTO {
   id: string;
@@ -92,7 +95,7 @@ const Dashboard: React.FC = () => {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [doctor, setDoctor] = useState<DoctorBasicDTO | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [notifications, setNotifications] = useState<NotificationDTO[]>([]);
+  const [notifications, setNotifications] = useState<DoctorNotification[]>([]);
   const [activePatientsCount, setActivePatientsCount] = useState<number>(0);
   const [recentTreatmentUpdates, setRecentTreatmentUpdates] = useState<TreatmentUpdateDTO[]>([]);
   const [waitingTestResults, setWaitingTestResults] = useState<TestResultDTO[]>([]);
@@ -132,14 +135,13 @@ const Dashboard: React.FC = () => {
             }));
             setAppointments(bookings);
 
-            // Hard-coded dữ liệu cho notifications
-            setNotifications([
-              { id: "1", message: "Lịch hẹn mới với bệnh nhân Nguyễn Văn B", type: "appointment" },
-              { id: "2", message: "Kết quả xét nghiệm của bệnh nhân Trần Thị C đã có", type: "test-result" },
-            ]);
+            // Tính số bệnh nhân đang điều trị (số bệnh nhân unique đã đặt lịch)
+            const uniquePatientIds = new Set(bookingsResponse.map(booking => booking.patientId));
+            setActivePatientsCount(uniquePatientIds.size);
 
-            // Hard-coded số bệnh nhân đang điều trị
-            setActivePatientsCount(5);
+            // Lấy thông báo từ API
+            const notificationsResponse = await getDoctorNotifications(parsedUserInfo.userId);
+            setNotifications(notificationsResponse);
 
             // Hard-coded cập nhật điều trị
             setRecentTreatmentUpdates([
@@ -272,6 +274,20 @@ const Dashboard: React.FC = () => {
     navigate("/doctor/appointments");
   };
 
+  // Function to mark a notification as read
+  const handleMarkNotificationAsRead = async (notificationId: string) => {
+    try {
+      const success = await markNotificationAsRead(notificationId);
+      if (success && userInfo?.userId) {
+        // Refresh notifications after marking as read
+        const updatedNotifications = await getDoctorNotifications(userInfo.userId);
+        setNotifications(updatedNotifications);
+      }
+    } catch (err) {
+      setError("Không thể cập nhật thông báo.");
+    }
+  };
+
   if (loading) {
     return <div className="text-center">Đang tải...</div>;
   }
@@ -400,20 +416,67 @@ const Dashboard: React.FC = () => {
         transition={{ duration: 0.3 }}
         className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6"
       >
-        <h2 className="text-lg font-medium mb-4">Thông báo</h2>
-        {notifications.length > 0 ? (
-          notifications.map((notification) => (
-            <div key={notification.id} className="flex items-center justify-between py-2">
-              <p className="text-sm font-medium">{notification.message}</p>
-              <span
-                className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                  notification.type === "appointment" ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800"
-                }`}
-              >
-                {notification.type}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-medium">Thông báo</h2>
+          <div className="relative">
+            <Bell className="h-5 w-5 text-gray-500" />
+            {notifications.filter(n => !n.isRead).length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                {notifications.filter(n => !n.isRead).length}
               </span>
-            </div>
-          ))
+            )}
+          </div>
+        </div>
+        {notifications.length > 0 ? (
+          <div className="divide-y divide-gray-100">
+            {notifications.map((notification) => (
+              <div 
+                key={notification.notificationId} 
+                className={`flex items-start justify-between py-3 ${!notification.isRead ? 'bg-blue-50' : ''} cursor-pointer hover:bg-gray-50`}
+                onClick={() => !notification.isRead && handleMarkNotificationAsRead(notification.notificationId)}
+              >
+                <div className="flex-1">
+                  <div className="flex items-start">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{notification.message}</p>
+                      <div className="flex items-center mt-1">
+                        <p className="text-xs text-gray-500 mr-2">
+                          {new Date(notification.time).toLocaleString('vi-VN')}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Bệnh nhân: {notification.patientName}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center ml-4">
+                  <span
+                    className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                      notification.type === "appointment" ? "bg-blue-100 text-blue-800" : 
+                      notification.type === "test-result" ? "bg-yellow-100 text-yellow-800" : 
+                      "bg-gray-100 text-gray-800"
+                    }`}
+                  >
+                    {notification.type}
+                  </span>
+                  {!notification.isRead && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-2 p-1 h-auto"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Ngăn sự kiện click lan truyền lên parent
+                        handleMarkNotificationAsRead(notification.notificationId);
+                      }}
+                    >
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <p className="text-gray-500">Không có thông báo mới</p>
         )}

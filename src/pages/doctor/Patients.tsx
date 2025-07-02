@@ -286,7 +286,7 @@ const DoctorPatients = () => {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bệnh nhân</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thông tin liên hệ</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Hành động</th>
+                    {/* <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Hành động</th> */}
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -329,7 +329,7 @@ const DoctorPatients = () => {
                           {patient.email}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {/* <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <Button 
                           variant="outline" 
                           size="sm"
@@ -341,7 +341,7 @@ const DoctorPatients = () => {
                         >
                           Xem hồ sơ
                         </Button>
-                      </td>
+                      </td> */}
                     </tr>
                   ))
                 ) : (

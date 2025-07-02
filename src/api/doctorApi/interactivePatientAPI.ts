@@ -1,129 +1,129 @@
-import axiosClient from "../axiosClient";
+import axios from 'axios';
+import { tr } from 'date-fns/locale';
 
-// Define interface for patient details
-export interface PatientDetails {
-  patientId: string;
-  name: string;
-  age: number;
-  gender: string;
-  medicalHistory: string[];
-  appointmentReason: string;
-}
-
-// Define interface for booking details
-export interface BookingDetails {
+// Định nghĩa interfaces cho dữ liệu
+export interface Booking {
   bookingId: string;
   patientId: string;
   doctorId: string;
   serviceId: string;
-  serviceName: string;
-  patientName: string;
+  slotId: string;
+  dateBooking: string;
+  description: string;
+  note: string;
   status: string;
-  date: string;
-  time: string;
+  createAt: string;
 }
 
-// Define interface for examination data
-export interface ExaminationData {
+export interface Patient {
+  patientId: string;
+  userId: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  gender: string;
+  dateOfBirth: string;
+  bloodType: string;
+  emergencyPhoneNumber: string;
+}
+
+export interface ExaminationRequest {
+  bookingId: string;
+  examinationDate: string;
+  examinationDescription: string;
+  result: string;
+  status: string;
+  note: string;
+}
+
+export interface Examination {
+  examinationId: string;
   bookingId: string;
   patientId: string;
   doctorId: string;
-  description: string;
+  examinationDate: string;
+  examinationDescription: string;
   result: string;
   status: string;
+  note: string;
+  createAt: string;
 }
 
-// Define interface for treatment plan data
-export interface TreatmentPlanData {
-  patientId: string;
-  doctorId: string;
-  method: string;
-  status: string;
-  description: string;
-}
+const dashboardAxios = axios.create({
+  baseURL: "https://localhost:7147",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
-// Define interface for treatment process data
-export interface TreatmentProcesses {
-  doctorId: string;
-  patientId: string;
-  treatmentPlanId: string;
-  processDate: string;
-  result: string;
-  status: string;
-}
+dashboardAxios.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-// Get booking details by ID
-export const getBookingById = async (bookingId: string): Promise<BookingDetails> => {
+/**
+ * Lấy thông tin booking theo bookingId
+ * @param bookingId ID của booking cần lấy thông tin
+ * @returns Thông tin chi tiết của booking
+ */
+export const getBookingById = async (bookingId: string): Promise<Booking> => {
   try {
-    const response = await axiosClient.get(`/api/DoctorPatients/bookings/${bookingId}`);
-    return response.data || response;
+    const response = await dashboardAxios.get(`/api/InteractivePatient/booking/${bookingId}`);
+    return response.data;
   } catch (error) {
-    console.error("Error fetching booking details:", error);
+    console.error(`Lỗi khi lấy thông tin booking với ID ${bookingId}:`, error);
     throw error;
   }
 };
 
-// Get patient details by ID
-export const getPatientDetailsById = async (patientId: string): Promise<PatientDetails> => {
+/**
+ * Lấy thông tin bệnh nhân theo patientId
+ * @param patientId ID của bệnh nhân cần lấy thông tin
+ * @returns Thông tin chi tiết của bệnh nhân
+ */
+export const getPatientById = async (patientId: string): Promise<Patient> => {
   try {
-    const response = await axiosClient.get(`/api/DoctorPatients/patients/${patientId}`);
-    return response.data || response;
+    const response = await dashboardAxios.get(`/api/InteractivePatient/patient/${patientId}`);
+    return response.data;
   } catch (error) {
-    console.error("Error fetching patient details:", error);
+    console.error(`Lỗi khi lấy thông tin bệnh nhân với ID ${patientId}:`, error);
     throw error;
   }
 };
 
-// Create new examination record
-export const createExamination = async (data: ExaminationData): Promise<any> => {
+/**
+ * Tạo một examination mới
+ * @param examinationData Dữ liệu của examination cần tạo
+ * @returns Kết quả của quá trình tạo examination
+ */
+export const createExamination = async (examinationData: ExaminationRequest): Promise<any> => {
   try {
-    const response = await axiosClient.post('/api/DoctorPatients/examinations', data);
-    return response;
+    const response = await dashboardAxios.post('/api/InteractivePatient/examination', examinationData);
+    return response.data;
   } catch (error) {
-    console.error("Error creating examination record:", error);
-    throw error;
-  }
-};
-// get all treatment plans 
-export const getAllTreatmentPlans = async (): Promise<TreatmentPlanData[]> => {
-  try {
-    const response = await axiosClient.get('/api/DoctorPatients/treatment-plans');
-    return response.data || response;
-  } catch (error) {
-    console.error("Error fetching treatment plans:", error);
+    console.error('Lỗi khi tạo examination:', error);
     throw error;
   }
 };
 
-// Create new treatment plan
-export const createTreatmentPlan = async (data: TreatmentPlanData): Promise<any> => {
+/**
+ * Cập nhật trạng thái của examination thành completed
+ * @param examinationId ID của examination cần cập nhật trạng thái
+ * @returns Kết quả của quá trình cập nhật trạng thái
+ */
+export const completeExamination = async (examinationId: string): Promise<any> => {
   try {
-    const response = await axiosClient.post('/api/DoctorPatients/treatment-plans', data);
-    return response;
+    const response = await dashboardAxios.put(`/api/InteractivePatient/examination/${examinationId}/complete`);
+    return response.data;
   } catch (error) {
-    console.error("Error creating treatment plan:", error);
-    throw error;
-  }
-};
-
-// Add new treatment process
-export const addNewTreatmentProcesses = async (record: TreatmentProcesses): Promise<TreatmentProcesses> => {
-  try {
-    const response = await axiosClient.post('/api/DoctorPatients/treatment-record', record);
-    return response.data || response;
-  } catch (error) {
-    console.error("Error adding treatment process:", error);
-    throw error;
-  }
-};
-
-// Update booking status
-export const updateBookingStatus = async (bookingId: string, status: string): Promise<any> => {
-  try {
-    const response = await axiosClient.put(`/api/DoctorPatients/bookings/${bookingId}/status`, { status });
-    return response;
-  } catch (error) {
-    console.error("Error updating booking status:", error);
+    console.error(`Lỗi khi cập nhật trạng thái examination ${examinationId}:`, error);
     throw error;
   }
 };

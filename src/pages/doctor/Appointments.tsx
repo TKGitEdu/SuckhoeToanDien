@@ -13,7 +13,8 @@ import {
   Check,
   X,
   ClipboardList,
-  FileText
+  FileText,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { getDoctorBookingsbyUserId } from "../../api/doctorApi/dashboardAPI";
@@ -476,9 +477,9 @@ const DoctorAppointments = () => {
             </p>
           </div>
           <div className="mt-4 md:mt-0">
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <CalendarClock className="mr-2 h-4 w-4" />
-              Tạo lịch hẹn mới
+            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => navigate(-1)}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Quay lại
             </Button>
           </div>
         </div>
@@ -984,22 +985,32 @@ const DoctorAppointments = () => {
                           Xem hồ sơ
                         </Button>
                         <Button 
-                          className="bg-blue-600 hover:bg-blue-700"
+                          className={`${appointment.status === 'confirmed' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}
                           onClick={() => {
                             if (appointment.status === 'Pending') {
                               handleConfirmAppointment(selectedAppointment);
                             } else if (appointment.status === 'confirmed') {
-                              alert("Lịch hẹn đã được xác nhận trước đó.");
+                              // Nếu đã confirmed thì chuyển đến trang interactive-patient với bookingId
+                              navigate(`/doctor/interactive-patient/${selectedAppointment}`);
                             } else if (appointment.status === 'completed') {
                               alert("Lịch hẹn đã hoàn thành. Không thể xác nhận lại.");
                             } else if (appointment.status === 'cancelled') {
                               alert("Lịch hẹn đã bị hủy. Không thể xác nhận.");
                             }
                           }}
-                          disabled={appointment.status !== 'Pending'}
+                          disabled={appointment.status !== 'Pending' && appointment.status !== 'confirmed'}
                         >
-                          <Check className="mr-2 h-4 w-4" />
-                          Xác nhận lịch hẹn
+                          {appointment.status === 'confirmed' ? (
+                            <>
+                              <CalendarClock className="mr-2 h-4 w-4" />
+                              Bắt đầu khám
+                            </>
+                          ) : (
+                            <>
+                              <Check className="mr-2 h-4 w-4" />
+                              Xác nhận lịch hẹn
+                            </>
+                          )}
                         </Button>
                       </div>
                       

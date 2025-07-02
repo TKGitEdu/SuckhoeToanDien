@@ -69,3 +69,54 @@ export const getDoctorByUserId = async (userId: string): Promise<Doctor | null> 
     return null;
   }
 };
+
+// Interface cho dữ liệu thông báo
+export interface DoctorNotification {
+  notificationId: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  bookingId: string;
+  treatmentProcessId: string;
+  type: string;
+  message: string;
+  time: string;
+  isRead: boolean;
+  bookingDate: string;
+  bookingStatus: string;
+  treatmentStatus: string;
+}
+
+// Lấy danh sách thông báo của bác sĩ theo userId
+export const getDoctorNotifications = async (
+  userId: string, 
+  limit: number = 20, 
+  unreadOnly: boolean = false
+): Promise<DoctorNotification[]> => {
+  try {
+    const response = await dashboardAxios.get(`/api/DoctorDashBoard/notifications`, {
+      params: { 
+        userId,
+        limit,
+        docvachuadoc: unreadOnly
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Lỗi khi lấy thông báo cho userId ${userId}:`, error);
+    return [];
+  }
+};
+
+// Đánh dấu thông báo đã đọc
+export const markNotificationAsRead = async (notificationId: string): Promise<boolean> => {
+  try {
+    const response = await dashboardAxios.put(`/api/DoctorDashBoard/notifications/read-all`, 
+      [notificationId]
+    );
+    return response.status === 200;
+  } catch (error) {
+    console.error(`Lỗi khi đánh dấu đã đọc cho thông báo ${notificationId}:`, error);
+    return false;
+  }
+};
