@@ -5,11 +5,18 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { logout } from "../utils/logout";
 
+interface UserInfo {
+  userId: string;
+  fullName: string;
+  roleId: string;
+  roleName: string;
+  email?: string;
+}
+
 const Header: React.FC = () => {
   const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserInfo | null>(null);
 
    useEffect(() => {
     const storedUser = localStorage.getItem("userInfo");
@@ -22,6 +29,21 @@ const Header: React.FC = () => {
     logout();
     setUser(null);
     navigate("/");
+  };
+
+  // Get dashboard link based on user role
+  const getDashboardLink = () => {
+    if (!user) return "/patient/dashboard";
+
+    switch (user.roleId) {
+      case "ROLE_1":
+        return "/admin/dashboard";
+      case "ROLE_2":
+        return "/doctor/dashboard";
+      case "ROLE_3":
+      default:
+        return "/patient/dashboard";
+    }
   };
 
   return (
@@ -58,7 +80,8 @@ const Header: React.FC = () => {
 
 
         {user ? (
-          <div className="flex gap-4 items-center">            <Link to="/patient/dashboard">
+          <div className="flex gap-4 items-center">
+            <Link to={getDashboardLink()}>
               <div className="flex items-center px-4 py-2 rounded-lg hover:bg-gray-50 transition-all cursor-pointer">
                 <span className="text-gray-700">Welcome </span>
                 <h2 className="text-red-500 font-bold ml-1">{user.fullName}</h2>

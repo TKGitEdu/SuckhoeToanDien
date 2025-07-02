@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -190,6 +190,18 @@ const DoctorTreatmentRecords = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedRecord, setSelectedRecord] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'medications' | 'appointments' | 'tests'>('overview');
+  const location = useLocation();
+  
+  // Get patientId from URL query parameters
+  const queryParams = new URLSearchParams(location.search);
+  const patientIdFromUrl = queryParams.get('patientId');
+  
+  useEffect(() => {
+    // If patientId is provided in URL, filter records for that patient
+    if (patientIdFromUrl) {
+      setSearchTerm(patientIdFromUrl);
+    }
+  }, [patientIdFromUrl]);
   
   const recordsPerPage = 3;
 

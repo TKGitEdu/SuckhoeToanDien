@@ -27,6 +27,8 @@ import DoctorDashboard from "../pages/doctor/Dashboard";
 import DoctorAppointments from "../pages/doctor/Appointments";
 import DoctorPatients from "../pages/doctor/Patients";
 import DoctorTreatmentRecords from "../pages/doctor/TreatmentRecords";
+import CreateAppointmentForPatient from "../pages/doctor/CreateAppointmentForPatient";
+import InteractivePatient from "../pages/doctor/InteractivePatient";
 import AdminDashboard from "../pages/admin/Dashboard";
 // import AdminServices from "../pages/admin/Services";
 import AdminDoctors from "../pages/admin/Doctors";
@@ -209,8 +211,7 @@ const AppRouter: React.FC = () => {
               <MainLayout>
                 <DoctorPatients />
               </MainLayout>
-            </ProtectedRoute>
-          }
+            </ProtectedRoute>          }
         />
         <Route
           path="/doctor/treatment-records"
@@ -222,6 +223,27 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/doctor/create-appointment"
+          element={
+            <ProtectedRoute allowedRoles={["Doctor"]}>
+              <MainLayout>
+                <CreateAppointmentForPatient />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/doctor/interactive-patient/:bookingId"
+          element={
+            <ProtectedRoute allowedRoles={["Doctor"]}>
+              <MainLayout>
+                <InteractivePatient />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        
         {/* Admin */}
         <Route
           path="/admin/dashboard"
