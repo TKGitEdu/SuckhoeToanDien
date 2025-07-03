@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { bookingApi, cancelUpdateBooking } from '../../api/bookingAPI';
-import type { Booking } from '../../api/bookingAPI';
+import { bookingApi, cancelUpdateBooking } from '../../api/patientApi/bookingAPI';
+import type { Booking } from '../../api/patientApi/bookingAPI';
 
 const AppointmentDetail = () => {
   const { bookingId } = useParams<{ bookingId: string }>();
@@ -59,6 +59,12 @@ const AppointmentDetail = () => {
   const handleCancelBooking = async () => {
     if (!booking) return;
 
+    // Kiểm tra thời gian còn lại đến lịch hẹn
+    if (hoursToAppointment < minHoursToCancel) {
+      alert(`Không thể hủy lịch hẹn khi ${timeRemainingText} đến lịch hẹn. Vui lòng liên hệ trực tiếp với phòng khám để hủy lịch hẹn.`);
+      return;
+    }
+
     if (!window.confirm("Bạn có chắc chắn muốn hủy lịch hẹn này?")) return;
 
     try {
@@ -115,6 +121,40 @@ const AppointmentDetail = () => {
                          booking.status !== "Đã hủy" && 
                          new Date(booking.dateBooking) > new Date();
 
+  // Tính thời gian còn lại đến lịch hẹn (theo giờ)
+  const calculateHoursToAppointment = () => {
+    if (!booking) return 0;
+    
+    const appointmentTime = new Date(booking.dateBooking).getTime();
+    const currentTime = new Date().getTime();
+    const diffInMs = appointmentTime - currentTime;
+    return Math.round(diffInMs / (1000 * 60 * 60)); // Chuyển ms thành giờ và làm tròn
+  };
+
+  const hoursToAppointment = calculateHoursToAppointment();
+  
+  // Kiểm tra nếu thời gian còn lại ít hơn 24 giờ thì không cho phép hủy
+  const minHoursToCancel = 24;
+  const canCancelByTime = hoursToAppointment >= minHoursToCancel;
+
+  // Định dạng thời gian còn lại thành dạng dễ đọc
+  const formatTimeRemaining = (hours: number) => {
+    if (hours < 0) return "Đã quá thời gian hẹn";
+    if (hours < 1) return "Còn dưới 1 giờ";
+    if (hours < 24) return `Còn ${hours} giờ`;
+    
+    const days = Math.floor(hours / 24);
+    const remainingHours = hours % 24;
+    
+    if (remainingHours === 0) {
+      return `Còn ${days} ngày`;
+    } else {
+      return `Còn ${days} ngày ${remainingHours} giờ`;
+    }
+  };
+
+  const timeRemainingText = formatTimeRemaining(hoursToAppointment);
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-4">
@@ -142,6 +182,16 @@ const AppointmentDetail = () => {
                 <span className="font-medium">Thời gian:</span> 
                 <span className="ml-2">{booking.slot?.startTime} - {booking.slot?.endTime}</span>
               </div>
+              {new Date(booking.dateBooking) > new Date() && (
+                <div>
+                  <span className="font-medium">Thời gian còn lại:</span> 
+                  <span className={`ml-2 ${
+                    hoursToAppointment < 24 ? "text-red-600 font-semibold" : "text-green-600"
+                  }`}>
+                    {timeRemainingText}
+                  </span>
+                </div>
+              )}
               <div>
                 <span className="font-medium">Trạng thái:</span> 
                 <span className={`ml-2 px-2 py-1 rounded-full text-sm ${
@@ -274,17 +324,32 @@ const AppointmentDetail = () => {
             Quay lại
           </Link>
 
-          {canCancelBooking && (
-            <button 
-              className={`px-4 py-2 rounded-md text-white ${
-                cancelLoading ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
-              }`}
-              onClick={handleCancelBooking}
-              disabled={cancelLoading}
-            >
-              {cancelLoading ? "Đang hủy..." : "Hủy lịch hẹn"}
-            </button>
-          )}
+          {canCancelBooking ? (
+            canCancelByTime ? (
+              <button 
+                className={`px-4 py-2 rounded-md text-white ${
+                  cancelLoading ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
+                }`}
+                onClick={handleCancelBooking}
+                disabled={cancelLoading}
+              >
+                {cancelLoading ? "Đang hủy..." : "Hủy lịch hẹn"}
+              </button>
+            ) : (
+              <div className="flex flex-col items-end">
+                <button 
+                  className="px-4 py-2 rounded-md text-white bg-gray-400 cursor-not-allowed"
+                  disabled={true}
+                  title={`Bạn không thể hủy lịch hẹn khi ${timeRemainingText} đến lịch hẹn`}
+                >
+                  Hủy lịch hẹn
+                </button>
+                <span className="text-xs text-red-600 mt-1">
+                  Không thể hủy lịch hẹn khi {timeRemainingText}
+                </span>
+              </div>
+            )
+          ) : null}
         </div>
       </div>
     </div>

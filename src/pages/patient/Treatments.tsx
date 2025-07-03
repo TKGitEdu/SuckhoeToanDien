@@ -22,10 +22,10 @@ import {
   Info
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
-import treatmentPlanAPI from "../../api/treatmentPlanAPI";
-import type { TreatmentPlan, TreatmentProcess } from "../../api/treatmentPlanAPI";
-import { bookingApi } from "../../api/bookingAPI";
-import type { Booking } from "../../api/bookingAPI";
+import treatmentPlanAPI from "../../api/patientApi/treatmentPlanAPI";
+import type { TreatmentPlan, TreatmentProcess } from "../../api/patientApi/treatmentPlanAPI";
+import { bookingApi } from "../../api/patientApi/bookingAPI";
+import type { Booking } from "../../api/patientApi/bookingAPI";
 
 // Interface cho dữ liệu điều trị (tương tự mock data)
 interface Medication {

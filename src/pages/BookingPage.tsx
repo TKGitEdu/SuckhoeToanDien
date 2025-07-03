@@ -6,8 +6,8 @@ import "react-datepicker/dist/react-datepicker.css";
 import { CalendarDays, Clock, User, Phone, Mail, FileText, CheckCircle, Loader2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
-import { bookingApiForBookingPage} from "../api/bookingApiForBookingPage";
-import type { Service, Doctor, Slot, BookingRequest } from "../api/bookingApiForBookingPage";
+import { bookingApiForBookingPage} from "../api/patientApi/bookingApiForBookingPage";
+import type { Service, Doctor, Slot, BookingRequest } from "../api/patientApi/bookingApiForBookingPage";
 import { useRef } from "react";
 
 type FormData = {

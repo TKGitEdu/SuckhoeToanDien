@@ -3,11 +3,11 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bookmark } from "lucide-react";
 import { Button } from "../../components/ui/button";
-import treatmentPlanAPI from "../../api/treatmentPlanAPI";
+import treatmentPlanAPI from "../../api/patientApi/treatmentPlanAPI";
 import type
- { TreatmentPlan } from "../../api/treatmentPlanAPI";
-import { bookingApi, getPatientDetailIdByPatientId} from "../../api/bookingAPI";
-import type {   Booking } from "../../api/bookingAPI";
+ { TreatmentPlan } from "../../api/patientApi/treatmentPlanAPI";
+import { bookingApi, getPatientDetailIdByPatientId} from "../../api/patientApi/bookingAPI";
+import type {   Booking } from "../../api/patientApi/bookingAPI";
 
 export default function ComponentTrackingTRM() {
   const [patientId, setPatientId] = useState<string | null>(null);

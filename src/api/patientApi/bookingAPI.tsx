@@ -94,6 +94,7 @@ export interface Booking {
 // trong file này chỉ cần gọi get myBookings để lấy danh sách booking của người dùng hiện tại
 // Định nghĩa kiểu dữ liệu cho phản hồi khi tạo booking
 // Export bookingApi object với các phương thức
+// file này được import vào dashboard patient
 export const bookingApi = {  // GET: api/Booking/mybookings
   getMyBookings: async (): Promise<Booking[]> => {
     try {

@@ -94,3 +94,36 @@ export const markAllNotificationsAsRead = async (userId: string): Promise<any> =
     throw error;
   }
 };
+
+/**
+ * Lấy ra các kiểm tra sức khỏe của bệnh nhân theo bookingId và userId
+ * @param bookingId ID của booking
+ * @param userId ID của người dùng
+ * @returns Danh sách các kiểm tra sức khỏe
+ */
+export interface Examination {
+  examinationId: string;
+  bookingId: string;
+  patientId: string;
+  doctorId: string;
+  doctorName: string;
+  examinationDate: string;
+  examinationDescription: string;
+  result: string;
+  status: string;
+  note: string;
+  createAt: string;
+  serviceName: string;
+}
+
+export const getPatientExaminations = async (bookingId: string, userId: string): Promise<Examination[]> => {
+  try {
+    const response = await bookingAxios.get(
+      `/api/PatientDashBoard/examinations?bookingId=${bookingId}&userId=${userId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Lỗi khi lấy kiểm tra sức khỏe:', error);
+    throw error;
+  }
+};

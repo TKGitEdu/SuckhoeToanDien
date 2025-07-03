@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Calendar, 
@@ -7,23 +7,28 @@ import {
   Bell, 
   CalendarCheck,
   XCircle,
-  Check
+  Check,
+  Stethoscope
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useState, useEffect } from "react";
-import { bookingApi } from "../../api/bookingAPI";
-import type { Booking } from "../../api/bookingAPI";
-import { getPatientNotifications, markNotificationAsRead, markAllNotificationsAsRead } from "../../api/patientApi/dashboardAPI";
-import type { Notification } from "../../api/patientApi/dashboardAPI";
+import { bookingApi } from "../../api/patientApi/bookingAPI";
+import type { Booking } from "../../api/patientApi/bookingAPI";
+import { getPatientNotifications, markNotificationAsRead, markAllNotificationsAsRead, getPatientExaminations } from "../../api/patientApi/dashboardAPI";
+import type { Notification, Examination } from "../../api/patientApi/dashboardAPI";
 import ComponentTrackingTRM from "./componentTrackingTRM";
 
 const PatientDashboard = () => {  
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [patientName, setPatientName] = useState("");
   const [userId, setUserId] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [examinations, setExaminations] = useState<Examination[]>([]);
+  const [examinationsLoading, setExaminationsLoading] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState<string>("");
   
   // Custom hook để lấy danh sách booking
   const useMyBookings = () => {
@@ -118,6 +123,22 @@ const PatientDashboard = () => {
       );
     } catch (error) {
       console.error("Lỗi khi đánh dấu tất cả thông báo đã đọc:", error);
+    }
+  };
+
+  // Hàm lấy danh sách các buổi khám
+  const fetchExaminations = async (bookingId: string) => {
+    if (!userId || !bookingId) return;
+    
+    try {
+      setExaminationsLoading(true);
+      setSelectedBookingId(bookingId);
+      const data = await getPatientExaminations(bookingId, userId);
+      setExaminations(data);
+      setExaminationsLoading(false);
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách buổi khám:", error);
+      setExaminationsLoading(false);
     }
   };
 
@@ -307,6 +328,100 @@ const PatientDashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Buổi khám / Hồ sơ khám bệnh */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+            className="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+          >
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center">
+                <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center mr-4">
+                  <Stethoscope className="h-5 w-5 text-teal-600" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">Hồ sơ khám bệnh</h2>
+              </div>
+            </div>
+            <div className="p-6">
+              {upcomingAppointments.length > 0 ? (
+                <div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Chọn lịch hẹn</label>
+                    <select 
+                      className="w-full p-2 border border-gray-300 rounded text-sm"
+                      onChange={(e) => {
+                        const bookingId = e.target.value;
+                        if (bookingId) fetchExaminations(bookingId);
+                      }}
+                      value={selectedBookingId}
+                    >
+                      <option value="">-- Chọn lịch hẹn --</option>
+                      {upcomingAppointments.map((booking, index) => (
+                        <option key={booking.bookingId} value={booking.bookingId}>
+                          {booking.service?.name || `Lịch hẹn ${index + 1}`} - {new Date(booking.dateBooking).toLocaleDateString()}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {examinations.length > 0 ? (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Chọn buổi khám</label>
+                      <select 
+                        className="w-full p-2 border border-gray-300 rounded text-sm mb-4"
+                        id="examination-select"
+                      >
+                        <option value="">-- Chọn buổi khám --</option>
+                        {examinations.map((exam, index) => (
+                          <option key={exam.examinationId} value={exam.examinationId}>
+                            Buổi khám số {index + 1} - {new Date(exam.createAt).toLocaleDateString()}
+                          </option>
+                        ))}
+                      </select>
+                      
+                      <Button 
+                        className="w-full" 
+                        onClick={() => {
+                          const select = document.getElementById('examination-select') as HTMLSelectElement;
+                          const examinationId = select.value;
+                          if (!examinationId) return;
+                          
+                          const selectedExamination = examinations.find(e => e.examinationId === examinationId);
+                          if (selectedExamination) {
+                            // Chuyển tới trang chi tiết examination kèm theo đối tượng examination
+                            navigate(`/patient/examinations?bookingId=${selectedExamination.bookingId}&examinationId=${examinationId}`, {
+                              state: { examination: selectedExamination }
+                            });
+                          }
+                        }}
+                      >
+                        Xem chi tiết buổi khám
+                      </Button>
+                    </div>
+                  ) : examinationsLoading ? (
+                    <div className="py-8 text-center">
+                      <div className="animate-spin inline-block h-6 w-6 border-t-2 border-b-2 border-teal-600 rounded-full mb-2"></div>
+                      <p className="text-gray-500">Đang tải thông tin buổi khám...</p>
+                    </div>
+                  ) : (
+                    <div className="py-8 text-center">
+                      <p className="text-gray-500 mb-2">Chưa có thông tin buổi khám</p>
+                      <p className="text-sm text-gray-400">Hãy chọn một lịch hẹn để xem thông tin các buổi khám</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="py-8 text-center">
+                  <p className="text-gray-500 mb-2">Bạn chưa có lịch hẹn</p>
+                  <Link to="/booking">
+                    <Button className="mt-2">Đặt lịch khám</Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </motion.div>
+
           {/* Upcoming Appointments */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}

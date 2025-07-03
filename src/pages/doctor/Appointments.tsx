@@ -19,7 +19,7 @@ import {
 import { Button } from "../../components/ui/button";
 import { getDoctorBookingsbyUserId } from "../../api/doctorApi/dashboardAPI";
 import { confirmBooking, cancelBooking, rescheduleBooking, getAllSlots } from "../../api/doctorApi/appointmentsAPI";
-import type { Service } from "../../api/bookingAPI";
+import type { Service } from "../../api/patientApi/bookingAPI";
 import type { Slot } from "../../api/doctorApi/appointmentsAPI";
 import { format, parseISO } from "date-fns";
 import { vi } from "date-fns/locale";

@@ -18,9 +18,9 @@ import {
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { createAppointmentForPatient, getPatientDetails } from "../../api/doctorApi/patientsAPI";
-import { bookingApiForBookingPage } from "../../api/bookingApiForBookingPage";
+import { bookingApiForBookingPage } from "../../api/patientApi/bookingApiForBookingPage";
 import { getAllSlots } from "../../api/doctorApi/appointmentsAPI";
-import type { Service } from "../../api/bookingApiForBookingPage";
+import type { Service } from "../../api/patientApi/bookingApiForBookingPage";
 import type { Slot } from "../../api/doctorApi/appointmentsAPI";
 
 interface CreateAppointmentProps {

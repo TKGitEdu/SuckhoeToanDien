@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { patientAPI, type Patient } from "../../api/patientAPI";
+import { patientAPI, type Patient } from "../../api/adminApi/patientAPI";
 import { Trash2, Pencil } from "lucide-react"; 
 import { Button } from "../../components/ui/button";
 

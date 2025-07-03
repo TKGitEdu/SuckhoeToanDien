@@ -19,7 +19,7 @@
 // }'
 
 import axios from "axios";
-import type { Booking } from "../bookingAPI";
+import type { Booking } from "../patientApi/bookingAPI";
 
 // Axios instance for doctor appointments API
 const appointmentsAxios = axios.create({

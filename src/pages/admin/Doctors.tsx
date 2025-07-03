@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { doctorAPI } from "../../api/doctorsAPI";
+import { doctorAPI } from "../../api/adminApi/doctorsAPI";
 
 type Booking = {
   bookingId: string;

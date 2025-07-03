@@ -38,6 +38,8 @@ import NotFoundPage from "../pages/NotFoundPage";
 import AdminLayout from "../layout/adminLayout";
 import ProtectedRoute from "./ProtectedRouter";
 import RegisterSuccess from "../components/registerSuccess";
+// thêm trang PatientExaminations D:\ThuMucTam\SWP391--FrontEnd\SWP391--FrontEnd\src\pages\patient\Examinations.tsx
+import PatientExaminations from "../pages/patient/Examinations";
 
 
 
@@ -149,6 +151,17 @@ const AppRouter: React.FC = () => {
             <ProtectedRoute allowedRoles={["Patient"]}>
               <MainLayout>
                 <PatientTreatments />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        {/* trang này nhận /patient/examinations?bookingId=BKG_1&examinationId=EXM_1 */}
+        <Route
+          path="/patient/examinations"
+          element={
+            <ProtectedRoute allowedRoles={["Patient"]}>
+              <MainLayout>
+                <PatientExaminations />
               </MainLayout>
             </ProtectedRoute>
           }
