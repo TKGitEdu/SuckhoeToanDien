@@ -706,9 +706,6 @@ const DoctorAppointments = () => {
                         app => bookingIds.includes(app.id) && app.status !== 'cancelled'
                       );
                       
-                      // Kiểm tra nếu có ít nhất một lịch hẹn không bị hủy
-                      const hasActiveBookingForDate = activeBookings.length > 0;
-                      
                       return (
                         <div 
                           key={slot.slotId}

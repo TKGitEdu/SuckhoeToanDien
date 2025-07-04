@@ -160,6 +160,7 @@ export interface TreatmentPlan {
   endDate: string;
   status: string;
   treatmentDescription: string;
+  patientDetailName: string;
 }
 
 // Lấy danh sách kế hoạch điều trị của bác sĩ

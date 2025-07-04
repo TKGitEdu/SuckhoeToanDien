@@ -33,31 +33,11 @@ interface DoctorBasicDTO {
   doctorName: string;
 }
 
-// Using the imported DoctorNotification interface instead
-// interface NotificationDTO {
-//   id: string;
-//   message: string;
-//   type: string;
-// }
-
-interface TreatmentUpdateDTO {
-  id: string;
-  patientName: string;
-  treatmentType: string;
-  currentStage: string;
-}
-
 interface ExaminationCreateDTO {
   bookingId: string;
   patientId: string;
   doctorId: string;
   description: string;
-  result: string;
-  status: string;
-}
-
-interface TreatmentProcessCreateDTO {
-  treatmentPlanId: string;
   result: string;
   status: string;
 }
@@ -102,7 +82,7 @@ const Dashboard: React.FC = () => {
           if (parsedUserInfo.userId) {
             // Lấy thông tin bác sĩ từ API
             const doctorResponse = await getDoctorByUserId(parsedUserInfo.userId);
-            setDoctor(doctorResponse || { doctorId: "DOC001", doctorName: parsedUserInfo.fullName || "Unknown Doctor" });
+            setDoctor(doctorResponse || { doctorId: "DOC_1", doctorName: parsedUserInfo.fullName || "Unknown Doctor" });
 
             // Lấy danh sách booking từ API
             const bookingsResponse = await getDoctorBookingsbyUserId(parsedUserInfo.userId);
@@ -442,7 +422,7 @@ const Dashboard: React.FC = () => {
             <tbody>
               {treatmentPlans.map((plan) => (
                 <tr key={plan.treatmentPlanId} className="border-t">
-                  <td className="py-2">{plan.patientName || `Bệnh nhân ${plan.patientDetailId}`}</td>
+                  <td className="py-2">{plan.patientDetailName}</td>
                   <td>{plan.method}</td>
                   <td>{plan.status}</td>
                   <td>
