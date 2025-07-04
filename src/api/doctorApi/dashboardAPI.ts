@@ -121,3 +121,83 @@ export const markNotificationAsRead = async (notificationId: string): Promise<bo
     return false;
   }
 };
+
+// Interface cho dữ liệu buổi khám
+export interface DoctorExamination {
+  examinationId: string;
+  doctorId: string;
+  patientId: string;
+  patientName?: string;
+  bookingId: string;
+  examinationDate: string;
+  examinationDescription: string;
+  status: string;
+  result: string;
+  createAt: string;
+  note: string;
+}
+
+// Lấy danh sách các buổi khám của bác sĩ theo doctorId
+export const getDoctorExaminations = async (doctorId: string): Promise<DoctorExamination[]> => {
+  try {
+    const response = await dashboardAxios.get(`/api/DoctorDashBoard/examinations?doctorId=${doctorId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Lỗi khi lấy danh sách buổi khám cho doctorId ${doctorId}:`, error);
+    return [];
+  }
+};
+
+// Interface cho dữ liệu kế hoạch điều trị
+export interface TreatmentPlan {
+  treatmentPlanId: string;
+  doctorId: string;
+  serviceId: string;
+  method: string;
+  patientDetailId: string;
+  patientName?: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+  treatmentDescription: string;
+}
+
+// Lấy danh sách kế hoạch điều trị của bác sĩ
+export const getDoctorTreatmentPlans = async (doctorId: string): Promise<TreatmentPlan[]> => {
+  try {
+    const response = await dashboardAxios.get(`/api/DoctorDashBoard/treatmentplans?doctorId=${doctorId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Lỗi khi lấy danh sách kế hoạch điều trị cho doctorId ${doctorId}:`, error);
+    return [];
+  }
+};
+
+// Cập nhật kế hoạch điều trị
+export const updateTreatmentPlan = async (treatmentPlanId: string, data: Partial<TreatmentPlan>): Promise<boolean> => {
+  try {
+    const response = await dashboardAxios.put(`/api/DoctorDashBoard/treatmentplans/${treatmentPlanId}`, data);
+    return response.status === 200;
+  } catch (error) {
+    console.error(`Lỗi khi cập nhật kế hoạch điều trị ${treatmentPlanId}:`, error);
+    return false;
+  }
+};
+
+// /* Dữ liệu mẫu cho hàm GetTreatmentPlansByDoctor
+// Request URL
+// https://localhost:7147/api/DoctorDashBoard/treatmentplans?doctorId=DOC_2
+// {
+//     "treatmentPlanId": "TP_2",
+//     "doctorId": "DOC_2",
+//     "serviceId": "SRV_4",
+//     "method": "IUI",
+//     "patientDetailId": "PATD_2",
+//     "startDate": "2025-07-12",
+//     "endDate": "2025-07-26",
+//     "status": "Kích thích nhẹ buồng trứng",
+//     "treatmentDescription": "Khám tổng quát; Kích thích nhẹ buồng trứng; Theo dõi nang noãn; Lọc rửa tinh trùng; Bơm tinh trùng vào buồng tử cung",
+//     "doctor": null,
+//     "patientDetail": null,
+//     "treatmentProcesses": []
+//   },

@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom"; // Add useNavigate for navigation
-import { getDoctorByUserId, getDoctorBookingsbyUserId, getDoctorNotifications, markNotificationAsRead } from "../../api/doctorApi/dashboardAPI";
-import type { DoctorNotification } from "../../api/doctorApi/dashboardAPI"; // Import as a type
+import { getDoctorByUserId, getDoctorBookingsbyUserId, getDoctorNotifications, markNotificationAsRead, getDoctorExaminations, getDoctorTreatmentPlans } from "../../api/doctorApi/dashboardAPI";
+import type { DoctorNotification, DoctorExamination, TreatmentPlan } from "../../api/doctorApi/dashboardAPI"; // Import as a type
 import { Button } from "../../components/ui/button"; // Import Button component
 import { Bell, CheckCircle } from "lucide-react"; // Import Bell and CheckCircle icons
 
@@ -47,18 +47,6 @@ interface TreatmentUpdateDTO {
   currentStage: string;
 }
 
-interface TestResultDTO {
-  id: string;
-  patientName: string;
-  testType: string;
-  status: string;
-}
-
-interface PatientProfileDTO {
-  patientId: string;
-  name: string;
-}
-
 interface ExaminationCreateDTO {
   bookingId: string;
   patientId: string;
@@ -66,14 +54,6 @@ interface ExaminationCreateDTO {
   description: string;
   result: string;
   status: string;
-}
-
-interface TreatmentPlanCreateDTO {
-  patientId: string;
-  doctorId: string;
-  method: string;
-  status: string;
-  description: string;
 }
 
 interface TreatmentProcessCreateDTO {
@@ -97,8 +77,8 @@ const Dashboard: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [notifications, setNotifications] = useState<DoctorNotification[]>([]);
   const [activePatientsCount, setActivePatientsCount] = useState<number>(0);
-  const [recentTreatmentUpdates, setRecentTreatmentUpdates] = useState<TreatmentUpdateDTO[]>([]);
-  const [waitingTestResults, setWaitingTestResults] = useState<TestResultDTO[]>([]);
+  const [treatmentPlans, setTreatmentPlans] = useState<TreatmentPlan[]>([]);
+  const [examinationShow, setExaminationShow] = useState<DoctorExamination[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -143,17 +123,20 @@ const Dashboard: React.FC = () => {
             const notificationsResponse = await getDoctorNotifications(parsedUserInfo.userId);
             setNotifications(notificationsResponse);
 
-            // Hard-coded cập nhật điều trị
-            setRecentTreatmentUpdates([
-              { id: "1", patientName: "Nguyễn Văn B", treatmentType: "Nha khoa", currentStage: "Đang điều trị" },
-              { id: "2", patientName: "Trần Thị C", treatmentType: "Chỉnh nha", currentStage: "Hoàn thành" },
-            ]);
+            // Lấy danh sách buổi khám/xét nghiệm của bác sĩ
+            if (doctorResponse && doctorResponse.doctorId) {
+              const examinationsResponse = await getDoctorExaminations(doctorResponse.doctorId);
+              // Lọc các buổi khám có trạng thái đang chờ kết quả
+              const pendingExaminations = examinationsResponse.filter(exam => 
+                exam.status === "in-progress" || exam.status === "Đang chờ" || exam.status === "completed" || exam.status === "Hoàn thành"
+              );
+              setExaminationShow(pendingExaminations);
+              
+              // Lấy danh sách kế hoạch điều trị
+              const treatmentPlansResponse = await getDoctorTreatmentPlans(doctorResponse.doctorId);
+              setTreatmentPlans(treatmentPlansResponse);
+            }
 
-            // Hard-coded kết quả xét nghiệm đang chờ
-            setWaitingTestResults([
-              { id: "1", patientName: "Nguyễn Văn B", testType: "Xét nghiệm máu", status: "pending" },
-              { id: "2", patientName: "Trần Thị C", testType: "X-quang", status: "pending" },
-            ]);
           } else {
             setError("User ID not found in stored user information.");
           }
@@ -171,18 +154,9 @@ const Dashboard: React.FC = () => {
     fetchData();
   }, []);
 
-  const handleViewProfile = async (patientId: string) => {
-    try {
-      // Hard-coded hồ sơ bệnh nhân
-      const patientProfile: PatientProfileDTO = {
-        patientId,
-        name: `Bệnh nhân ${patientId}`,
-      };
-      console.log("Patient Profile:", patientProfile);
-      // TODO: Điều hướng đến trang hồ sơ bệnh nhân hoặc hiển thị modal
-    } catch (err) {
-      setError("Không thể tải hồ sơ bệnh nhân.");
-    }
+  const handleViewProfile = (patientId: string) => {
+    // Navigate to the patient's profile page
+    navigate(`/doctor/patient-profile/${patientId}`);
   };
 
   const handleStartAppointment = async (bookingId: string) => {
@@ -229,44 +203,9 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleCreateTreatmentPlan = async (patientId: string) => {
-    try {
-      // Giả lập API createTreatmentPlan
-      const treatmentPlanData: TreatmentPlanCreateDTO = {
-        patientId,
-        doctorId: doctor?.doctorId || "",
-        method: "Điều trị nha khoa",
-        status: "active",
-        description: "Kế hoạch điều trị nha khoa cho bệnh nhân",
-      };
-      console.log("Treatment Plan created:", treatmentPlanData);
-      // Cập nhật lại danh sách cập nhật điều trị (hard-coded)
-      setRecentTreatmentUpdates([
-        ...recentTreatmentUpdates,
-        { id: `new-${Date.now()}`, patientName: `Bệnh nhân ${patientId}`, treatmentType: "Nha khoa", currentStage: "Đang điều trị" },
-      ]);
-    } catch (err) {
-      setError("Không thể tạo kế hoạch điều trị.");
-    }
-  };
-
-  const handleCreateTreatmentProcess = async (treatmentPlanId: string) => {
-    try {
-      // Giả lập API createTreatmentProcess
-      const processData: TreatmentProcessCreateDTO = {
-        treatmentPlanId,
-        result: "",
-        status: "scheduled",
-      };
-      console.log("Treatment Process created:", processData);
-      // Cập nhật lại danh sách cập nhật điều trị (hard-coded)
-      setRecentTreatmentUpdates([
-        ...recentTreatmentUpdates,
-        { id: `new-${Date.now()}`, patientName: "Bệnh nhân mới", treatmentType: "Nha khoa", currentStage: "Lên lịch" },
-      ]);
-    } catch (err) {
-      setError("Không thể tạo quá trình điều trị.");
-    }
+  // Function to navigate to treatment plan update page
+  const handleUpdateTreatmentPlan = (treatmentPlanId: string) => {
+    navigate(`/doctor/treatment-plan/${treatmentPlanId}`);
   };
 
   // Function to navigate to the appointments page
@@ -342,8 +281,8 @@ const Dashboard: React.FC = () => {
           transition={{ duration: 0.3, delay: 0.2 }}
           className="bg-white p-4 rounded-xl shadow-sm border border-gray-100"
         >
-          <h3 className="text-sm font-medium text-gray-500">Kết quả xét nghiệm đang chờ</h3>
-          <p className="text-2xl font-bold">{waitingTestResults.length}</p>
+          <h3 className="text-sm font-medium text-gray-500">Danh sách buổi khám</h3>
+          <p className="text-2xl font-bold">{examinationShow.length}</p>
         </motion.div>
       </div>
 
@@ -489,29 +428,29 @@ const Dashboard: React.FC = () => {
         transition={{ duration: 0.3 }}
         className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6"
       >
-        <h2 className="text-lg font-medium mb-4">Cập nhật điều trị gần đây</h2>
-        {recentTreatmentUpdates.length > 0 ? (
+        <h2 className="text-lg font-medium mb-4">Kế hoạch điều trị</h2>
+        {treatmentPlans.length > 0 ? (
           <table className="w-full">
             <thead>
               <tr className="text-left text-sm text-gray-500">
                 <th>Bệnh nhân</th>
-                <th>Loại điều trị</th>
-                <th>Giai đoạn</th>
+                <th>Phương pháp</th>
+                <th>Trạng thái</th>
                 <th>Hành động</th>
               </tr>
             </thead>
             <tbody>
-              {recentTreatmentUpdates.map((update) => (
-                <tr key={update.id} className="border-t">
-                  <td className="py-2">{update.patientName}</td>
-                  <td>{update.treatmentType}</td>
-                  <td>{update.currentStage}</td>
+              {treatmentPlans.map((plan) => (
+                <tr key={plan.treatmentPlanId} className="border-t">
+                  <td className="py-2">{plan.patientName || `Bệnh nhân ${plan.patientDetailId}`}</td>
+                  <td>{plan.method}</td>
+                  <td>{plan.status}</td>
                   <td>
                     <button
                       className="px-2 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200"
-                      onClick={() => handleCreateTreatmentProcess(update.id)}
+                      onClick={() => handleUpdateTreatmentPlan(plan.treatmentPlanId)}
                     >
-                      Thêm quá trình
+                      Cập nhật
                     </button>
                   </td>
                 </tr>
@@ -519,7 +458,7 @@ const Dashboard: React.FC = () => {
             </tbody>
           </table>
         ) : (
-          <p className="text-gray-500">Không có cập nhật điều trị gần đây</p>
+          <p className="text-gray-500">Không có kế hoạch điều trị nào</p>
         )}
       </motion.div>
 
@@ -530,36 +469,53 @@ const Dashboard: React.FC = () => {
         transition={{ duration: 0.3 }}
         className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6"
       >
-        <h2 className="text-lg font-medium mb-4">Kết quả xét nghiệm đang chờ</h2>
-        {waitingTestResults.length > 0 ? (
+        <h2 className="text-lg font-medium mb-4">Danh sách buổi khám</h2>
+        {examinationShow.length > 0 ? (
           <table className="w-full">
             <thead>
               <tr className="text-left text-sm text-gray-500">
                 <th>Bệnh nhân</th>
-                <th>Loại xét nghiệm</th>
+                <th>Mô tả buổi khám</th>
+                <th>Ngày khám</th>
                 <th>Trạng thái</th>
+                <th>Hành động</th>
               </tr>
             </thead>
             <tbody>
-              {waitingTestResults.map((result) => (
-                <tr key={result.id} className="border-t">
-                  <td className="py-2">{result.patientName}</td>
-                  <td>{result.testType}</td>
+              {examinationShow.map((examination) => (
+                <tr key={examination.examinationId} className="border-t">
+                  <td className="py-2">{examination.patientName || 'Bệnh nhân'}</td>
+                  <td>{examination.examinationDescription}</td>
+                  <td>{new Date(examination.examinationDate).toLocaleDateString('vi-VN')}</td>
                   <td>
                     <span
                       className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                        result.status === "pending" ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"
+                        examination.status === "pending" || examination.status === "Đang chờ" || examination.status === "Chờ kết quả"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : examination.status === "in-progress" || examination.status === "Đang xử lý"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-green-100 text-green-800"
                       }`}
                     >
-                      {result.status}
+                      {examination.status}
                     </span>
+                  </td>
+                  <td>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs font-medium text-blue-600"
+                      onClick={() => navigate(`/doctor/examination/${examination.examinationId}`)}
+                    >
+                      Xem chi tiết
+                    </Button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         ) : (
-          <p className="text-gray-500">Không có kết quả xét nghiệm đang chờ</p>
+          <p className="text-gray-500">Không có buổi khám nào</p>
         )}
       </motion.div>
     </div>

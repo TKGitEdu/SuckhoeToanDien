@@ -324,8 +324,8 @@ const DoctorAppointments = () => {
       // Call the API to confirm the appointment - status is the only field being modified
       await confirmBooking(appointmentId, confirmationData);
       
-      // Show success message
-      alert("Xác nhận lịch hẹn thành công!");
+      // // Show success message
+      // alert("Xác nhận lịch hẹn thành công!");
       
       // Refresh appointment data
       await refreshAppointments();
