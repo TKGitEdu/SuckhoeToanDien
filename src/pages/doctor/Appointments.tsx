@@ -59,6 +59,16 @@ const DoctorAppointments = () => {
   // State for storing slots data
   const [slots, setSlots] = useState<Slot[]>([]);
   
+  // State cho modal đổi lịch hẹn
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [rescheduleInfo, setRescheduleInfo] = useState({
+    appointmentId: "",
+    patientName: "",
+    newDate: format(new Date(), 'yyyy-MM-dd'),
+    slotId: "",
+    note: "Lịch hẹn đã được lên lịch lại bởi bác sĩ"
+  });
+  
   const appointmentsPerPage = 5;
 
   // Format date for display (DD/MM/YYYY)
@@ -387,18 +397,37 @@ const DoctorAppointments = () => {
   };
 
   // Function to handle appointment rescheduling
-  const handleRescheduleAppointment = async (appointmentId: string) => {
+  const handleRescheduleAppointment = (appointmentId: string) => {
+    // Find the appointment to be rescheduled
+    const appointmentToReschedule = allAppointments.find(app => app.id === appointmentId);
+    
+    if (!appointmentToReschedule) {
+      console.error(`Không tìm thấy lịch hẹn với ID ${appointmentId}`);
+      return;
+    }
+    
+    // Tạo giá trị mặc định cho modal
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const defaultDateStr = format(tomorrow, 'yyyy-MM-dd');
+    
+    // Cập nhật thông tin cho modal
+    setRescheduleInfo({
+      appointmentId: appointmentId,
+      patientName: appointmentToReschedule.patientName,
+      newDate: defaultDateStr,
+      slotId: slots.length > 0 ? slots[0].slotId : "",
+      note: "Lịch hẹn đã được lên lịch lại bởi bác sĩ"
+    });
+    
+    // Mở modal
+    setIsRescheduleModalOpen(true);
+  };
+  
+  // Function to handle confirming the reschedule from the modal
+  const confirmReschedule = async () => {
     try {
       setLoading(true);
-      
-      // Find the appointment to be rescheduled
-      const appointmentToReschedule = allAppointments.find(app => app.id === appointmentId);
-      
-      if (!appointmentToReschedule) {
-        console.error(`Không tìm thấy lịch hẹn với ID ${appointmentId}`);
-        setLoading(false);
-        return;
-      }
       
       // Get the doctor information from localStorage
       const userInfo = localStorage.getItem("userInfo");
@@ -413,41 +442,19 @@ const DoctorAppointments = () => {
       // Get doctorId (either from doctor object or use a default if not available)
       const doctorId = localStorage.getItem("doctorId") || userObj.doctor?.doctorId || "DOC_1";
       
-      // In a real application, you would show a date/time picker here
-      // For now, we'll use a simple prompt to get the new date and slot
-      const newDateStr = prompt(
-        "Nhập ngày mới (yyyy-MM-dd):", 
-        format(new Date(), 'yyyy-MM-dd')
-      );
-      
-      if (!newDateStr) {
-        setLoading(false);
-        return;
-      }
-      
-      // Get the new slot ID (in a real app, you would show a dropdown)
-      const newSlotId = prompt("Nhập ID slot mới:", "SLOT_01");
-      
-      if (!newSlotId) {
-        setLoading(false);
-        return;
-      }
-      
       // Format the date properly
-      const [year, month, day] = newDateStr.split('-').map(Number);
-      const newDate = new Date(year, month - 1, day+1); // +1 to adjust for 0-indexed month
+      const [year, month, day] = rescheduleInfo.newDate.split('-').map(Number);
+      const newDate = new Date(year, month - 1, day + 1); // +1 to adjust for 0-indexed month
       const isoDate = newDate.toISOString();
       
-      // Optional: Ask for a reason
-      const rescheduleReason = prompt(
-        "Lý do đổi lịch hẹn (không bắt buộc):", 
-        "Lịch hẹn đã được lên lịch lại bởi bác sĩ"
-      );
-      
-      const note = rescheduleReason || "Lịch hẹn đã được lên lịch lại bởi bác sĩ";
-      
       // Call the API to reschedule the appointment
-      await rescheduleBooking(appointmentId, doctorId, isoDate, newSlotId, note);
+      await rescheduleBooking(
+        rescheduleInfo.appointmentId, 
+        doctorId, 
+        isoDate, 
+        rescheduleInfo.slotId, 
+        rescheduleInfo.note
+      );
       
       // Show success message
       alert("Đổi lịch hẹn thành công!");
@@ -455,11 +462,12 @@ const DoctorAppointments = () => {
       // Refresh appointment data
       await refreshAppointments();
       
-      // Clear selected appointment
+      // Close modal and clear selected appointment
+      setIsRescheduleModalOpen(false);
       setSelectedAppointment(null);
       
     } catch (error) {
-      console.error(`Lỗi khi đổi lịch hẹn ${appointmentId}:`, error);
+      console.error(`Lỗi khi đổi lịch hẹn ${rescheduleInfo.appointmentId}:`, error);
       alert(`Không thể đổi lịch hẹn. Lỗi: ${error instanceof Error ? error.message : 'Lỗi không xác định'}`);
     } finally {
       setLoading(false);
@@ -808,11 +816,16 @@ const DoctorAppointments = () => {
                               ? 'bg-yellow-100 text-yellow-800'
                               : appointment.status === 'completed'
                               ? 'bg-blue-100 text-blue-800'
-                              : 'bg-red-100 text-red-800'
+                              : appointment.status === 'rescheduled'
+                              ? 'bg-purple-100 text-purple-800'
+                              : appointment.status === 'cancelled'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-gray-100 text-gray-800'
                           }`}>
                             {appointment.status === 'confirmed' ? 'Đã xác nhận' : 
                              appointment.status === 'Pending' ? 'Đang chờ' : // code backend, database nó vậy khỏi sửa nữa mệt quá
                              appointment.status === 'completed' ? 'Đã hoàn thành' :
+                             appointment.status === 'rescheduled' ? 'Đã dời lịch' :
                              appointment.status === 'cancelled' ? 'Đã hủy' : 'Đang chờ'}
                              
                           </span>
@@ -961,7 +974,7 @@ const DoctorAppointments = () => {
                             if (appointment && (appointment.status === 'Pending' || appointment.status === 'confirmed'|| appointment.status === 'rescheduled')) {
                               handleRescheduleAppointment(selectedAppointment);
                             } else {
-                              alert("Chỉ có thể đổi lịch hẹn có trạng thái 'Đang chờ' hoặc 'Đã xác nhận'");
+                              alert("Chỉ có thể đổi lịch hẹn có trạng thái 'Đang chờ' hoặc 'Đã xác nhận' hoặc 'Đã dời lịch'");
                             }
                           }}
                           disabled={appointment.status === 'completed' || appointment.status === 'cancelled'}
@@ -976,7 +989,7 @@ const DoctorAppointments = () => {
                             if (appointment && (appointment.status === 'Pending' || appointment.status === 'confirmed'|| appointment.status === 'rescheduled')) {
                               handleCancelAppointment(selectedAppointment);
                             } else {
-                              alert("Chỉ có thể hủy lịch hẹn có trạng thái 'Đang chờ' hoặc 'Đã xác nhận'");
+                              alert("Chỉ có thể hủy lịch hẹn có trạng thái 'Đang chờ' hoặc 'Đã xác nhận' hoặc 'Đã dời lịch'");
                             }
                           }}
                           disabled={appointment.status === 'completed' || appointment.status === 'cancelled'}
@@ -998,7 +1011,7 @@ const DoctorAppointments = () => {
                         <Button 
                           className={`${appointment.status === 'confirmed' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}
                           onClick={() => {
-                            if (appointment.status === 'Pending') {
+                            if (appointment.status === 'Pending' || appointment.status === 'rescheduled') {
                               handleConfirmAppointment(selectedAppointment);
                             } else if (appointment.status === 'confirmed') {
                               // Nếu đã confirmed thì chuyển đến trang interactive-patient với bookingId
@@ -1009,7 +1022,7 @@ const DoctorAppointments = () => {
                               alert("Lịch hẹn đã bị hủy. Không thể xác nhận.");
                             }
                           }}
-                          disabled={appointment.status !== 'Pending' && appointment.status !== 'confirmed'}
+                          disabled={appointment.status !== 'Pending' && appointment.status !== 'confirmed' && appointment.status !== 'rescheduled'}
                         >
                           {appointment.status === 'confirmed' ? (
                             <>
@@ -1059,12 +1072,17 @@ const DoctorAppointments = () => {
                                     ? 'bg-yellow-100 text-yellow-800'
                                     : appointment.status === 'completed'
                                     ? 'bg-blue-100 text-blue-800'
-                                    : 'bg-red-100 text-red-800'
+                                    : appointment.status === 'rescheduled'
+                                    ? 'bg-purple-100 text-purple-800'
+                                    : appointment.status === 'cancelled'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-gray-100 text-gray-800'
                                 }`}>
                                   {appointment.status === 'confirmed' ? 'Đã xác nhận' : 
                                    appointment.status === 'Pending' ? 'Đang chờ' : // code backend, database nó vậy khỏi sửa nữa mệt quá
                                    appointment.status === 'completed' ? 'Đã hoàn thành' :
-                                   appointment.status === 'cancelled' ? 'Đã hủy' : 'Đang chờ'}
+                                   appointment.status === 'rescheduled' ? 'Đã dời lịch' :
+                                   appointment.status === 'cancelled' ? 'Đã hủy' : 'không biết'}
                                 </span>
                               </div>
                             </div>
@@ -1079,6 +1097,95 @@ const DoctorAppointments = () => {
           </>
         )}
       </div>
+      
+      {/* Modal đổi lịch hẹn */}
+      {isRescheduleModalOpen && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-900">Đổi lịch hẹn</h3>
+              <button
+                onClick={() => setIsRescheduleModalOpen(false)}
+                className="text-gray-400 hover:text-gray-500 focus:outline-none"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Bệnh nhân
+                </label>
+                <input
+                  type="text"
+                  value={rescheduleInfo.patientName}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Ngày mới (yyyy-MM-dd)
+                </label>
+                <input
+                  type="date"
+                  value={rescheduleInfo.newDate}
+                  onChange={(e) => setRescheduleInfo({...rescheduleInfo, newDate: e.target.value})}
+                  min={format(new Date(), 'yyyy-MM-dd')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Khung giờ
+                </label>
+                <select
+                  value={rescheduleInfo.slotId}
+                  onChange={(e) => setRescheduleInfo({...rescheduleInfo, slotId: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {slots.map(slot => (
+                    <option key={slot.slotId} value={slot.slotId}>
+                      {slot.slotName} ({slot.startTime} - {slot.endTime})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Lý do đổi lịch
+                </label>
+                <textarea
+                  value={rescheduleInfo.note}
+                  onChange={(e) => setRescheduleInfo({...rescheduleInfo, note: e.target.value})}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsRescheduleModalOpen(false)}
+                  className="border-gray-300"
+                >
+                  Hủy
+                </Button>
+                <Button
+                  onClick={confirmReschedule}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Xác nhận đổi lịch
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
