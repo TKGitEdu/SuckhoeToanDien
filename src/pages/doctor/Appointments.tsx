@@ -403,15 +403,15 @@ const DoctorAppointments = () => {
       // Get the doctor information from localStorage
       const userInfo = localStorage.getItem("userInfo");
       const userObj = userInfo ? JSON.parse(userInfo) : null;
-      
-      if (!userObj || !userObj.userId) {
+
+      if (!userObj || !userObj.doctor?.doctorId) {
         console.error("Không tìm thấy thông tin bác sĩ");
         setLoading(false);
         return;
       }
       
       // Get doctorId (either from doctor object or use a default if not available)
-      const doctorId = userObj.doctor?.doctorId || "DOC_1";
+      const doctorId = localStorage.getItem("doctorId") || userObj.doctor?.doctorId || "DOC_1";
       
       // In a real application, you would show a date/time picker here
       // For now, we'll use a simple prompt to get the new date and slot
@@ -435,7 +435,7 @@ const DoctorAppointments = () => {
       
       // Format the date properly
       const [year, month, day] = newDateStr.split('-').map(Number);
-      const newDate = new Date(year, month - 1, day);
+      const newDate = new Date(year, month - 1, day+1); // +1 to adjust for 0-indexed month
       const isoDate = newDate.toISOString();
       
       // Optional: Ask for a reason
@@ -600,7 +600,7 @@ const DoctorAppointments = () => {
                   // Get day of week for first day (0 for Sunday, 1 for Monday, etc.)
                   const firstDayOfMonth = startOfMonth.getDay();
                   // Get number of days in month
-                  const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
+                  const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate()+1;
                   
                   // Create array for calendar cells
                   const calendarDays = [];
@@ -617,13 +617,18 @@ const DoctorAppointments = () => {
                     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
                     const formattedDate = format(date, 'dd/MM/yyyy', { locale: vi });
                     const isToday = new Date().toDateString() === date.toDateString();
-                    const hasAppointment = allAppointments.some(a => a.date === formattedDate);
                     
-                    // Count appointments for this date
-                    const appointmentsForDate = allAppointments.filter(a => a.date === formattedDate);
+                    // Lọc ra các cuộc hẹn không bị hủy (status không phải là 'cancelled')
+                    const validAppointments = allAppointments.filter(a => a.status !== 'cancelled');
+                    
+                    // Kiểm tra xem có cuộc hẹn nào không bị hủy không
+                    const hasAppointment = validAppointments.some(a => a.date === formattedDate);
+                    
+                    // Chỉ đếm các cuộc hẹn không bị hủy
+                    const appointmentsForDate = validAppointments.filter(a => a.date === formattedDate);
                     const appointmentCount = appointmentsForDate.length;
                     
-                    // Get all slot names for this date's appointments
+                    // Chỉ hiển thị slot của các cuộc hẹn không bị hủy
                     const slotsForDay = new Set<string>();
                     appointmentsForDate.forEach(app => {
                       const appTime = app.time;
@@ -679,27 +684,33 @@ const DoctorAppointments = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                     {slots.map(slot => {
                       // Check if this slot has any bookings for the selected date
-                      const hasBookingForDate = slot.bookings?.some(booking => {
-                        const bookingDate = formatDate(booking.dateBooking);
-                        return bookingDate === selectedDate;
-                      });
-                      
-                      // Count bookings for this slot on selected date
+                      // Tìm booking cho slot này trên ngày đã chọn
                       const bookingsForSlot = slot.bookings?.filter(booking => {
                         const bookingDate = formatDate(booking.dateBooking);
                         return bookingDate === selectedDate;
                       }) || [];
                       
+                      // Tìm tất cả booking ID từ bookingsForSlot
+                      const bookingIds = bookingsForSlot.map(b => b.bookingId);
+                      
+                      // Lọc tất cả lịch hẹn không bị hủy (từ allAppointments) dựa trên bookingIds
+                      const activeBookings = allAppointments.filter(
+                        app => bookingIds.includes(app.id) && app.status !== 'cancelled'
+                      );
+                      
+                      // Kiểm tra nếu có ít nhất một lịch hẹn không bị hủy
+                      const hasActiveBookingForDate = activeBookings.length > 0;
+                      
                       return (
                         <div 
                           key={slot.slotId}
-                          className={`p-2 rounded-md border ${hasBookingForDate ? 'bg-blue-50 border-blue-200' : 'border-gray-200'}`}
+                          className={`p-2 rounded-md border ${activeBookings.length > 0 ? 'bg-blue-50 border-blue-200' : 'border-gray-200'}`}
                         >
                           <div className="font-medium text-gray-900">{slot.slotName}</div>
                           <div className="text-sm text-gray-500">{`${slot.startTime} - ${slot.endTime}`}</div>
-                          {bookingsForSlot.length > 0 && (
+                          {activeBookings.length > 0 && (
                             <div className="mt-1 text-xs text-blue-600">
-                              {bookingsForSlot.length} lịch hẹn
+                              {activeBookings.length} lịch hẹn
                             </div>
                           )}
                         </div>

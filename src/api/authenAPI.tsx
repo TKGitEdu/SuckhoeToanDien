@@ -6,21 +6,21 @@ type LoginPayload = {
   password: string;
 };
 
-type User = {
-  userId: string;
-  fullName: string;
-  email: string;
-  username: string;
-  roleId: string;
-  role: {
-    roleName: string;
-  };
-};
 
-type LoginResponse = {
+export interface LoginResponse {
   token: string;
-  user: User;
-};
+  doctorId?: string | null;
+  patientId?: string | null;
+  user: {
+    userId: string;
+    fullName: string;
+    username: string;
+    role: {
+      roleName: string;
+    };
+  };
+}
+
 
 type RegisterPayload = {
   username: string;
@@ -39,6 +39,8 @@ export const authApi = {
   login: async (data: LoginPayload) =>{ 
    const response:LoginResponse  = await axiosClient.post("api/Auth/login", data)
     localStorage.setItem("accessToken", response.token);
+    localStorage.setItem("doctorId", response.doctorId || "");
+    localStorage.setItem("patientId", response.patientId || "");
     localStorage.setItem("userInfo", JSON.stringify(response.user));
 
     return response.user;

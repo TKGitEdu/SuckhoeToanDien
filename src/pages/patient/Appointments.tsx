@@ -206,11 +206,11 @@ const AppointmentDetail = () => {
                 </span>
               </div>
               <div>
-                <span className="font-medium">Ghi chú:</span> 
+                <span className="font-medium">Mô tả:</span> 
                 <p className="mt-1 text-gray-700">{booking.note || "Không có ghi chú"}</p>
               </div>
               <div>
-                <span className="font-medium">Mô tả:</span> 
+                <span className="font-medium">Ghi chú:</span> 
                 <p className="mt-1 text-gray-700">{booking.description || "Không có mô tả"}</p>
               </div>
             </div>

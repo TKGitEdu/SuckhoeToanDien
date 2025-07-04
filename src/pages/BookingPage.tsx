@@ -529,7 +529,7 @@ const BookingPage = () => {
                       {...register("fullName", { required: true })}
                       className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Nguyễn Văn A"
-                      readOnly // thêm dòng này nếu muốn không cho sửa
+                      readOnly 
                     />
                   </div>
                   {errors.fullName && (
@@ -698,8 +698,9 @@ const BookingPage = () => {
                 Xem lịch hẹn của tôi
               </Button>
             </Link>
-          </div>        </motion.div>
-      )}    </div>
+          </div>        
+          </motion.div>
+      )}   </div>
   );
 };
 

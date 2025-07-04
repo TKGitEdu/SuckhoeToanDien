@@ -297,6 +297,7 @@ const RegisterPage = () => {
                 </label>
                 <select
                   id="gender"
+                  {...register("gender", { required: "Giới tính là bắt buộc" })}
                   className={`w-full px-4 py-3 rounded-lg border ${errors.gender ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   {...register("gender")}
                 >
@@ -318,7 +319,7 @@ const RegisterPage = () => {
                   id="dateOfBirth"
                   type="date"
                   className={`w-full px-4 py-3 rounded-lg border ${errors.dateOfBirth ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  {...register("dateOfBirth")}
+                  {...register("dateOfBirth", { required: "Ngày sinh là bắt buộc" })}
                 />
                 {errors.dateOfBirth && (
                   <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth.message}</p>

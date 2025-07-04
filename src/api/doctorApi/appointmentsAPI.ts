@@ -1,23 +1,4 @@
-// tui có hàm "xác nhận lịch hẹn"
-// nhập vào bookingid tương ứng sẽ cập nhật trạng thái của lịch hẹn thành "confirmed" và trả về thông tin lịch hẹn đã cập nhật.
-// Name	Description
-// bookingId *string
-
-// curl -X 'PUT' \
-//   'https://localhost:7147/api/DoctorDashBoard/booking/BKG_1' \
-//   -H 'accept: text/plain' \
-//   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiZG9jdG9yMSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiVVNSX0RPQzEiLCJqdGkiOiJhOThhMDRmNy1lZDI0LTRhZDYtYjhhOC0yMmZiN2YzNjIwOWYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJEb2N0b3IiLCJleHAiOjE3NTEzOTM2NzksImlzcyI6IkluZmVydGlsaXR5VHJlYXRtZW50TWFuYWdlbWVudCIsImF1ZCI6IkluZmVydGlsaXR5VHJlYXRtZW50TWFuYWdlbWVudENsaWVudCJ9.HsV88cohu6BJLt6qin9_Pouf__6CsNPv1k_kVwcBPjw' \
-//   -H 'Content-Type: application/json' \
-//   -d '{
-//   "doctorId": "DOC_1",
-//   "serviceId": "SRV_3",
-//   "slotId": "SLOT_04",
-//   "dateBooking": "2025-07-02T21:26:44.991Z",
-//   "description": "Đăng ký điều trị IVF",
-//   "note": "Đã xác nhận qua điện thoại",
-//   "status": "confirmed"
-// }'
-
+// File: src/api/doctorApi/appointmentsAPI.ts
 import axios from "axios";
 import type { Booking } from "../patientApi/bookingAPI";
 
@@ -86,19 +67,6 @@ export const confirmBooking = async (bookingId: string, bookingData: BookingConf
     throw error;
   }
 };
-// triển khai hàm hủy lịch hẹn với api đã được cung cấp, có ví dụ curl bên dưới
-// curl -X 'PUT' \
-//   'https://localhost:7147/api/DoctorDashBoard/booking/BKG_1/change-status' \
-//   -H 'accept: */*' \
-//   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiZG9jdG9yMSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiVVNSX0RPQzEiLCJqdGkiOiJhOThhMDRmNy1lZDI0LTRhZDYtYjhhOC0yMmZiN2YzNjIwOWYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJEb2N0b3IiLCJleHAiOjE3NTEzOTM2NzksImlzcyI6IkluZmVydGlsaXR5VHJlYXRtZW50TWFuYWdlbWVudCIsImF1ZCI6IkluZmVydGlsaXR5VHJlYXRtZW50TWFuYWdlbWVudENsaWVudCJ9.HsV88cohu6BJLt6qin9_Pouf__6CsNPv1k_kVwcBPjw' \
-//   -H 'Content-Type: application/json' \
-//   -d '{
-//   "doctorId": "DOC_1",
-//   "status": "cancelled", hoặc "rescheduled"
-//   "note": "Đã xác nhận qua điện thoạ",
-//   "newDate": "2025-07-01T18:15:01.633Z",
-//   "newSlotId": "SLOT_05"
-// }'
 
 // Interface for changing appointment status (cancel or reschedule)
 interface BookingStatusChangeData {
@@ -194,15 +162,7 @@ export const rescheduleBooking = async (
     throw error;
   }
 };
-// các hàm nằm ở line < 197 đã đúng yêu cầu không chỉnh sửa.
-// Curl
-// viết hàm lấy lấy toàn bộ thông tin các slot
-// curl -X 'GET' \
-//   'https://localhost:7147/api/Slot' \
-//   -H 'accept: text/plain' \
-//   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiZG9jdG9yMSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiVVNSX0RPQzEiLCJqdGkiOiJhYTY4NGVlOS0wMWNiLTQ5Y2ItYmI2NS03NWQwYTc3OGQ5MDUiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJEb2N0b3IiLCJleHAiOjE3NTEzOTc5OTEsImlzcyI6IkluZmVydGlsaXR5VHJlYXRtZW50TWFuYWdlbWVudCIsImF1ZCI6IkluZmVydGlsaXR5VHJlYXRtZW50TWFuYWdlbWVudENsaWVudCJ9.axPMylz3UmZVQHiyktnTn7CtV9s3u6gu7epFuH1S2Ek'
-// Request URL
-// https://localhost:7147/api/Slot
+// các hàm nằm ở line < 165 đã đúng yêu cầu không chỉnh sửa.
 
 /**
  * Interface for Booking inside a Slot
