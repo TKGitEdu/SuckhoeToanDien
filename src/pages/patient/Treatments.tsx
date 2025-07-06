@@ -294,15 +294,10 @@ const mapTreatmentStepToStage = (treatmentStep: TreatmentStep): Stage => {
 
   // Filter treatments
   const filteredTreatments = treatments.filter(treatment => {
-    const matchesSearch = 
-      treatment.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      treatment.doctor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      treatment.id.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = 
-      activeFilter === "all" || 
-      treatment.status === activeFilter;
-    
+    const matchesSearch = treatment.id.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesFilter = activeFilter === "all" || treatment.giaidoan === activeFilter;
+
     return matchesSearch && matchesFilter;
   });
 
