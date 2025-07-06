@@ -68,7 +68,7 @@ export interface TreatmentPlan {
   doctor: Doctor;
   patientDetail: PatientDetail;
   treatmentDescription: string;
-  giaidoan: string; // in-progress , completed, cancelled
+  giaidoan?: string; // in-progress , completed, cancelled
   treatmentProcesses: TreatmentProcess[];
 
 }
