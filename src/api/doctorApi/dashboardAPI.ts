@@ -13,12 +13,11 @@ export interface BookingDashboard {
   note: string;
   status: string;
   createAt: string;
-  doctor?: Doctor;
-  patient?: Patient;
-  payment?: Payment;
+  patient?: Patient[];
+  payment?: Payment[];
   service?: Service;
-  slot?: Slot;
-  examination?: Examination;
+  slot?: Slot[];
+  doctors?: Doctor[];
 }
 
 // Có thể import Booking từ bookingAPI nếu muốn dùng đầy đủ thông tin booking
@@ -185,20 +184,102 @@ export const updateTreatmentPlan = async (treatmentPlanId: string, data: Partial
   }
 };
 
-// /* Dữ liệu mẫu cho hàm GetTreatmentPlansByDoctor
-// Request URL
-// https://localhost:7147/api/DoctorDashBoard/treatmentplans?doctorId=DOC_2
-// {
-//     "treatmentPlanId": "TP_2",
-//     "doctorId": "DOC_2",
-//     "serviceId": "SRV_4",
-//     "method": "IUI",
-//     "patientDetailId": "PATD_2",
-//     "startDate": "2025-07-12",
-//     "endDate": "2025-07-26",
-//     "status": "Kích thích nhẹ buồng trứng",
-//     "treatmentDescription": "Khám tổng quát; Kích thích nhẹ buồng trứng; Theo dõi nang noãn; Lọc rửa tinh trùng; Bơm tinh trùng vào buồng tử cung",
-//     "doctor": null,
-//     "patientDetail": null,
-//     "treatmentProcesses": []
-//   },
+//tui đã cập nhật BookingDashboard để lấy thêm trường patientDetailId nếu cần
+// tạo treatmentPlan cho bệnh nhân đo, treatmentPlan 
+// với mẫu
+// curl -X 'POST' \
+//   'https://localhost:7147/api/DoctorDashBoard/treatmentplan/create' \
+//   -H 'accept: */*' \
+//   -H 'Content-Type: application/json' \
+//   -d '{
+//   "doctorId": "string",
+//   "patientId": "string",
+//   "serviceId": "string",
+//   "method": "string",
+//   "startDate": "2025-07-07",
+//   "endDate": "2025-07-07",
+//   "status": "string",
+//   "treatmentDescription": "string",
+//   "giaidoan": "string"
+// }'
+
+// tạo xong thì có thêm hàm cập nhật nhiều khi bác sĩ ông quên mấy các description, method, giaidoan nên sửa thêm
+// curl -X 'PUT' \
+//   'https://localhost:7147/api/DoctorDashBoard/treatmentplan/flexible-update' \
+//   -H 'accept: */*' \
+//   -H 'Content-Type: application/json' \
+//   -d '{
+//   "treatmentPlanId": "string",
+//   "doctorId": "string",
+//   "method": "string",
+//   "startDate": "2025-07-07",
+//   "endDate": "2025-07-07",
+//   "treatmentDescription": "string",
+//   "status": "string",
+//   "giaidoan": "string"
+// }'
+
+// Interface cho việc tạo treatment plan mới
+export interface CreateTreatmentPlanRequest {
+  doctorId: string;
+  patientId: string;
+  serviceId: string;
+  method: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+  treatmentDescription: string;
+  giaidoan: string;
+}
+
+// Interface cho việc cập nhật treatment plan
+export interface UpdateTreatmentPlanRequest {
+  treatmentPlanId: string;
+  doctorId: string;
+  method: string;
+  startDate: string;
+  endDate: string;
+  treatmentDescription: string;
+  status: string;
+  giaidoan: string;
+}
+
+// Tạo treatment plan mới cho bệnh nhân
+export const createTreatmentPlan = async (data: CreateTreatmentPlanRequest): Promise<boolean> => {
+  try {
+    const response = await dashboardAxios.post('/api/DoctorDashBoard/treatmentplan/create', data);
+    return response.status === 200 || response.status === 201;
+  } catch (error) {
+    console.error('Lỗi khi tạo kế hoạch điều trị:', error);
+    throw error;
+  }
+};
+
+// Cập nhật treatment plan linh hoạt (flexible update)
+export const flexibleUpdateTreatmentPlan = async (data: UpdateTreatmentPlanRequest): Promise<boolean> => {
+  try {
+    console.log('Sending flexible update request:', data);
+    const response = await dashboardAxios.put('/api/DoctorDashBoard/treatmentplan/flexible-update', data);
+    console.log('Flexible update response:', response.data);
+    return response.status === 200;
+  } catch (error) {
+    console.error('Lỗi khi cập nhật kế hoạch điều trị:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Response data:', error.response?.data);
+      console.error('Status code:', error.response?.status);
+      
+      // Throw error with details for better error handling
+      if (error.response?.status === 400) {
+        throw new Error(`Dữ liệu không hợp lệ: ${error.response?.data?.message || 'Vui lòng kiểm tra lại thông tin'}`);
+      } else if (error.response?.status === 404) {
+        throw new Error('Không tìm thấy kế hoạch điều trị');
+      } else if (error.response?.status === 401) {
+        throw new Error('Bạn không có quyền thực hiện thao tác này');
+      } else {
+        throw new Error(`Lỗi server: ${error.response?.status}`);
+      }
+    }
+    throw error;
+  }
+};
+
