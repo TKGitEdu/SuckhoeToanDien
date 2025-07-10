@@ -79,6 +79,7 @@ export interface DoctorNotification {
   treatmentProcessId: string;
   type: string;
   message: string;
+  messageForDoctor: string;
   time: string;
   doctorIsRead: boolean;
   patientIsRead?: boolean;
@@ -108,15 +109,37 @@ export const getDoctorNotifications = async (
   }
 };
 
-// Đánh dấu thông báo đã đọc
+// Đánh dấu thông báo đã đọc đọc single
 export const markNotificationAsRead = async (notificationId: string): Promise<boolean> => {
   try {
-    const response = await dashboardAxios.put(`/api/DoctorDashBoard/notifications/read-all`, 
+    const response = await dashboardAxios.put(`/api/DoctorDashBoard/notifications/${notificationId}/read`, 
       [notificationId]
     );
     return response.status === 200;
   } catch (error) {
     console.error(`Lỗi khi đánh dấu đã đọc cho thông báo ${notificationId}:`, error);
+    return false;
+  }
+};
+
+// Đánh dấu tất cả thông báo đã đọc cho bác sĩ
+export const readAllNotifications = async (doctorId?: string): Promise<boolean> => {
+  try {
+    // Lấy doctorId từ localStorage nếu không được truyền vào
+    const finalDoctorId = doctorId || localStorage.getItem('doctorId');
+    
+    if (!finalDoctorId) {
+      console.error('Không tìm thấy doctorId trong localStorage hoặc parameter');
+      return false;
+    }
+
+    const response = await dashboardAxios.put(`/api/DoctorDashBoard/notifications/read-all`, null, {
+      params: { doctorId: finalDoctorId }
+    });
+    
+    return response.status === 200;
+  } catch (error) {
+    console.error('Lỗi khi đánh dấu tất cả thông báo đã đọc:', error);
     return false;
   }
 };
@@ -136,7 +159,8 @@ export interface DoctorExamination {
   note: string;
 }
 
-// Lấy danh sách các buổi khám của bác sĩ theo doctorId
+// Lấy danh sách các buổi khám của bác sĩ theo doctorId 
+// 'https://localhost:7147/api/DoctorDashBoard/examinations?doctorId=DOC_1' 
 export const getDoctorExaminations = async (doctorId: string): Promise<DoctorExamination[]> => {
   try {
     const response = await dashboardAxios.get(`/api/DoctorDashBoard/examinations?doctorId=${doctorId}`);
@@ -321,4 +345,10 @@ export const updateTreatmentPlanStandard = async (data: UpdateTreatmentPlanReque
     throw error;
   }
 };
+
+// API Reference for read all notifications: 
+// curl -X 'PUT' \
+//   'https://localhost:7147/api/DoctorDashBoard/notifications/read-all?doctorId=DOC_1' \
+//   -H 'accept: */*'
+  
 

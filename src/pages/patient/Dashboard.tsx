@@ -29,6 +29,8 @@ const PatientDashboard = () => {
   const [examinations, setExaminations] = useState<Examination[]>([]);
   const [examinationsLoading, setExaminationsLoading] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string>("");
+  const [showAllNotifications, setShowAllNotifications] = useState<boolean>(false);
+  const [expandedNotifications, setExpandedNotifications] = useState<Set<string>>(new Set());
   
   // Custom hook để lấy danh sách booking
   const useMyBookings = () => {
@@ -124,6 +126,24 @@ const PatientDashboard = () => {
     } catch (error) {
       console.error("Lỗi khi đánh dấu tất cả thông báo đã đọc:", error);
     }
+  };
+
+  // Function to toggle expanded state of a notification
+  const toggleNotificationExpansion = (notificationId: string) => {
+    setExpandedNotifications(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(notificationId)) {
+        newSet.delete(notificationId);
+      } else {
+        newSet.add(notificationId);
+      }
+      return newSet;
+    });
+  };
+
+  // Function to toggle showing all notifications
+  const toggleShowAllNotifications = () => {
+    setShowAllNotifications(prev => !prev);
   };
 
   // Hàm lấy danh sách các buổi khám
@@ -546,69 +566,122 @@ const PatientDashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
           >
-            <div className="p-6 border-b border-gray-100">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-900">Thông báo</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-medium">Thông báo</h2>
+              <div className="flex items-center space-x-2">
                 {notifications.filter(n => !n.patientIsRead).length > 0 && (
-                  <button 
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-blue-600 hover:bg-blue-50"
                     onClick={handleMarkAllAsRead}
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                   >
-                    Đánh dấu tất cả đã đọc
-                  </button>
+                    Đọc tất cả
+                  </Button>
                 )}
+                <div className="relative">
+                  <Bell className="h-5 w-5 text-gray-500" />
+                  {notifications.filter(n => !n.patientIsRead).length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                      {notifications.filter(n => !n.patientIsRead).length}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="divide-y divide-gray-100">
-              {notificationsLoading ? (
-                <div className="p-6 text-center">
-                  <div className="animate-spin inline-block h-6 w-6 border-t-2 border-b-2 border-blue-600 rounded-full mr-2"></div>
-                  <span className="text-gray-500">Đang tải thông báo...</span>
-                </div>
-              ) : notifications.length > 0 ? (
-                notifications.slice(0, 5).map((notification) => (
-                  <div 
-                    key={notification.notificationId} 
-                    className={`p-4 hover:bg-gray-50 cursor-pointer ${notification.patientIsRead ? 'bg-gray-50' : 'bg-white'}`}
-                    onClick={() => handleMarkAsRead(notification.notificationId)}
-                  >
-                    <div className="flex items-start">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${notification.patientIsRead ? 'bg-gray-200' : 'bg-blue-100'}`}>
-                        <Bell className={`h-5 w-5 ${notification.patientIsRead ? 'text-gray-500' : 'text-blue-600'}`} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start mb-1">
-                          <h3 className={`text-sm font-semibold ${notification.patientIsRead ? 'text-gray-600' : 'text-gray-900'}`}>
-                            {notification.doctorName ? `Từ bác sĩ ${notification.doctorName}` : notification.type}
-                          </h3>
+            <div className="max-h-96 overflow-y-auto">
+              {notifications.length > 0 ? (
+                <div className="divide-y divide-gray-100">
+                  {(showAllNotifications ? notifications : notifications.slice(0, 5)).map((notification) => (
+                    <div 
+                      key={notification.notificationId} 
+                      className={`flex items-start justify-between py-3 ${!notification.patientIsRead ? 'bg-blue-50' : ''} cursor-pointer hover:bg-gray-50 rounded-lg px-2`}
+                      onClick={() => !notification.patientIsRead && handleMarkAsRead(notification.notificationId)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 mr-2">
+                            <div 
+                              className={`text-sm font-medium text-gray-900 ${
+                                expandedNotifications.has(notification.notificationId) ? '' : 'overflow-hidden'
+                              }`}
+                              style={{
+                                display: expandedNotifications.has(notification.notificationId) ? 'block' : '-webkit-box',
+                                WebkitLineClamp: expandedNotifications.has(notification.notificationId) ? 'unset' : 2,
+                                WebkitBoxOrient: 'vertical',
+                                lineHeight: '1.4em',
+                                maxHeight: expandedNotifications.has(notification.notificationId) ? 'none' : '2.8em'
+                              }}
+                            >
+                              {notification.message}
+                            </div>
+                            {notification.message.length > 80 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleNotificationExpansion(notification.notificationId);
+                                }}
+                                className="text-xs text-blue-600 hover:text-blue-800 mt-1 focus:outline-none"
+                              >
+                                {expandedNotifications.has(notification.notificationId) ? 'Thu gọn' : 'Xem thêm'}
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end ml-2">
+                            <span
+                              className={`inline-block px-2 py-1 text-xs font-medium rounded-full mb-1 ${
+                                notification.type === "appointment" ? "bg-blue-100 text-blue-800" : 
+                                notification.type === "test-result" ? "bg-yellow-100 text-yellow-800" : 
+                                "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {notification.type}
+                            </span>
+                            {!notification.patientIsRead && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-1 h-auto"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMarkAsRead(notification.notificationId);
+                                }}
+                              >
+                                <Check className="h-4 w-4 text-green-500" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="mt-1">
                           <p className="text-xs text-gray-500">
-                            {new Date(notification.time).toLocaleDateString('vi-VN')}
+                            {new Date(notification.time).toLocaleString('vi-VN')}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {notification.doctorName ? `Từ bác sĩ ${notification.doctorName}` : notification.type}
                           </p>
                         </div>
-                        <p className="text-sm text-gray-600">
-                          {notification.message}
-                        </p>
-                        {!notification.patientIsRead && (
-                          <span className="inline-block mt-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                            Chưa đọc
-                          </span>
-                        )}
                       </div>
                     </div>
-                  </div>
-                ))
-              ) : (
-                <div className="p-6 text-center">
-                  <p className="text-gray-500">Không có thông báo nào</p>
+                  ))}
                 </div>
+              ) : (
+                <p className="text-gray-500 text-center">Không có thông báo mới</p>
               )}
               {notifications.length > 5 && (
-                <div className="p-4 text-center">
-                  <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                    Xem tất cả thông báo
-                  </button>
+                <div className="pt-3 text-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-blue-600 hover:bg-blue-50"
+                    onClick={toggleShowAllNotifications}
+                  >
+                    {showAllNotifications 
+                      ? 'Thu gọn' 
+                      : `Xem thêm ${notifications.length - 5} thông báo`
+                    }
+                  </Button>
                 </div>
               )}
             </div>

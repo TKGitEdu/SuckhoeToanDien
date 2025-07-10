@@ -406,16 +406,16 @@ const DoctorAppointments = () => {
       return;
     }
     
-    // Tạo giá trị mặc định cho modal
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const defaultDateStr = format(tomorrow, 'yyyy-MM-dd');
+    // Tạo giá trị mặc định cho modal - sử dụng ngày hiện tại của lịch hẹn
+    // Chuyển đổi từ định dạng dd/MM/yyyy sang yyyy-MM-dd cho input date
+    const currentDateParts = appointmentToReschedule.date.split('/'); // [dd, MM, yyyy]
+    const currentDateForInput = `${currentDateParts[2]}-${currentDateParts[1]}-${currentDateParts[0]}`; // yyyy-MM-dd
     
     // Cập nhật thông tin cho modal
     setRescheduleInfo({
       appointmentId: appointmentId,
       patientName: appointmentToReschedule.patientName,
-      newDate: defaultDateStr,
+      newDate: currentDateForInput, // Sử dụng ngày hiện tại của lịch hẹn
       slotId: slots.length > 0 ? slots[0].slotId : "",
       note: "Lịch hẹn đã được lên lịch lại bởi bác sĩ"
     });
@@ -1124,7 +1124,7 @@ const DoctorAppointments = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Ngày mới (yyyy-MM-dd)
+                   Tháng/Ngày mới {/* Ngày mới (yyyy-MM-dd) */}
                 </label>
                 <input
                   type="date"

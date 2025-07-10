@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { getDoctorBookingsbyUserId, getDoctorNotifications, markNotificationAsRead, getDoctorExaminations, getDoctorTreatmentPlans } from "../../api/doctorApi/dashboardAPI";
+import { getDoctorBookingsbyUserId, getDoctorNotifications, markNotificationAsRead, readAllNotifications, getDoctorExaminations, getDoctorTreatmentPlans } from "../../api/doctorApi/dashboardAPI";
 import type { DoctorNotification, DoctorExamination, TreatmentPlan } from "../../api/doctorApi/dashboardAPI";
 import { Button } from "../../components/ui/button";
 import { Bell, CheckCircle } from "lucide-react";
@@ -52,6 +52,8 @@ const Dashboard: React.FC = () => {
   const [examinationShow, setExaminationShow] = useState<DoctorExamination[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAllNotifications, setShowAllNotifications] = useState<boolean>(false);
+  const [expandedNotifications, setExpandedNotifications] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchData = async () => {
@@ -95,7 +97,7 @@ const Dashboard: React.FC = () => {
               const examinationsResponse = await getDoctorExaminations(parsedUserInfo.doctor.doctorId);
               // Lọc các buổi khám có trạng thái đang chờ kết quả
               const pendingExaminations = examinationsResponse.filter(exam => 
-                exam.status === "in-progress" || exam.status === "Đang chờ" || exam.status === "completed" || exam.status === "Hoàn thành"
+                exam.status === "in-progress" || exam.status === "completed" || exam.status === "pending" || exam.status === "cancelled"
               );
               setExaminationShow(pendingExaminations);
               
@@ -167,6 +169,38 @@ const Dashboard: React.FC = () => {
       }
     } catch (err) {
       setError("Không thể cập nhật thông báo.");
+    }
+  };
+
+  // Function to toggle expanded state of a notification
+  const toggleNotificationExpansion = (notificationId: string) => {
+    setExpandedNotifications(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(notificationId)) {
+        newSet.delete(notificationId);
+      } else {
+        newSet.add(notificationId);
+      }
+      return newSet;
+    });
+  };
+
+  // Function to toggle showing all notifications
+  const toggleShowAllNotifications = () => {
+    setShowAllNotifications(prev => !prev);
+  };
+
+  // Function to mark all notifications as read
+  const handleReadAllNotifications = async () => {
+    try {
+      const success = await readAllNotifications();
+      if (success && userInfo?.userId) {
+        // Refresh notifications after marking all as read
+        const updatedNotifications = await getDoctorNotifications(userInfo.userId);
+        setNotifications(updatedNotifications);
+      }
+    } catch (err) {
+      setError("Không thể đánh dấu tất cả thông báo đã đọc.");
     }
   };
 
@@ -322,58 +356,98 @@ const Dashboard: React.FC = () => {
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-medium">Thông báo</h2>
-            <div className="relative">
-              <Bell className="h-5 w-5 text-gray-500" />
+            <div className="flex items-center space-x-2">
               {notifications.filter(n => !n.doctorIsRead).length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                  {notifications.filter(n => !n.doctorIsRead).length}
-                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-blue-600 hover:bg-blue-50"
+                  onClick={handleReadAllNotifications}
+                >
+                  Đọc tất cả
+                </Button>
               )}
+              <div className="relative">
+                <Bell className="h-5 w-5 text-gray-500" />
+                {notifications.filter(n => !n.doctorIsRead).length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    {notifications.filter(n => !n.doctorIsRead).length}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="max-h-96 overflow-y-auto">
             {notifications.length > 0 ? (
               <div className="divide-y divide-gray-100">
-                {notifications.slice(0, 5).map((notification) => (
+                {(showAllNotifications ? notifications : notifications.slice(0, 5)).map((notification) => (
                   <div 
                     key={notification.notificationId} 
                     className={`flex items-start justify-between py-3 ${!notification.doctorIsRead ? 'bg-blue-50' : ''} cursor-pointer hover:bg-gray-50 rounded-lg px-2`}
                     onClick={() => !notification.doctorIsRead && handleMarkNotificationAsRead(notification.notificationId)}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{notification.message}</p>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 mr-2">
+                          <div 
+                            className={`text-sm font-medium text-gray-900 ${
+                              expandedNotifications.has(notification.notificationId) ? '' : 'overflow-hidden'
+                            }`}
+                            style={{
+                              display: expandedNotifications.has(notification.notificationId) ? 'block' : '-webkit-box',
+                              WebkitLineClamp: expandedNotifications.has(notification.notificationId) ? 'unset' : 2,
+                              WebkitBoxOrient: 'vertical',
+                              lineHeight: '1.4em',
+                              maxHeight: expandedNotifications.has(notification.notificationId) ? 'none' : '2.8em'
+                            }}
+                          >
+                            {notification.messageForDoctor}
+                          </div>
+                          {notification.messageForDoctor.length > 80 && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleNotificationExpansion(notification.notificationId);
+                              }}
+                              className="text-xs text-blue-600 hover:text-blue-800 mt-1 focus:outline-none"
+                            >
+                              {expandedNotifications.has(notification.notificationId) ? 'Thu gọn' : 'Xem thêm'}
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end ml-2">
+                          <span
+                            className={`inline-block px-2 py-1 text-xs font-medium rounded-full mb-1 ${
+                              notification.type === "appointment" ? "bg-blue-100 text-blue-800" : 
+                              notification.type === "test-result" ? "bg-yellow-100 text-yellow-800" : 
+                              "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {notification.type}
+                          </span>
+                          {!notification.doctorIsRead && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-1 h-auto"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMarkNotificationAsRead(notification.notificationId);
+                              }}
+                            >
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                       <div className="mt-1">
                         <p className="text-xs text-gray-500">
                           {new Date(notification.time).toLocaleString('vi-VN')}
                         </p>
-                        <p className="text-xs text-gray-500 truncate">
+                        <p className="text-xs text-gray-500">
                           BN: {notification.patientName}
                         </p>
                       </div>
-                    </div>
-                    <div className="flex flex-col items-end ml-2">
-                      <span
-                        className={`inline-block px-2 py-1 text-xs font-medium rounded-full mb-1 ${
-                          notification.type === "appointment" ? "bg-blue-100 text-blue-800" : 
-                          notification.type === "test-result" ? "bg-yellow-100 text-yellow-800" : 
-                          "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {notification.type}
-                      </span>
-                      {!notification.doctorIsRead && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="p-1 h-auto"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMarkNotificationAsRead(notification.notificationId);
-                          }}
-                        >
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        </Button>
-                      )}
                     </div>
                   </div>
                 ))}
@@ -387,8 +461,12 @@ const Dashboard: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   className="text-blue-600 hover:bg-blue-50"
+                  onClick={toggleShowAllNotifications}
                 >
-                  Xem thêm {notifications.length - 5} thông báo
+                  {showAllNotifications 
+                    ? 'Thu gọn' 
+                    : `Xem thêm ${notifications.length - 5} thông báo`
+                  }
                 </Button>
               </div>
             )}
@@ -528,15 +606,25 @@ const Dashboard: React.FC = () => {
                   <td>{new Date(examination.examinationDate).toLocaleDateString('vi-VN')}</td>
                   <td>
                     <span
+                      // examination.status chỉ có 3 kiểu dữ liệu "pending", "in-progress", "completed"
                       className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                        examination.status === "pending" || examination.status === "Đang chờ" || examination.status === "Chờ kết quả"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : examination.status === "in-progress" || examination.status === "Đang xử lý"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-green-100 text-green-800"
+                        examination.status === "pending" 
+                          ? "bg-yellow-100 text-yellow-800"
+                          : examination.status === "in-progress"
+                          ? "bg-blue-100 text-blue-800"
+                          : examination.status === "completed"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {examination.status}
+                      {examination.status === "pending" 
+                        ? "Đang chờ"
+                        : examination.status === "in-progress"
+                        ? "Đang xử lý" 
+                        : examination.status === "completed"
+                        ? "Hoàn thành"
+                        : examination.status
+                      }
                     </span>
                   </td>
                   <td>
