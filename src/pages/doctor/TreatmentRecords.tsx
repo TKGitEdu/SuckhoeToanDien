@@ -1036,8 +1036,25 @@ const location = useLocation();
                           </Button>
                         </div>
                         
-                        {stepFormData.length > 0 ? (
+                        {stepFormData.length > 0 || treatmentSteps.length > 0 ? (
                           <div className="space-y-4">
+                            {/* Nếu stepFormData rỗng nhưng có treatmentSteps, khởi tạo stepFormData */}
+                            {stepFormData.length === 0 && treatmentSteps.length > 0 && (
+                              <div className="mb-4">
+                                <Button
+                                  onClick={() => {
+                                    setStepFormData(treatmentSteps.map(step => ({
+                                      stepOrder: step.stepOrder,
+                                      stepName: step.stepName
+                                    })));
+                                  }}
+                                  className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                  Chỉnh sửa các bước hiện tại
+                                </Button>
+                              </div>
+                            )}
+                            
                             {stepFormData.map((step, index) => (
                               <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
                                 <div className="flex items-center gap-4">
@@ -1058,7 +1075,7 @@ const location = useLocation();
                                       Tên bước
                                     </label>
                                     <input
-                                      type="text"
+                                      type="text" 
                                       value={step.stepName}
                                       onChange={(e) => updateStep(index, 'stepName', e.target.value)}
                                       className="w-full border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1079,21 +1096,23 @@ const location = useLocation();
                               </div>
                             ))}
                             
-                            <div className="flex gap-4 pt-4">
-                              <Button
-                                onClick={handleUpdateTreatmentSteps}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700"
-                              >
-                                Cập nhật các bước
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                onClick={() => setActiveTab('overview')}
-                                className="flex-1 border-gray-300 text-gray-700"
-                              >
-                                Hủy
-                              </Button>
-                            </div>
+                            {stepFormData.length > 0 && (
+                              <div className="flex gap-4 pt-4">
+                                <Button
+                                  onClick={handleUpdateTreatmentSteps}
+                                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                                >
+                                  Cập nhật các bước
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  onClick={() => setActiveTab('overview')}
+                                  className="flex-1 border-gray-300 text-gray-700"
+                                >
+                                  Hủy
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <div className="text-center py-8">
