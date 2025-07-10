@@ -16,7 +16,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
-import { getDoctorTreatmentPlans, flexibleUpdateTreatmentPlan } from "../../api/doctorApi/dashboardAPI";
+import { getDoctorTreatmentPlans, updateTreatmentPlanStandard } from "../../api/doctorApi/dashboardAPI";
 import { getTreatmentSteps, createOrUpdateTreatmentSteps } from "../../api/doctorApi/treatmentRecordAPI";
 import type { TreatmentPlan, UpdateTreatmentPlanRequest } from "../../api/doctorApi/dashboardAPI";
 import type { TreatmentStep, CreateStepRequest } from "../../api/doctorApi/treatmentRecordAPI";
@@ -67,7 +67,7 @@ const DoctorTreatmentRecords = () => {
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [doctorInfo, setDoctorInfo] = useState<UserInfo | null>(null);
   const [updateFormData, setUpdateFormData] = useState<Partial<UpdateTreatmentPlanRequest>>({});
-  const location = useLocation();
+const location = useLocation();
   
   // Get treatmentPlanId from URL query parameters
   const queryParams = new URLSearchParams(location.search);
@@ -189,18 +189,20 @@ const DoctorTreatmentRecords = () => {
   };
 
   // Load treatment steps for selected record
+  // NOTE: Hàm này load tất cả steps cho treatment plan được chọn
+  // và cập nhật vào allTreatmentSteps để dùng cho dropdown status
   const loadTreatmentSteps = async (treatmentPlanId: string) => {
     try {
       const stepsResponse = await getTreatmentSteps(treatmentPlanId);
       setTreatmentSteps(stepsResponse.steps);
       
-      // Update allTreatmentSteps state
+      // Update allTreatmentSteps state để các component khác có thể dùng
       setAllTreatmentSteps(prev => ({
         ...prev,
         [treatmentPlanId]: stepsResponse.steps
       }));
       
-      // Initialize form data with existing steps
+      // Initialize form data with existing steps cho tab "Các bước điều trị"
       setStepFormData(stepsResponse.steps.map(step => ({
         stepOrder: step.stepOrder,
         stepName: step.stepName
@@ -287,21 +289,24 @@ const DoctorTreatmentRecords = () => {
         return;
       }
 
-      // Create base update data with required fields
+      // IMPORTANT: status field sẽ chứa stepName được chọn từ dropdown
+      // Backend expect status = stepName của step hiện tại, không phải trạng thái chung
       const updateData: UpdateTreatmentPlanRequest = {
         treatmentPlanId: selectedRecord,
         doctorId: doctorId,
         method: updateFormData.method?.trim() || currentRecord.method,
+        patientDetailId: currentRecord.patientDetailId,
         startDate: startDate,
         endDate: endDate,
         treatmentDescription: updateFormData.treatmentDescription?.trim() || currentRecord.treatmentDescription,
-        status: updateFormData.status?.trim() || currentRecord.status,
-        giaidoan: updateFormData.giaidoan?.trim() || "",
+        status: updateFormData.status?.trim() || currentRecord.status, // Đây là stepName được chọn
+        giaidoan: updateFormData.giaidoan?.trim() || currentRecord.giaidoan || "",
+        ghiChu: updateFormData.ghiChu?.trim() || currentRecord.ghiChu || undefined,
       };
 
       console.log("Sending update request:", updateData);
 
-      const success = await flexibleUpdateTreatmentPlan(updateData);
+      const success = await updateTreatmentPlanStandard(updateData);
 
       if (success) {
         console.log("Treatment plan updated successfully");
@@ -329,13 +334,24 @@ const DoctorTreatmentRecords = () => {
   };
 
   // Calculate progress percentage based on treatment steps completion
+  // NOTE: Progress được tính dựa trên status hiện tại (step name) và tổng số steps
+  // Vì status thực chất là tên của step hiện tại, ta có thể dùng nó để ước tính tiến độ
   const getProgressPercentage = (status: string, treatmentPlanId?: string, steps?: TreatmentStep[]) => {
     // If we have step data for this specific treatment plan, calculate based on steps
     if (treatmentPlanId && steps && steps.length > 0) {
       // Sort steps by stepOrder to get proper sequence
       const sortedSteps = [...steps].sort((a, b) => a.stepOrder - b.stepOrder);
       
-      // Calculate progress based on status and number of steps
+      // Tìm step hiện tại dựa trên status (status = stepName)
+      const currentStepIndex = sortedSteps.findIndex(step => step.stepName === status);
+      
+      if (currentStepIndex >= 0) {
+        // Tính progress dựa trên vị trí của step hiện tại
+        const progressPercentage = Math.round(((currentStepIndex + 1) / sortedSteps.length) * 100);
+        return Math.min(100, Math.max(0, progressPercentage));
+      }
+      
+      // Fallback: nếu không tìm thấy step, dùng logic cũ
       let completedSteps = 0;
       const totalSteps = sortedSteps.length;
       
@@ -394,6 +410,38 @@ const DoctorTreatmentRecords = () => {
       'cancelled': 'bg-red-100 text-red-800',
     };
     return statusColorMap[status.toLowerCase()] || 'bg-gray-100 text-gray-800';
+  };
+
+  // Get stage display text
+  const getStageDisplayText = (giaidoan: string | null | undefined) => {
+    if (!giaidoan) return 'Chưa xác định giai đoạn';
+    
+    const stageMap: { [key: string]: string } = {
+      'completed': 'Hoàn thành',
+      'in-progress': 'Đang tiến hành',
+      'cancelled': 'Đã hủy',
+    };
+    
+    return stageMap[giaidoan.toLowerCase()] || giaidoan;
+  };
+
+  // Helper function to get current treatment step for a plan
+  // Helper function to get all available steps for dropdown
+  // NOTE: Theo logic backend, cột 'status' trong treatment plan thực chất chứa tên của một step cụ thể
+  // (ví dụ: "Kích thích nhẹ buồng trứng") chứ không phải trạng thái chung như "Đang điều trị", "Hoàn thành"
+  // Hàm này trả về danh sách tất cả steps có thể để user chọn làm status hiện tại
+  const getAvailableSteps = (treatmentPlanId: string): Array<{value: string, label: string}> => {
+    const steps = allTreatmentSteps[treatmentPlanId];
+    if (!steps || steps.length === 0) {
+      return [];
+    }
+    
+    // Sắp xếp steps theo thứ tự stepOrder và format cho dropdown
+    const sortedSteps = [...steps].sort((a, b) => a.stepOrder - b.stepOrder);
+    return sortedSteps.map(step => ({
+      value: step.stepName, // Chỉ lưu stepName vì backend expect status = stepName
+      label: `${step.stepOrder}. ${step.stepName}`
+    }));
   };
 
   if (loading) {
@@ -546,6 +594,9 @@ const DoctorTreatmentRecords = () => {
                       const newSelectedId = record.treatmentPlanId === selectedRecord ? null : record.treatmentPlanId;
                       setSelectedRecord(newSelectedId);
                       if (newSelectedId) {
+                        // Reset form data
+                        setUpdateFormData({});
+                        
                         // Use existing steps from allTreatmentSteps or load fresh
                         if (allTreatmentSteps[newSelectedId]) {
                           setTreatmentSteps(allTreatmentSteps[newSelectedId]);
@@ -741,20 +792,33 @@ const DoctorTreatmentRecords = () => {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                         <div className="bg-gray-50 p-4 rounded-lg">
-                          <h4 className="text-sm font-medium text-gray-700 mb-2">Trạng thái hiện tại</h4>
-                          <p className="text-gray-900">{recordDetails.status}</p>
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Giai đoạn hiện tại</h4>
+                          <p className="text-gray-900">{getStageDisplayText(recordDetails.giaidoan)}</p>
                         </div>
                         <div className="bg-blue-50 p-4 rounded-lg">
                           <h4 className="text-sm font-medium text-gray-700 mb-2">Phương pháp điều trị</h4>
                           <p className="text-gray-900">{recordDetails.method}</p>
+                        </div>
+                        <div className="bg-green-50 p-4 rounded-lg">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Trạng thái (Bước điều trị hiện tại)</h4>
+                          {/* 
+                            Hiển thị status hiện tại - đây chính là tên của step hiện tại 
+                            Ví dụ: "Kích thích nhẹ buồng trứng" thay vì "Đang điều trị"
+                          */}
+                          <p className="text-gray-900">{recordDetails.status}</p>
                         </div>
                       </div>
                       
                       <div className="bg-yellow-50 p-4 rounded-lg mb-6">
                         <h4 className="text-sm font-medium text-gray-700 mb-2">Mô tả điều trị</h4>
                         <p className="text-gray-700">{recordDetails.treatmentDescription || 'Chưa có mô tả'}</p>
+                      </div>
+                      
+                      <div className="bg-purple-50 p-4 rounded-lg mb-6">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Ghi chú của bác sĩ</h4>
+                        <p className="text-gray-700">{recordDetails.ghiChu || 'Chưa có ghi chú'}</p>
                       </div>
                       
                       <div className="flex flex-col md:flex-row gap-4">
@@ -765,9 +829,13 @@ const DoctorTreatmentRecords = () => {
                           <FileBarChart className="mr-2 h-4 w-4" />
                           Cập nhật kế hoạch
                         </Button>
-                        <Button variant="outline" className="flex-1 border-gray-300 text-gray-700">
+                        <Button 
+                          variant="outline" 
+                          className="flex-1 border-gray-300 text-gray-700"
+                          onClick={() => setActiveTab('treatmentstep')}
+                        >
                           <ListTodo className="mr-2 h-4 w-4" />
-                          Thêm ghi chú
+                          Quản lý bước điều trị
                         </Button>
                       </div>
                     </div>
@@ -828,18 +896,31 @@ const DoctorTreatmentRecords = () => {
                         
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Trạng thái
+                            Trạng thái (Bước điều trị hiện tại)
                           </label>
+                          {/* 
+                            NOTE: Dropdown này hiển thị tất cả steps có thể, user chọn step name làm status
+                            Backend logic: treatmentPlan.status === stepName của step hiện tại
+                            Khi update, ta gửi stepName được chọn làm status mới
+                          */}
                           <select
                             value={updateFormData.status || recordDetails.status}
-                            onChange={(e) => setUpdateFormData({...updateFormData, status: e.target.value})}
+                            onChange={(e) => {
+                              setUpdateFormData({...updateFormData, status: e.target.value});
+                              clearMessages();
+                            }}
                             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
-                            <option value="pending">Chờ xử lý</option>
-                            <option value="in-progress">Đang điều trị</option>
-                            <option value="completed">Hoàn thành</option>
-                            <option value="cancelled">Hủy bỏ</option>
+                            <option value="">Chọn bước điều trị</option>
+                            {getAvailableSteps(recordDetails.treatmentPlanId).map((step) => (
+                              <option key={step.value} value={step.value}>{step.label}</option>
+                            ))}
                           </select>
+                          {getAvailableSteps(recordDetails.treatmentPlanId).length === 0 && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Chưa có bước điều trị. Vui lòng thêm ở tab "Các bước điều trị"
+                            </p>
+                          )}
                         </div>
                         
                         <div>
@@ -859,15 +940,33 @@ const DoctorTreatmentRecords = () => {
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Giai đoạn
                           </label>
-                          <input
-                            type="text"
-                            value={updateFormData.giaidoan || ''}
+                          <select
+                            value={updateFormData.giaidoan || recordDetails.giaidoan || ''}
                             onChange={(e) => setUpdateFormData({...updateFormData, giaidoan: e.target.value})}
                             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Nhập giai đoạn hiện tại..."
+                          >
+                            <option value="">Chọn giai đoạn</option>
+                            <option value="completed">Hoàn thành</option>
+                            <option value="in-progress">Đang tiến hành</option>
+                            <option value="cancelled">Đã hủy</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ghi chú
+                          </label>
+                          <textarea
+                            value={updateFormData.ghiChu || recordDetails.ghiChu || ''}
+                            onChange={(e) => setUpdateFormData({...updateFormData, ghiChu: e.target.value})}
+                            rows={4}
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Nhập ghi chú cho kế hoạch điều trị..."
                           />
                         </div>
-                        
+
+
+
                         <div className="flex gap-4 pt-4">
                           <Button
                             onClick={handleUpdateTreatmentPlan}
@@ -877,7 +976,10 @@ const DoctorTreatmentRecords = () => {
                           </Button>
                           <Button 
                             variant="outline" 
-                            onClick={() => setActiveTab('overview')}
+                            onClick={() => {
+                              setActiveTab('overview');
+                              setUpdateFormData({});
+                            }}
                             className="flex-1 border-gray-300 text-gray-700"
                           >
                             Hủy

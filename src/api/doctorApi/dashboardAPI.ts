@@ -160,6 +160,8 @@ export interface TreatmentPlan {
   status: string;
   treatmentDescription: string;
   patientDetailName: string;
+  giaidoan: string;
+  ghiChu: string; // bác sĩ ghi chú thêm cho kế hoạch điều trị
 }
 
 // Lấy danh sách kế hoạch điều trị của bác sĩ
@@ -203,20 +205,23 @@ export const updateTreatmentPlan = async (treatmentPlanId: string, data: Partial
 //   "giaidoan": "string"
 // }'
 
-// tạo xong thì có thêm hàm cập nhật nhiều khi bác sĩ ông quên mấy các description, method, giaidoan nên sửa thêm
+// tạo xong thì có thêm hàm cập nhật nhiều khi bác sĩ ông quên mấy các description, method, giaidoan,  ghi chú, nên sửa thêm
 // curl -X 'PUT' \
-//   'https://localhost:7147/api/DoctorDashBoard/treatmentplan/flexible-update' \
+//   'https://localhost:7147/api/DoctorDashBoard/treatmentplan/update' \
 //   -H 'accept: */*' \
+//   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiZG9jdG9yMiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiVVNSX0RPQzIiLCJqdGkiOiIxNmQxM2JmNS0zOWQ4LTQ3ZWYtYmY3OC0xYjkzMjRiY2E2YmUiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJEb2N0b3IiLCJleHAiOjE3NTIxMTM1OTIsImlzcyI6IkluZmVydGlsaXR5VHJlYXRtZW50TWFuYWdlbWVudCIsImF1ZCI6IkluZmVydGlsaXR5VHJlYXRtZW50TWFuYWdlbWVudENsaWVudCJ9.WkA_ZNk-IewiFutlL8cYYs5LFOJE6xRFwukdKt4hUf0' \
 //   -H 'Content-Type: application/json' \
 //   -d '{
 //   "treatmentPlanId": "string",
 //   "doctorId": "string",
 //   "method": "string",
-//   "startDate": "2025-07-07",
-//   "endDate": "2025-07-07",
-//   "treatmentDescription": "string",
+//   "patientDetailId": "string",
+//   "startDate": "2025-07-10",
+//   "endDate": "2025-07-10",
 //   "status": "string",
-//   "giaidoan": "string"
+//   "treatmentDescription": "string",
+//   "giaidoan": "string",
+//   "ghiChu": "string"
 // }'
 
 // Interface cho việc tạo treatment plan mới
@@ -230,6 +235,7 @@ export interface CreateTreatmentPlanRequest {
   status: string;
   treatmentDescription: string;
   giaidoan: string;
+  ghiChu?: string; // Bác sĩ ghi chú thêm cho kế hoạch điều trị
 }
 
 // Interface cho việc cập nhật treatment plan
@@ -237,11 +243,13 @@ export interface UpdateTreatmentPlanRequest {
   treatmentPlanId: string;
   doctorId: string;
   method: string;
+  patientDetailId: string;
   startDate: string;
   endDate: string;
   treatmentDescription: string;
   status: string;
   giaidoan: string;
+  ghiChu?: string; // Bác sĩ ghi chú thêm cho kế hoạch điều trị
 }
 
 // Tạo treatment plan mới cho bệnh nhân
@@ -264,6 +272,37 @@ export const flexibleUpdateTreatmentPlan = async (data: UpdateTreatmentPlanReque
     return response.status === 200;
   } catch (error) {
     console.error('Lỗi khi cập nhật kế hoạch điều trị:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Response data:', error.response?.data);
+      console.error('Status code:', error.response?.status);
+      
+      // Throw error with details for better error handling
+      if (error.response?.status === 400) {
+        throw new Error(`Dữ liệu không hợp lệ: ${error.response?.data?.message || 'Vui lòng kiểm tra lại thông tin'}`);
+      } else if (error.response?.status === 404) {
+        throw new Error('Không tìm thấy kế hoạch điều trị');
+      } else if (error.response?.status === 401) {
+        throw new Error('Bạn không có quyền thực hiện thao tác này');
+      } else {
+        throw new Error(`Lỗi server: ${error.response?.status}`);
+      }
+    }
+    throw error;
+  }
+};
+
+// Cập nhật treatment plan sử dụng endpoint chuẩn 
+// Sử dụng API: PUT /api/DoctorDashBoard/treatmentplan/update
+// Yêu cầu tất cả các trường: treatmentPlanId, doctorId, method, patientDetailId, 
+// startDate, endDate, status, treatmentDescription, giaidoan, ghiChu
+export const updateTreatmentPlanStandard = async (data: UpdateTreatmentPlanRequest): Promise<boolean> => {
+  try {
+    console.log('Sending standard update request:', data);
+    const response = await dashboardAxios.put('/api/DoctorDashBoard/treatmentplan/update', data);
+    console.log('Standard update response:', response.data);
+    return response.status === 200;
+  } catch (error) {
+    console.error('Lỗi khi cập nhật kế hoạch điều trị (standard):', error);
     if (axios.isAxiosError(error)) {
       console.error('Response data:', error.response?.data);
       console.error('Status code:', error.response?.status);
