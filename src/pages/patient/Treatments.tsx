@@ -1,14 +1,12 @@
 // src/components/PatientTreatments.tsx
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   CalendarClock,
   Clock,
   CheckCircle,
   AlertCircle,
-  ChevronLeft,
-  ChevronRight,
   Search,
   Pill,
   Syringe,
@@ -19,48 +17,96 @@ import {
   Microscope,
   Bookmark,
   BarChart,
-  Info
+  Info,
+  ArrowLeftCircle
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import treatmentPlanAPI from "../../api/patientApi/treatmentPlanAPI";
-import type { TreatmentPlan, TreatmentProcess } from "../../api/patientApi/treatmentPlanAPI";
-import { bookingApi } from "../../api/patientApi/bookingAPI";
-import type { Booking } from "../../api/patientApi/bookingAPI";
+import type { TreatmentPlan, Medication as APIMedication, TreatmentPlanBooking, Examination, TreatmentStep } from "../../api/patientApi/treatmentPlanAPI";
 
-// Interface cho dữ liệu điều trị (tương tự mock data)
+// Interface cho dữ liệu điều trị hiển thị trong component
 interface Medication {
-  name: string;
-  dosage: string;
-  frequency: string;
-  startDate: string;
-  endDate: string;
-  instructions: string;
+  drugType: string;
+  drugName: string;
+  description: string;
 }
 
-interface Appointment {
+// Hàm ánh xạ API Medication sang component Medication
+const mapAPIMedicationToMedication = (apiMedication: APIMedication): Medication => {
+  return {
+    drugType: apiMedication.drugType,
+    drugName: apiMedication.drugName,
+    description: apiMedication.description
+  };
+};
+
+// Hàm ánh xạ TreatmentPlanBooking sang Appointment
+const mapTreatmentPlanBookingToAppointment = (booking: TreatmentPlanBooking): Appointment => {
+  return {
+    id: booking.bookingId,
+    date: new Date(booking.dateBooking).toLocaleDateString('vi-VN'),
+    time: booking.slotId || "N/A", // Có thể cần mapping slot thành thời gian
+    purpose: booking.description || "Tư vấn điều trị",
+    status: booking.status.toLowerCase(),
+    note: booking.note,
+    slotName: booking.slotName || "Không xác định" // Thêm slotName nếu cần
+  };
+};
+
+// Hàm ánh xạ Examination sang TestResult
+const mapExaminationToTestResult = (examination: Examination): TestResult => {
+  return {
+    id: examination.examinationId,
+    date: new Date(examination.examinationDate).toLocaleDateString('vi-VN'),
+    type: examination.examinationDescription.includes('IVF') ? 'Khám IVF' : 
+          examination.examinationDescription.includes('IUI') ? 'Khám IUI' : 'Khám tổng quát',
+    result: examination.result,
+    details: examination.examinationDescription,
+    status: examination.status,
+    note: examination.note
+  };
+};
+
+interface Appointment { // là booking
   id: string;
   date: string;
   time: string;
   purpose: string;
   status: string;
+  note?: string;
+  slotName?: string; // Thêm slotName nếu cần
+}
+
+interface Examinations {
+  examinationId: string;
+  doctorId: string;
+  patientId: string;
+  bookingId: string;
+  examinationDate: string;
+  examinationDescription: string;
+  status: string;
+  result: string;
+  createAt: string;
+  note: string;
 }
 
 interface TestResult {
+  id: string;
   date: string;
   type: string;
   result: string;
   details: string;
+  status: string;
+  note: string;
 }
 
 interface Stage {
-  name: string;
-  startDate: string | null;
-  endDate: string | null;
-  status: string;
+  stepOrder: number;
+  stepName: string;
   description: string;
 }
 
-interface Treatment {
+interface Treatment { // chắc là treatmentplan
   id: string;
   type: string;
   startDate: string;
@@ -73,6 +119,7 @@ interface Treatment {
   nextDate?: string;
   notes: string;
   result?: string;
+  giaidoan: string; // Thêm trường giaidoan nếu cần
   medications: Medication[];
   appointments: Appointment[];
   testResults: TestResult[];
@@ -87,9 +134,35 @@ const PatientTreatments = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTreatment, setSelectedTreatment] = useState<Treatment | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [expandedStages, setExpandedStages] = useState<{ [key: number]: boolean }>({});
+  const navigate = useNavigate();
+  const { treatmentPlanId } = useParams(); // Lấy treatmentPlanId từ URL
 
-  // Hàm ánh xạ TreatmentPlan và Booking sang Treatment
-  const mapToTreatment = (plan: TreatmentPlan, bookings: Booking[]): Treatment => {
+  // Hàm toggle mô tả đầy đủ cho giai đoạn
+  const toggleStageDescription = (index: number) => {
+    setExpandedStages(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
+  // Hàm cắt ngắn mô tả
+  const truncateDescription = (text: string, maxLength: number = 150) => {
+    if (text.length <= maxLength) return text;
+    return text.slice(0, maxLength) + "...";
+  };
+
+// Hàm ánh xạ TreatmentStep sang Stage
+const mapTreatmentStepToStage = (treatmentStep: TreatmentStep): Stage => {
+  return {
+    stepOrder: treatmentStep.stepOrder,
+    stepName: treatmentStep.stepName,
+    description: treatmentStep.description
+  };
+};
+
+  // Hàm ánh xạ TreatmentPlan sang Treatment
+  const mapToTreatment = (plan: TreatmentPlan, medications: Medication[], appointments: Appointment[], testResults: TestResult[], steps: TreatmentStep[] = []): Treatment => {
     // Xác định tiến độ dựa trên trạng thái và số giai đoạn hoàn thành
     const completedProcesses = plan.treatmentProcesses.filter(p => p.status === "Completed").length;
     const totalProcesses = plan.treatmentProcesses.length;
@@ -99,29 +172,8 @@ const PatientTreatments = () => {
     const currentProcess = plan.treatmentProcesses.find(p => p.status === "InProgress");
     const nextProcess = plan.treatmentProcesses.find(p => p.status === "Pending");
 
-    // Ánh xạ bookings thành appointments
-    const appointments: Appointment[] = bookings
-      .filter(b => b.doctorId === plan.doctorId && b.dateBooking >= plan.startDate)
-      .map(b => ({
-        id: b.bookingId,
-        date: b.dateBooking,
-        time: b.slot?.startTime || "N/A",
-        purpose: b.description || b.service?.name || "Tư vấn",
-        status: b.examination?.status || "upcoming"
-      }));
-
-    // Dữ liệu giả cho medications, testResults (vì API không cung cấp)
-    const medications: Medication[] = []; // Cần API bổ sung
-    const testResults: TestResult[] = []; // Cần API bổ sung
-
-    // Ánh xạ treatmentProcesses thành stages
-    const stages: Stage[] = plan.treatmentProcesses.map(p => ({
-      name: p.method,
-      startDate: p.actualDate || p.scheduledDate,
-      endDate: p.status === "Completed" ? p.actualDate : null,
-      status: p.status === "InProgress" ? "current" : p.status === "Completed" ? "completed" : "upcoming",
-      description: p.result || `Giai đoạn ${p.method}`
-    }));
+    // Ánh xạ treatment steps thành stages
+    const stages: Stage[] = steps.map(step => mapTreatmentStepToStage(step));
 
     return {
       id: plan.treatmentPlanId,
@@ -139,7 +191,8 @@ const PatientTreatments = () => {
       medications,
       appointments,
       testResults,
-      stages
+      stages,
+      giaidoan: plan.giaidoan // Thêm trường giaidoan nếu cần
     };
   };
 
@@ -164,14 +217,66 @@ const PatientTreatments = () => {
         const treatmentPlans = await treatmentPlanAPI.getAllTreatmentPlansByPatient(patientId);
         console.log("Treatment Plans:", treatmentPlans);
 
-        // Lấy danh sách Booking
-        const bookings = await bookingApi.getMyBookings();
-        console.log("Bookings:", bookings);
+        // Lấy medications, bookings và examinations cho từng treatment plan
+        const treatmentPlansWithData = await Promise.all(
+          treatmentPlans.map(async (plan) => {
+            try {
+              // Fetch medications
+              const apiMedications = await treatmentPlanAPI.getMedicationsByTreatmentPlanId(plan.treatmentPlanId);
+              const medications = apiMedications.map(mapAPIMedicationToMedication);
+
+              // Fetch bookings từ treatment plan
+              const treatmentPlanBookings = await treatmentPlanAPI.getBookingsByTreatmentPlanId(plan.treatmentPlanId);
+              const appointments = treatmentPlanBookings.map(mapTreatmentPlanBookingToAppointment);
+
+              // Fetch examinations từ tất cả bookings
+              const allExaminations: Examinations[] = [];
+              for (const booking of treatmentPlanBookings) {
+                try {
+                  const examinations = await treatmentPlanAPI.getExaminationsByBooking(
+                    booking.bookingId, 
+                    booking.patientId, 
+                    booking.doctorId
+                  );
+                  allExaminations.push(...examinations);
+                } catch (error) {
+                  console.error(`Error fetching examinations for booking ${booking.bookingId}:`, error);
+                }
+              }
+              
+              const testResults = allExaminations.map(mapExaminationToTestResult);
+
+              // Fetch treatment steps
+              const treatmentSteps = await treatmentPlanAPI.getTreatmentStepsByTreatmentPlanId(plan.treatmentPlanId);
+
+              return { plan, medications, appointments, testResults, treatmentSteps };
+            } catch (error) {
+              console.error(`Error fetching data for plan ${plan.treatmentPlanId}:`, error);
+              return { plan, medications: [], appointments: [], testResults: [], treatmentSteps: [] };
+            }
+          })
+        );
 
         // Ánh xạ dữ liệu sang định dạng Treatment
-        const mappedTreatments = treatmentPlans.map(plan => mapToTreatment(plan, bookings));
+        const mappedTreatments = treatmentPlansWithData.map(({ plan, medications, appointments, testResults, treatmentSteps }) => 
+          mapToTreatment(plan, medications, appointments, testResults, treatmentSteps)
+        );
         setTreatments(mappedTreatments);
-        setSelectedTreatment(mappedTreatments[0] || null);
+        
+        // Ưu tiên hiển thị treatment plan từ URL nếu có
+        if (treatmentPlanId) {
+          const targetTreatment = mappedTreatments.find(treatment => treatment.id === treatmentPlanId);
+          if (targetTreatment) {
+            setSelectedTreatment(targetTreatment);
+            console.log(`Auto-selected treatment plan: ${treatmentPlanId}`);
+          } else {
+            console.warn(`Treatment plan with ID ${treatmentPlanId} not found`);
+            setSelectedTreatment(mappedTreatments[0] || null);
+          }
+        } else {
+          // Nếu không có ID từ URL, chọn treatment đầu tiên
+          setSelectedTreatment(mappedTreatments[0] || null);
+        }
       } catch (err) {
         setError("Không thể tải dữ liệu điều trị. Vui lòng thử lại sau.");
         console.error(err);
@@ -181,7 +286,7 @@ const PatientTreatments = () => {
     };
 
     fetchData();
-  }, []);
+  }, [treatmentPlanId]); // Thêm treatmentPlanId vào dependency array
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,15 +294,10 @@ const PatientTreatments = () => {
 
   // Filter treatments
   const filteredTreatments = treatments.filter(treatment => {
-    const matchesSearch = 
-      treatment.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      treatment.doctor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      treatment.id.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = 
-      activeFilter === "all" || 
-      treatment.status === activeFilter;
-    
+    const matchesSearch = treatment.id.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesFilter = activeFilter === "all" || treatment.giaidoan === activeFilter;
+
     return matchesSearch && matchesFilter;
   });
 
@@ -222,12 +322,16 @@ const PatientTreatments = () => {
     <div className="py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Quản lý quá trình điều trị</h1>
-          <Link to="/booking">
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              Đặt lịch tư vấn
-            </Button>
-          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Quản lý quá trình điều trị</h1>
+          </div>
+          <button
+            onClick={() => navigate(-1)}
+            className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          >
+            <ArrowLeftCircle className="h-5 w-5" />
+            Quay lại
+          </button>
         </div>
         
         {/* Filters and Search */}
@@ -310,28 +414,33 @@ const PatientTreatments = () => {
                     selectedTreatment?.id === treatment.id
                       ? 'border-blue-500 ring-2 ring-blue-200'
                       : 'border-gray-100'
+                  } ${
+                    treatmentPlanId === treatment.id 
+                      ? 'bg-blue-50 border-blue-300' 
+                      : ''
                   }`}
                   onClick={() => {
                     setSelectedTreatment(treatment);
                     setActiveTab("overview");
+                    setExpandedStages({}); // Reset expanded stages when switching treatments
                   }}
                 >
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        treatment.status === 'in-progress' 
+                        treatment.giaidoan === 'in-progress' 
                           ? 'bg-blue-100 text-blue-800' 
-                          : treatment.status === 'completed'
+                          : treatment.giaidoan === 'completed'
                             ? 'bg-green-100 text-green-800'
                             : 'bg-red-100 text-red-800'
                       }`}>
-                        {treatment.status === 'in-progress' 
-                          ? 'Đang thực hiện' 
-                          : treatment.status === 'completed'
+                        {treatment.giaidoan === 'in-progress'
+                          ? 'Đang thực hiện'
+                          : treatment.giaidoan === 'completed'
                             ? 'Đã hoàn thành'
                             : 'Đã hủy'}
                       </span>
-                      <span className="text-xs text-gray-500">{treatment.id}</span>
+                      
                     </div>
                     
                     <h3 className="text-lg font-semibold text-gray-900">Điều trị {treatment.type}</h3>
@@ -341,22 +450,6 @@ const PatientTreatments = () => {
                       <Calendar className="h-4 w-4 mr-1" />
                       <span>Bắt đầu: {treatment.startDate}</span>
                     </div>
-                    
-                    {treatment.status === 'in-progress' && (
-                      <div className="mt-3">
-                        <div className="flex justify-between mb-1 text-xs">
-                          <span className="font-medium text-gray-700">Tiến độ</span>
-                          <span className="font-medium text-gray-700">{treatment.progress}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div 
-                            className="bg-blue-600 h-1.5 rounded-full" 
-                            style={{ width: `${treatment.progress}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
-                    
                     {treatment.status === 'completed' && treatment.result && (
                       <div className="mt-3 text-sm">
                         <span className="font-medium text-gray-700">Kết quả: </span>
@@ -379,20 +472,20 @@ const PatientTreatments = () => {
                     <div className="flex justify-between items-center mb-4">
                       <div>
                         <h2 className="text-2xl font-bold text-gray-900">
-                          Điều trị {selectedTreatment.type} - {selectedTreatment.id}
+                          Điều trị {selectedTreatment.type}
                         </h2>
                         <p className="text-gray-600">Bác sĩ phụ trách: {selectedTreatment.doctor}</p>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        selectedTreatment.status === 'in-progress' 
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        selectedTreatment.giaidoan === 'in-progress' 
                           ? 'bg-blue-100 text-blue-800' 
-                          : selectedTreatment.status === 'completed'
+                          : selectedTreatment.giaidoan === 'completed'
                             ? 'bg-green-100 text-green-800'
                             : 'bg-red-100 text-red-800'
                       }`}>
-                        {selectedTreatment.status === 'in-progress' 
-                          ? 'Đang thực hiện' 
-                          : selectedTreatment.status === 'completed'
+                        {selectedTreatment.giaidoan === 'in-progress'
+                          ? 'Đang thực hiện'
+                          : selectedTreatment.giaidoan === 'completed'
                             ? 'Đã hoàn thành'
                             : 'Đã hủy'}
                       </span>
@@ -470,10 +563,13 @@ const PatientTreatments = () => {
                             : "text-gray-500 hover:text-gray-700"
                         }`}
                       >
-                        Kết quả xét nghiệm
+                        Kết quả khám bệnh
                       </button>
                       <button
-                        onClick={() => setActiveTab("stages")}
+                        onClick={() => {
+                          setActiveTab("stages");
+                          setExpandedStages({}); // Reset expanded stages when switching to stages tab
+                        }}
                         className={`py-3 px-6 font-medium text-sm focus:outline-none whitespace-nowrap ${
                           activeTab === "stages"
                             ? "border-b-2 border-blue-600 text-blue-600"
@@ -611,7 +707,7 @@ const PatientTreatments = () => {
                                   <TestTube className="h-5 w-5 text-blue-600" />
                                 </div>
                                 <div>
-                                  <p className="text-sm font-medium text-gray-900">Xét nghiệm</p>
+                                  <p className="text-sm font-medium text-gray-900">Kết quả khám</p>
                                   <p className="text-sm text-gray-600">{selectedTreatment.testResults.length} kết quả</p>
                                 </div>
                               </div>
@@ -632,36 +728,27 @@ const PatientTreatments = () => {
                               <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
                                 <div className="flex items-center mb-2">
                                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                                    {medication.name.includes('inject') || medication.instructions.includes('Tiêm') ? (
+                                    {medication.drugName.includes('inject') ? (
                                       <Syringe className="h-5 w-5 text-blue-600" />
                                     ) : (
                                       <Pill className="h-5 w-5 text-blue-600" />
                                     )}
                                   </div>
                                   <div>
-                                    <h4 className="text-lg font-medium text-gray-900">{medication.name}</h4>
-                                    <p className="text-gray-600">{medication.dosage}</p>
+                                    <h4 className="font-medium text-gray-900">{medication.drugName}</h4>
+                                    <p className="text-sm text-gray-500">{medication.drugType}</p>
                                   </div>
                                 </div>
                                 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                                   <div>
-                                    <p className="text-sm text-gray-500">Tần suất</p>
-                                    <p className="font-medium">{medication.frequency}</p>
+                                    <p className="text-sm text-gray-500">Loại thuốc</p>
+                                    <p className="font-medium">{medication.drugType}</p>
                                   </div>
                                   <div>
-                                    <p className="text-sm text-gray-500">Ngày bắt đầu</p>
-                                    <p className="font-medium">{medication.startDate}</p>
+                                    <p className="text-sm text-gray-500">Mô tả thuốc</p>
+                                    <p className="font-medium">{medication.description}</p>
                                   </div>
-                                  <div>
-                                    <p className="text-sm text-gray-500">Ngày kết thúc</p>
-                                    <p className="font-medium">{medication.endDate}</p>
-                                  </div>
-                                </div>
-                                
-                                <div className="mt-4 pt-3 border-t border-gray-100">
-                                  <p className="text-sm text-gray-500">Hướng dẫn sử dụng</p>
-                                  <p className="text-gray-700">{medication.instructions}</p>
                                 </div>
                               </div>
                             ))}
@@ -687,7 +774,7 @@ const PatientTreatments = () => {
                     {/* Appointments Tab */}
                     {activeTab === "appointments" && (
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Lịch hẹn</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Lịch hẹn điều trị</h3>
                         
                         {selectedTreatment.appointments.length > 0 ? (
                           <div className="space-y-4">
@@ -702,29 +789,44 @@ const PatientTreatments = () => {
                                       <h4 className="font-medium text-gray-900">{appointment.purpose}</h4>
                                       <div className="flex items-center mt-1 text-gray-500 text-sm">
                                         <Calendar className="h-4 w-4 mr-1" /> {appointment.date}
-                                        <Clock className="h-4 w-4 ml-3 mr-1" /> {appointment.time}
+                                        <Clock className="h-4 w-4 ml-3 mr-1" /> {appointment.time} : {appointment.slotName}
                                       </div>
+                                      {/* <p className="text-xs text-gray-400 mt-1">ID: {appointment.id}</p> */}
                                     </div>
                                   </div>
                                   
                                   <div>
                                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                      appointment.status === 'upcoming' 
-                                        ? 'bg-blue-100 text-blue-800' 
-                                        : appointment.status === 'completed'
-                                          ? 'bg-green-100 text-green-800'
-                                          : 'bg-red-100 text-red-800'
+                                      appointment.status === 'pending' 
+                                        ? 'bg-yellow-100 text-yellow-800' 
+                                        : appointment.status === 'confirmed'
+                                          ? 'bg-blue-100 text-blue-800'
+                                          : appointment.status === 'completed'
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-red-100 text-red-800'
                                     }`}>
-                                      {appointment.status === 'upcoming' 
-                                        ? 'Sắp tới' 
-                                        : appointment.status === 'completed'
-                                          ? 'Đã hoàn thành'
-                                          : 'Đã hủy'}
+                                      {appointment.status === 'pending' 
+                                        ? 'Chờ xác nhận' 
+                                        : appointment.status === 'confirmed'
+                                          ? 'Đã xác nhận'
+                                          : appointment.status === 'completed'
+                                            ? 'Đã hoàn thành'
+                                            : 'Đã hủy'}
                                     </span>
                                   </div>
                                 </div>
                                 
-                                {appointment.status === 'upcoming' && (
+                                {appointment.note && (
+                                  <div className="mt-3 pt-3 border-t border-gray-100">
+                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                      <p className="text-sm text-gray-600">
+                                        <span className="font-medium">Ghi chú:</span> {appointment.note}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
                                   <div className="mt-3 pt-3 border-t border-gray-100 flex justify-end">
                                     <Link to={`/patient/appointments`}>
                                       <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
@@ -737,7 +839,17 @@ const PatientTreatments = () => {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-gray-500">Không có thông tin về lịch hẹn.</p>
+                          <div className="text-center py-8">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                              <Calendar className="h-8 w-8 text-gray-400" />
+                            </div>
+                            <p className="text-gray-500 mb-4">Chưa có lịch hẹn nào cho kế hoạch điều trị này.</p>
+                            <Link to="/booking">
+                              <Button className="bg-blue-600 hover:bg-blue-700">
+                                Đặt lịch hẹn mới
+                              </Button>
+                            </Link>
+                          </div>
                         )}
                       </div>
                     )}
@@ -745,51 +857,75 @@ const PatientTreatments = () => {
                     {/* Test Results Tab */}
                     {activeTab === "test-results" && (
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Kết quả xét nghiệm</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Kết quả khám bệnh</h3>
                         
                         {selectedTreatment.testResults.length > 0 ? (
                           <div className="space-y-4">
-                            {selectedTreatment.testResults.map((result, index) => (
-                              <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                            {selectedTreatment.testResults.map((result) => (
+                              <div key={result.id} className="bg-white border border-gray-200 rounded-lg p-4">
                                 <div className="flex items-center mb-3">
                                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                                    {result.type.includes('Xét nghiệm') ? (
-                                      <TestTube className="h-5 w-5 text-blue-600" />
-                                    ) : result.type.includes('Siêu âm') ? (
-                                      <BarChart className="h-5 w-5 text-blue-600" />
-                                    ) : (
+                                    {result.type.includes('IVF') ? (
                                       <Microscope className="h-5 w-5 text-blue-600" />
+                                    ) : result.type.includes('IUI') ? (
+                                      <TestTube className="h-5 w-5 text-blue-600" />
+                                    ) : (
+                                      <BarChart className="h-5 w-5 text-blue-600" />
                                     )}
                                   </div>
-                                  <div>
-                                    <h4 className="font-medium text-gray-900">{result.type}</h4>
-                                    <p className="text-sm text-gray-500">{result.date}</p>
+                                  <div className="flex-1">
+                                    <div className="flex items-center justify-between">
+                                      <h4 className="font-medium text-gray-900">{result.type}</h4>
+                                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                        result.status === 'Hoàn thành'
+                                          ? 'bg-green-100 text-green-800'
+                                          : result.status === 'Đang thực hiện'
+                                            ? 'bg-blue-100 text-blue-800'
+                                            : 'bg-yellow-100 text-yellow-800'
+                                      }`}>
+                                        {result.status}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-gray-500 mt-1">{result.date}</p>
                                   </div>
                                 </div>
                                 
                                 <div className="mt-3">
-                                  <div className="flex items-center mb-2">
-                                    <span className="text-sm text-gray-500 mr-2">Kết quả:</span>
-                                    <span className={`font-medium ${
-                                      result.result === 'Tốt' || result.result === 'Bình thường' || result.result === 'Dương tính'
-                                        ? 'text-green-600'
-                                        : result.result === 'Cần theo dõi'
-                                          ? 'text-yellow-600'
-                                          : 'text-red-600'
-                                    }`}>
-                                      {result.result}
-                                    </span>
+                                  <div className="mb-3">
+                                    <span className="text-sm font-medium text-gray-700">Mô tả khám bệnh:</span>
+                                    <p className="text-sm text-gray-600 mt-1">{result.details}</p>
                                   </div>
                                   
-                                  <div className="bg-gray-50 p-3 rounded">
-                                    <p className="text-sm text-gray-700">{result.details}</p>
+                                  <div className="mb-3">
+                                    <span className="text-sm font-medium text-gray-700">Kết quả:</span>
+                                    <div className="bg-gray-50 p-3 rounded mt-1">
+                                      <p className="text-sm text-gray-700">{result.result}</p>
+                                    </div>
                                   </div>
+                                  
+                                  {result.note && (
+                                    <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-100">
+                                      <div className="flex items-start">
+                                        <Info className="h-4 w-4 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
+                                        <div>
+                                          <p className="text-sm font-medium text-yellow-800">Ghi chú từ bác sĩ:</p>
+                                          <p className="text-sm text-yellow-700 mt-1">{result.note}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <p className="text-gray-500">Không có thông tin về kết quả xét nghiệm.</p>
+                          <div className="text-center py-8">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                              <TestTube className="h-8 w-8 text-gray-400" />
+                            </div>
+                            <p className="text-gray-500 mb-4">Chưa có kết quả khám bệnh nào cho kế hoạch điều trị này.</p>
+                            <p className="text-sm text-gray-400">Kết quả khám sẽ được cập nhật sau mỗi lần thăm khám.</p>
+                          </div>
                         )}
                       </div>
                     )}
@@ -804,54 +940,66 @@ const PatientTreatments = () => {
                             <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200"></div>
                             
                             <div className="space-y-6">
-                              {selectedTreatment.stages.map((stage, index) => (
-                                <div key={index} className="relative flex items-start">
-                                  <div className={`absolute left-0 w-10 h-10 rounded-full flex items-center justify-center z-10 ${
-                                    stage.status === 'completed'
-                                      ? 'bg-green-100'
-                                      : stage.status === 'current'
-                                        ? 'bg-blue-100'
-                                        : 'bg-gray-100'
-                                  }`}>
-                                    {stage.status === 'completed' ? (
-                                      <CheckCircle className="h-5 w-5 text-green-600" />
-                                    ) : stage.status === 'current' ? (
-                                      <Clock className="h-5 w-5 text-blue-600" />
-                                    ) : (
-                                      <span className="h-2.5 w-2.5 bg-gray-400 rounded-full"></span>
-                                    )}
-                                  </div>
+                              {selectedTreatment.stages
+                                .sort((a, b) => a.stepOrder - b.stepOrder)
+                                .map((stage, index) => {
+                                  const isExpanded = expandedStages[index];
+                                  const shouldTruncate = stage.description.length > 150;
+                                  const displayDescription = isExpanded || !shouldTruncate 
+                                    ? stage.description 
+                                    : truncateDescription(stage.description);
                                   
-                                  <div className="ml-16">
-                                    <h4 className={`font-medium ${
-                                      stage.status === 'completed'
-                                        ? 'text-green-600'
-                                        : stage.status === 'current'
-                                          ? 'text-blue-600'
-                                          : 'text-gray-400'
-                                    }`}>
-                                      {stage.name}
-                                    </h4>
-                                    
-                                    <p className="text-gray-600 mt-1">{stage.description}</p>
-                                    
-                                    {(stage.startDate || stage.endDate) && (
-                                      <div className="flex flex-wrap gap-x-4 mt-2 text-sm text-gray-500">
-                                        {stage.startDate && (
-                                          <span>Bắt đầu: {stage.startDate}</span>
-                                        )}
-                                        {stage.endDate && (
-                                          <span>Kết thúc: {stage.endDate}</span>
-                                        )}
+                                  return (
+                                    <div key={index} className="relative flex items-start">
+                                      <div className="absolute left-0 w-10 h-10 rounded-full flex items-center justify-center z-10 bg-blue-100 border-2 border-white shadow-sm">
+                                        <span className="text-sm font-medium text-blue-600">{stage.stepOrder}</span>
                                       </div>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
+                                      
+                                      <div className="ml-16 bg-white border border-gray-200 rounded-lg p-4 shadow-sm w-full">
+                                        <h4 className="font-semibold text-blue-600 mb-2">
+                                          {stage.stepName}
+                                        </h4>
+                                        
+                                        <div className="text-gray-600 leading-relaxed">
+                                          <p className="whitespace-pre-wrap">{displayDescription}</p>
+                                          
+                                          {shouldTruncate && (
+                                            <button
+                                              onClick={() => toggleStageDescription(index)}
+                                              className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium focus:outline-none focus:underline transition-colors"
+                                            >
+                                              {isExpanded ? (
+                                                <span className="flex items-center">
+                                                  Ẩn bớt
+                                                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                                  </svg>
+                                                </span>
+                                              ) : (
+                                                <span className="flex items-center">
+                                                  Xem thêm
+                                                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                  </svg>
+                                                </span>
+                                              )}
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                             </div>
                           </div>
                         ) : (
-                          <p className="text-gray-500">Không có thông tin về các giai đoạn điều trị.</p>
+                          <div className="text-center py-8">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                              <FileText className="h-8 w-8 text-gray-400" />
+                            </div>
+                            <p className="text-gray-500 mb-2">Không có thông tin về các giai đoạn điều trị.</p>
+                            <p className="text-sm text-gray-400">Các giai đoạn điều trị sẽ được cập nhật khi có kế hoạch chi tiết.</p>
+                          </div>
                         )}
                       </div>
                     )}

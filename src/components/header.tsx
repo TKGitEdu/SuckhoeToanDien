@@ -28,6 +28,10 @@ const Header: React.FC = () => {
   const handleLogout = () => {
     logout();
     setUser(null);
+    localStorage.removeItem("userInfo");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("doctorId");
+    localStorage.removeItem("patientId");
     navigate("/");
   };
 
