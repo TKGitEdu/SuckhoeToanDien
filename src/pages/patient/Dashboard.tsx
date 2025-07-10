@@ -24,8 +24,6 @@ const PatientDashboard = () => {
   const [patientName, setPatientName] = useState("");
   const [userId, setUserId] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [examinations, setExaminations] = useState<Examination[]>([]);
   const [examinationsLoading, setExaminationsLoading] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string>("");
@@ -86,13 +84,10 @@ const PatientDashboard = () => {
   // Hàm lấy thông báo
   const fetchNotifications = async (userId: string) => {
     try {
-      setNotificationsLoading(true);
       const data = await getPatientNotifications(userId, 20, false);
       setNotifications(data);
-      setNotificationsLoading(false);
     } catch (error) {
       console.error("Lỗi khi lấy thông báo:", error);
-      setNotificationsLoading(false);
     }
   };
 
@@ -265,476 +260,401 @@ const PatientDashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.3 }}
-            className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative"
+            className="bg-white p-6 rounded-xl shadow-sm border border-gray-100"
           >
             <div className="flex items-center">
-              <div 
-                className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center mr-4 cursor-pointer"
-                onClick={() => setShowNotifications(!showNotifications)}
-              >
-                <Bell className="h-6 w-6 text-yellow-600" />
-                {notifications.filter(n => !n.patientIsRead).length > 0 && (
-                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    {notifications.filter(n => !n.patientIsRead).length}
-                  </span>
-                )}
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mr-4">
+                <XCircle className="h-6 w-6 text-red-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Thông báo mới</p>
-                <p className="text-2xl font-bold text-gray-900">{notifications.filter(n => !n.patientIsRead).length}</p>
+                <p className="text-sm text-gray-500">Lịch hẹn đã hủy</p>
+                <p className="text-2xl font-bold text-gray-900">{cancelledAppointments.length}</p>
               </div>
             </div>
-            
-            {/* Dropdown Panel for Notifications */}
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg z-10 max-h-96 overflow-y-auto border border-gray-200">
-                <div className="p-3 border-b border-gray-200 flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-800">Thông báo</h3>
-                  {notifications.filter(n => !n.patientIsRead).length > 0 && (
-                    <button 
-                      onClick={handleMarkAllAsRead}
-                      className="text-xs text-blue-600 hover:text-blue-800"
-                    >
-                      Đánh dấu tất cả đã đọc
-                    </button>
-                  )}
-                </div>
-                <div className="divide-y divide-gray-100">
-                  {notificationsLoading ? (
-                    <div className="p-4 text-center text-gray-500">
-                      <div className="animate-spin inline-block h-4 w-4 border-t-2 border-blue-600 rounded-full mr-2"></div>
-                      Đang tải thông báo...
-                    </div>
-                  ) : notifications.length === 0 ? (
-                    <div className="p-4 text-center text-gray-500">
-                      Không có thông báo nào
-                    </div>
-                  ) : (
-                    notifications.map((notification) => (
-                      <div 
-                        key={notification.notificationId} 
-                        className={`p-3 hover:bg-gray-50 cursor-pointer ${notification.patientIsRead ? 'bg-gray-50' : 'bg-white'}`}
-                        onClick={() => handleMarkAsRead(notification.notificationId)}
-                      >
-                        <div className="flex items-start">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${notification.patientIsRead ? 'bg-gray-200' : 'bg-blue-100'}`}>
-                            <Bell className={`h-4 w-4 ${notification.patientIsRead ? 'text-gray-500' : 'text-blue-600'}`} />
-                          </div>
-                          <div className="flex-1">
-                            <p className={`text-sm font-medium ${notification.patientIsRead ? 'text-gray-600' : 'text-gray-900'}`}>
-                              {notification.doctorName ? `Từ bác sĩ ${notification.doctorName}` : notification.type}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {new Date(notification.time).toLocaleDateString('vi-VN')}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {notification.message}
-                            </p>
-                          </div>
-                          {notification.patientIsRead ? (
-                            <span className="text-xs text-green-600 flex items-center">
-                              <Check className="h-3 w-3 mr-1" />
-                              Đã đọc
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Buổi khám / Hồ sơ khám bệnh */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-            className="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
-          >
-            <div className="p-6 border-b border-gray-100">
-              <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center mr-4">
-                  <Stethoscope className="h-5 w-5 text-teal-600" />
-                </div>
-                <h2 className="text-xl font-bold text-gray-900">Hồ sơ khám bệnh</h2>
-              </div>
-            </div>
-            <div className="p-6">
-              {upcomingAppointments.length > 0 ? (
-                <div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Chọn lịch hẹn</label>
-                    <select 
-                      className="w-full p-2 border border-gray-300 rounded text-sm"
-                      onChange={(e) => {
-                        const bookingId = e.target.value;
-                        if (bookingId) fetchExaminations(bookingId);
-                      }}
-                      value={selectedBookingId}
-                    >
-                      <option value="">-- Chọn lịch hẹn --</option>
-                      {upcomingAppointments.map((booking, index) => (
-                        <option key={booking.bookingId} value={booking.bookingId}>
-                          {booking.service?.name || `Lịch hẹn ${index + 1}`} - {new Date(booking.dateBooking).toLocaleDateString()}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  {examinations.length > 0 ? (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Chọn buổi khám</label>
-                      <select 
-                        className="w-full p-2 border border-gray-300 rounded text-sm mb-4"
-                        id="examination-select"
-                      >
-                        <option value="">-- Chọn buổi khám --</option>
-                        {examinations.map((exam, index) => (
-                          <option key={exam.examinationId} value={exam.examinationId}>
-                            Buổi khám số {index + 1} - {new Date(exam.createAt).toLocaleDateString()}
-                          </option>
-                        ))}
-                      </select>
-                      
-                      <Button 
-                        className="w-full" 
-                        onClick={() => {
-                          const select = document.getElementById('examination-select') as HTMLSelectElement;
-                          const examinationId = select.value;
-                          if (!examinationId) return;
-                          
-                          const selectedExamination = examinations.find(e => e.examinationId === examinationId);
-                          if (selectedExamination) {
-                            // Chuyển tới trang chi tiết examination kèm theo đối tượng examination
-                            navigate(`/patient/examinations?bookingId=${selectedExamination.bookingId}&examinationId=${examinationId}`, {
-                              state: { examination: selectedExamination }
-                            });
-                          }
-                        }}
-                      >
-                        Xem chi tiết buổi khám
-                      </Button>
-                    </div>
-                  ) : examinationsLoading ? (
-                    <div className="py-8 text-center">
-                      <div className="animate-spin inline-block h-6 w-6 border-t-2 border-b-2 border-teal-600 rounded-full mb-2"></div>
-                      <p className="text-gray-500">Đang tải thông tin buổi khám...</p>
-                    </div>
-                  ) : (
-                    <div className="py-8 text-center">
-                      <p className="text-gray-500 mb-2">Chưa có thông tin buổi khám</p>
-                      <p className="text-sm text-gray-400">Hãy chọn một lịch hẹn để xem thông tin các buổi khám</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="py-8 text-center">
-                  <p className="text-gray-500 mb-2">Bạn chưa có lịch hẹn</p>
-                  <Link to="/booking">
-                    <Button className="mt-2">Đặt lịch khám</Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </motion.div>
-
-          {/* Upcoming Appointments */}
+        {/* Notifications Section - Large panel above main content */}
+        {notifications.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
-          >
-            <div className="p-6 border-b border-gray-100">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-900">Lịch hẹn sắp tới</h2>
-              </div>
-            </div>
-            <div className="divide-y divide-gray-100">
-              {upcomingAppointments.length > 0 ? (
-                upcomingAppointments.map((booking) => (
-                  <div key={booking.bookingId} className="p-6">
-                    <div className="flex items-start">
-                      <div className="mr-4">
-                        <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-100">
-                          <CalendarCheck className="h-6 w-6 text-blue-600" />
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900">{booking.service?.name || "Dịch vụ không xác định"}</h3>
-                            <p className="text-gray-600">{booking.doctor?.doctorName || "Bác sĩ không xác định"}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-gray-900 font-medium">{new Date(booking.dateBooking).toLocaleDateString('vi-VN')}</p>
-                            <p className="text-gray-600">{booking.slot?.startTime || 'N/A'} - {booking.slot?.endTime || 'N/A'}</p>
-                          </div>
-                        </div>
-                        <div className="mt-3 flex justify-between items-center">
-                          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {booking.status || "Đã đặt lịch"}
-                          </span>
-                          <div className="flex space-x-2">
-                            <Link to={`/patient/appointments/${booking.bookingId}`}>
-                              <Button size="sm" className="text-sm bg-blue-600 hover:bg-blue-700">
-                                Chi tiết
-                              </Button>
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="p-6 text-center">
-                  <p className="text-gray-500">Bạn không có lịch hẹn nào sắp tới</p>
-                  <Link to="/booking" className="mt-2 inline-block">
-                    <Button className="bg-blue-600 hover:bg-blue-700 mt-2">
-                      Đặt lịch ngay
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </motion.div>
-
-          {/* Cancelled Appointments */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-            className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
-          >
-            <div className="p-6 border-b border-gray-100">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-900">Lịch hẹn đã hủy</h2>
-              </div>
-            </div>
-            <div className="divide-y divide-gray-100">
-              {cancelledAppointments.length > 0 ? (
-                cancelledAppointments.map((booking) => (
-                  <div key={booking.bookingId} className="p-6">
-                    <div className="flex items-start">
-                      <div className="mr-4">
-                        <div className="w-12 h-12 rounded-full flex items-center justify-center bg-red-100">
-                          <XCircle className="h-6 w-6 text-red-600" />
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900">{booking.service?.name || "Dịch vụ không xác định"}</h3>
-                            <p className="text-gray-600">{booking.doctor?.doctorName || "Bác sĩ không xác định"}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-gray-900 font-medium">{new Date(booking.dateBooking).toLocaleDateString('vi-VN')}</p>
-                            <p className="text-gray-600">{booking.slot?.startTime || 'N/A'} - {booking.slot?.endTime || 'N/A'}</p>
-                          </div>
-                        </div>
-                        <div className="mt-3 flex justify-between items-center">
-                          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            Đã hủy
-                          </span>
-                          <div className="flex space-x-2">
-                            <Link to={`/patient/appointments/${booking.bookingId}`}>
-                              <Button size="sm" className="text-sm bg-blue-600 hover:bg-blue-700">
-                                Chi tiết
-                              </Button>
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="p-6 text-center">
-                  <p className="text-gray-500">Bạn không có lịch hẹn nào đã hủy</p>
-                </div>
-              )}
-            </div>
-          </motion.div>
-
-          {/* Notifications Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
+            className="mb-8 bg-white rounded-xl shadow-sm border border-gray-100 p-6"
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium">Thông báo</h2>
+              <h2 className="text-xl font-bold text-gray-900">Thông báo mới</h2>
               <div className="flex items-center space-x-2">
                 {notifications.filter(n => !n.patientIsRead).length > 0 && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-xs text-blue-600 hover:bg-blue-50"
+                    className="text-sm text-blue-600 hover:bg-blue-50"
                     onClick={handleMarkAllAsRead}
                   >
                     Đọc tất cả
                   </Button>
                 )}
                 <div className="relative">
-                  <Bell className="h-5 w-5 text-gray-500" />
+                  <Bell className="h-6 w-6 text-gray-500" />
                   {notifications.filter(n => !n.patientIsRead).length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                       {notifications.filter(n => !n.patientIsRead).length}
                     </span>
                   )}
                 </div>
               </div>
             </div>
-            <div className="max-h-96 overflow-y-auto">
-              {notifications.length > 0 ? (
-                <div className="divide-y divide-gray-100">
-                  {(showAllNotifications ? notifications : notifications.slice(0, 5)).map((notification) => (
-                    <div 
-                      key={notification.notificationId} 
-                      className={`flex items-start justify-between py-3 ${!notification.patientIsRead ? 'bg-blue-50' : ''} cursor-pointer hover:bg-gray-50 rounded-lg px-2`}
-                      onClick={() => !notification.patientIsRead && handleMarkAsRead(notification.notificationId)}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 mr-2">
-                            <div 
-                              className={`text-sm font-medium text-gray-900 ${
-                                expandedNotifications.has(notification.notificationId) ? '' : 'overflow-hidden'
-                              }`}
-                              style={{
-                                display: expandedNotifications.has(notification.notificationId) ? 'block' : '-webkit-box',
-                                WebkitLineClamp: expandedNotifications.has(notification.notificationId) ? 'unset' : 2,
-                                WebkitBoxOrient: 'vertical',
-                                lineHeight: '1.4em',
-                                maxHeight: expandedNotifications.has(notification.notificationId) ? 'none' : '2.8em'
-                              }}
-                            >
-                              {notification.message}
-                            </div>
-                            {notification.message.length > 80 && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleNotificationExpansion(notification.notificationId);
-                                }}
-                                className="text-xs text-blue-600 hover:text-blue-800 mt-1 focus:outline-none"
-                              >
-                                {expandedNotifications.has(notification.notificationId) ? 'Thu gọn' : 'Xem thêm'}
-                              </button>
-                            )}
-                          </div>
-                          <div className="flex flex-col items-end ml-2">
-                            <span
-                              className={`inline-block px-2 py-1 text-xs font-medium rounded-full mb-1 ${
-                                notification.type === "appointment" ? "bg-blue-100 text-blue-800" : 
-                                notification.type === "test-result" ? "bg-yellow-100 text-yellow-800" : 
-                                "bg-gray-100 text-gray-800"
-                              }`}
-                            >
-                              {notification.type}
-                            </span>
-                            {!notification.patientIsRead && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="p-1 h-auto"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleMarkAsRead(notification.notificationId);
-                                }}
-                              >
-                                <Check className="h-4 w-4 text-green-500" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                        <div className="mt-1">
-                          <p className="text-xs text-gray-500">
-                            {new Date(notification.time).toLocaleString('vi-VN')}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {notification.doctorName ? `Từ bác sĩ ${notification.doctorName}` : notification.type}
-                          </p>
-                        </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+              {(showAllNotifications ? notifications : notifications.slice(0, 4)).map((notification) => (
+                <div 
+                  key={notification.notificationId} 
+                  className={`p-4 rounded-lg border ${!notification.patientIsRead ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'} cursor-pointer hover:bg-gray-100 transition-colors`}
+                  onClick={() => !notification.patientIsRead && handleMarkAsRead(notification.notificationId)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 mr-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span
+                          className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                            notification.type === "appointment" ? "bg-blue-100 text-blue-800" : 
+                            notification.type === "test-result" ? "bg-yellow-100 text-yellow-800" : 
+                            "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {notification.type}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(notification.time).toLocaleString('vi-VN')}
+                        </span>
                       </div>
+                      <div 
+                        className={`text-sm text-gray-900 ${
+                          expandedNotifications.has(notification.notificationId) ? '' : 'overflow-hidden'
+                        }`}
+                        style={{
+                          display: expandedNotifications.has(notification.notificationId) ? 'block' : '-webkit-box',
+                          WebkitLineClamp: expandedNotifications.has(notification.notificationId) ? 'unset' : 3,
+                          WebkitBoxOrient: 'vertical',
+                          lineHeight: '1.4em',
+                          maxHeight: expandedNotifications.has(notification.notificationId) ? 'none' : '4.2em'
+                        }}
+                      >
+                        {notification.message}
+                      </div>
+                      {notification.message.length > 100 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleNotificationExpansion(notification.notificationId);
+                          }}
+                          className="text-xs text-blue-600 hover:text-blue-800 mt-1 focus:outline-none"
+                        >
+                          {expandedNotifications.has(notification.notificationId) ? 'Thu gọn' : 'Xem thêm'}
+                        </button>
+                      )}
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-500">
+                          {notification.doctorName ? `Từ bác sĩ ${notification.doctorName}` : notification.type}
+                        </p>
+                      </div>
+                      {notification.patientIsRead && (
+                        <span className="text-xs text-green-600 flex items-center mt-2">
+                          <Check className="h-3 w-3 mr-1" />
+                          Đã đọc
+                        </span>
+                      )}
                     </div>
-                  ))}
+                  </div>
                 </div>
-              ) : (
-                <p className="text-gray-500 text-center">Không có thông báo mới</p>
-              )}
-              {notifications.length > 5 && (
-                <div className="pt-3 text-center">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-blue-600 hover:bg-blue-50"
-                    onClick={toggleShowAllNotifications}
-                  >
-                    {showAllNotifications 
-                      ? 'Thu gọn' 
-                      : `Xem thêm ${notifications.length - 5} thông báo`
-                    }
-                  </Button>
-                </div>
-              )}
+              ))}
             </div>
+            {notifications.length > 4 && (
+              <div className="pt-4 text-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-blue-600 hover:bg-blue-50"
+                  onClick={toggleShowAllNotifications}
+                >
+                  {showAllNotifications 
+                    ? 'Thu gọn' 
+                    : `Xem thêm ${notifications.length - 4} thông báo`
+                  }
+                </Button>
+              </div>
+            )}
           </motion.div>
+        )}
 
-          {/* Recent Activities */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
-          >
-            <div className="p-6 border-b border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900">Hoạt động gần đây</h2>
-            </div>
-            <div className="divide-y divide-gray-100">
-              {bookings.length > 0 ? (
-                [...bookings]
-                  .sort((a, b) => new Date(b.createAt).getTime() - new Date(a.createAt).getTime())
-                  .slice(0, 3)
-                  .map((booking) => (
-                    <div key={booking.bookingId} className="p-4">
-                      <div className="flex">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Cột bên trái - chiếm 2/3 trang */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Lịch hẹn sắp tới */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+            >
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-bold text-gray-900">Lịch hẹn sắp tới</h2>
+                </div>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {upcomingAppointments.length > 0 ? (
+                  upcomingAppointments.map((booking) => (
+                    <div key={booking.bookingId} className="p-6">
+                      <div className="flex items-start">
                         <div className="mr-4">
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-100">
-                            <Calendar className="h-5 w-5 text-blue-600" />
+                          <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-100">
+                            <CalendarCheck className="h-6 w-6 text-blue-600" />
                           </div>
                         </div>
-                        <div>
-                          <h3 className="text-sm font-medium text-gray-900">
-                            {booking.service?.name ? `Đặt lịch ${booking.service.name}` : "Đặt lịch dịch vụ"}
-                          </h3>
-                          <p className="text-xs text-gray-500 mb-1">
-                            {new Date(booking.createAt).toLocaleDateString('vi-VN')}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {booking.description || `Lịch hẹn với bác sĩ ${booking.doctor?.doctorName || "không xác định"} `}
-                          </p>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900">{booking.service?.name || "Dịch vụ không xác định"}</h3>
+                              <p className="text-gray-600">{booking.doctor?.doctorName || "Bác sĩ không xác định"}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-gray-900 font-medium">{new Date(booking.dateBooking).toLocaleDateString('vi-VN')}</p>
+                              <p className="text-gray-600">{booking.slot?.startTime || 'N/A'} - {booking.slot?.endTime || 'N/A'}</p>
+                            </div>
+                          </div>
+                          <div className="mt-3 flex justify-between items-center">
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {booking.status || "Đã đặt lịch"}
+                            </span>
+                            <div className="flex space-x-2">
+                              <Link to={`/patient/appointments/${booking.bookingId}`}>
+                                <Button size="sm" className="text-sm bg-blue-600 hover:bg-blue-700">
+                                  Chi tiết
+                                </Button>
+                              </Link>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
                   ))
-              ) : (
-                <div className="p-4 text-center">
-                  <p className="text-gray-500">Không có hoạt động gần đây</p>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </div>
+                ) : (
+                  <div className="p-6 text-center">
+                    <p className="text-gray-500">Bạn không có lịch hẹn nào sắp tới</p>
+                    <Link to="/booking" className="mt-2 inline-block">
+                      <Button className="bg-blue-600 hover:bg-blue-700 mt-2">
+                        Đặt lịch ngay
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </motion.div>
 
-        {/* Treatment Progress */}
-        <ComponentTrackingTRM/>
+            {/* Treatment Progress - Theo dõi điều trị */}
+            <ComponentTrackingTRM/>
+          </div>
+
+          {/* Cột bên phải - chiếm 1/3 trang */}
+          <div className="lg:col-span-1 space-y-8">
+            {/* Recent Activities */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+            >
+              <div className="p-6 border-b border-gray-100">
+                <h2 className="text-xl font-bold text-gray-900">Hoạt động gần đây</h2>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {bookings.length > 0 ? (
+                  [...bookings]
+                    .sort((a, b) => new Date(b.createAt).getTime() - new Date(a.createAt).getTime())
+                    .slice(0, 3)
+                    .map((booking) => (
+                      <div key={booking.bookingId} className="p-4">
+                        <div className="flex">
+                          <div className="mr-4">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-100">
+                              <Calendar className="h-5 w-5 text-blue-600" />
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-900">
+                              {booking.service?.name ? `Đặt lịch ${booking.service.name}` : "Đặt lịch dịch vụ"}
+                            </h3>
+                            <p className="text-xs text-gray-500 mb-1">
+                              {new Date(booking.createAt).toLocaleDateString('vi-VN')}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {booking.description || `Lịch hẹn với bác sĩ ${booking.doctor?.doctorName || "không xác định"} `}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                ) : (
+                  <div className="p-4 text-center">
+                    <p className="text-gray-500">Không có hoạt động gần đây</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Buổi khám / Hồ sơ khám bệnh */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+            >
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center mr-4">
+                    <Stethoscope className="h-5 w-5 text-teal-600" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Hồ sơ khám bệnh</h2>
+                </div>
+              </div>
+              <div className="p-6">
+                {upcomingAppointments.length > 0 ? (
+                  <div>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Chọn lịch hẹn</label>
+                      <select 
+                        className="w-full p-2 border border-gray-300 rounded text-sm"
+                        onChange={(e) => {
+                          const bookingId = e.target.value;
+                          if (bookingId) fetchExaminations(bookingId);
+                        }}
+                        value={selectedBookingId}
+                      >
+                        <option value="">-- Chọn lịch hẹn --</option>
+                        {upcomingAppointments.map((booking, index) => (
+                          <option key={booking.bookingId} value={booking.bookingId}>
+                            {booking.service?.name || `Lịch hẹn ${index + 1}`} - {new Date(booking.dateBooking).toLocaleDateString()}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    {examinations.length > 0 ? (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Chọn buổi khám</label>
+                        <select 
+                          className="w-full p-2 border border-gray-300 rounded text-sm mb-4"
+                          id="examination-select"
+                        >
+                          <option value="">-- Chọn buổi khám --</option>
+                          {examinations.map((exam, index) => (
+                            <option key={exam.examinationId} value={exam.examinationId}>
+                              Buổi khám số {index + 1} - {new Date(exam.createAt).toLocaleDateString()}
+                            </option>
+                          ))}
+                        </select>
+                        
+                        <Button 
+                          className="w-full" 
+                          onClick={() => {
+                            const select = document.getElementById('examination-select') as HTMLSelectElement;
+                            const examinationId = select.value;
+                            if (!examinationId) return;
+                            
+                            const selectedExamination = examinations.find(e => e.examinationId === examinationId);
+                            if (selectedExamination) {
+                              // Chuyển tới trang chi tiết examination kèm theo đối tượng examination
+                              navigate(`/patient/examinations?bookingId=${selectedExamination.bookingId}&examinationId=${examinationId}`, {
+                                state: { examination: selectedExamination }
+                              });
+                            }
+                          }}
+                        >
+                          Xem chi tiết buổi khám
+                        </Button>
+                      </div>
+                    ) : examinationsLoading ? (
+                      <div className="py-8 text-center">
+                        <div className="animate-spin inline-block h-6 w-6 border-t-2 border-b-2 border-teal-600 rounded-full mb-2"></div>
+                        <p className="text-gray-500">Đang tải thông tin buổi khám...</p>
+                      </div>
+                    ) : (
+                      <div className="py-8 text-center">
+                        <p className="text-gray-500 mb-2">Chưa có thông tin buổi khám</p>
+                        <p className="text-sm text-gray-400">Hãy chọn một lịch hẹn để xem thông tin các buổi khám</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center">
+                    <p className="text-gray-500 mb-2">Bạn chưa có lịch hẹn</p>
+                    <Link to="/booking">
+                      <Button className="mt-2">Đặt lịch khám</Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Cancelled Appointments */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+            >
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-bold text-gray-900">Lịch hẹn đã hủy</h2>
+                </div>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {cancelledAppointments.length > 0 ? (
+                  cancelledAppointments.map((booking) => (
+                    <div key={booking.bookingId} className="p-6">
+                      <div className="flex items-start">
+                        <div className="mr-4">
+                          <div className="w-12 h-12 rounded-full flex items-center justify-center bg-red-100">
+                            <XCircle className="h-6 w-6 text-red-600" />
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900">{booking.service?.name || "Dịch vụ không xác định"}</h3>
+                              <p className="text-gray-600">{booking.doctor?.doctorName || "Bác sĩ không xác định"}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-gray-900 font-medium">{new Date(booking.dateBooking).toLocaleDateString('vi-VN')}</p>
+                              <p className="text-gray-600">{booking.slot?.startTime || 'N/A'} - {booking.slot?.endTime || 'N/A'}</p>
+                            </div>
+                          </div>
+                          <div className="mt-3 flex justify-between items-center">
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              Đã hủy
+                            </span>
+                            <div className="flex space-x-2">
+                              <Link to={`/patient/appointments/${booking.bookingId}`}>
+                                <Button size="sm" className="text-sm bg-blue-600 hover:bg-blue-700">
+                                  Chi tiết
+                                </Button>
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-6 text-center">
+                    <p className="text-gray-500">Bạn không có lịch hẹn nào đã hủy</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        </div>
 
         {/* Recommended Services */}
         <motion.div
