@@ -40,7 +40,8 @@ import ProtectedRoute from "./ProtectedRouter";
 import RegisterSuccess from "../components/registerSuccess";
 // thêm trang PatientExaminations D:\ThuMucTam\SWP391--FrontEnd\SWP391--FrontEnd\src\pages\patient\Examinations.tsx
 import PatientExaminations from "../pages/patient/Examinations";
-
+// thêm trang CreateTreatmentPlan
+import CreateTreatmentPlan from "../pages/doctor/CreateTreatmentplan";
 
 
 
@@ -169,7 +170,7 @@ const AppRouter: React.FC = () => {
         <Route
           path="/patient/profile"
           element={
-            <ProtectedRoute allowedRoles={["Patient"]}>
+            <ProtectedRoute allowedRoles={["Patient", "Doctor"]}>
               <MainLayout>
                 <PatientProfile />
               </MainLayout>
@@ -218,13 +219,24 @@ const AppRouter: React.FC = () => {
           }
         />
         <Route
+          path="/doctor/create-treatment-plan/:examinationId"
+          element={
+            <ProtectedRoute allowedRoles={["Doctor"]}>
+              <MainLayout>
+                <CreateTreatmentPlan />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/doctor/patients"
           element={
             <ProtectedRoute allowedRoles={["Doctor"]}>
               <MainLayout>
                 <DoctorPatients />
               </MainLayout>
-            </ProtectedRoute>          }
+            </ProtectedRoute>          
+            }
         />
         <Route
           path="/doctor/treatment-records"

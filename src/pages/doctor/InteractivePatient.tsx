@@ -8,8 +8,9 @@ import { format } from "date-fns";
 import { 
   getBookingById, 
   getPatientById, 
-  createExamination, 
-  completeExamination
+  createExamination,
+  getPatientMedicalHistory,
+  checkExaminationExists
 } from "../../api/doctorApi/interactivePatientAPI";
 import type { 
   Booking as BookingType,
@@ -43,7 +44,7 @@ const InteractivePatient: React.FC = () => {
   const [examinationResult, setExaminationResult] = useState<string>("");
   const [specialNote, setSpecialNote] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
-  const [savedExaminationId, setSavedExaminationId] = useState<string | null>(null);
+  const [examinationExists, setExaminationExists] = useState<boolean>(false);
 
   useEffect(() => {
     // Hàm lấy dữ liệu booking và patient từ API
@@ -62,6 +63,25 @@ const InteractivePatient: React.FC = () => {
         const bookingData = await getBookingById(bookingId);
         console.log("Booking data:", bookingData);
         
+        // Kiểm tra xem booking này đã có examination chưa
+        try {
+          const hasExamination = await checkExaminationExists(bookingId);
+          setExaminationExists(hasExamination);
+          
+          if (hasExamination) {
+            console.log("Booking đã có examination, cần tạo booking mới để khám tiếp");
+            // Nếu đã có examination, hiển thị thông báo và chuyển hướng
+            setTimeout(() => {
+              alert("Bệnh nhân đã được khám cho lịch hẹn này!\n\nVui lòng tạo lịch hẹn mới để có thể khám tiếp.");
+              navigate(`/doctor/create-appointment?patientId=${bookingData.patientId}`); // Chuyển đến trang đặt lịch của bác sĩ
+            }, 100);
+            return;
+          }
+        } catch (error) {
+          console.error("Error checking examination exists:", error);
+          // Nếu có lỗi khi kiểm tra, vẫn tiếp tục để bác sĩ có thể thử khám
+        }
+        
         // Chuẩn bị dữ liệu booking để hiển thị
         const bookingDisplay: BookingDisplay = {
           ...bookingData,
@@ -71,6 +91,25 @@ const InteractivePatient: React.FC = () => {
         // Lấy thông tin bệnh nhân từ API
         const patientData = await getPatientById(bookingData.patientId);
         console.log("Patient data:", patientData);
+        
+        // Lấy tiền sử bệnh của bệnh nhân
+        let medicalHistoryData = [];
+        try {
+          const medicalHistory = await getPatientMedicalHistory(bookingData.patientId);
+          console.log("Medical history:", medicalHistory);
+          
+          // Trích xuất tiền sử bệnh từ response
+          if (medicalHistory.medicalRecords && medicalHistory.medicalRecords.length > 0) {
+            medicalHistoryData = medicalHistory.medicalRecords.map(record => 
+              record.medicalHistory || "Chưa có thông tin tiền sử bệnh"
+            );
+          } else {
+            medicalHistoryData = ["Chưa có thông tin tiền sử bệnh"];
+          }
+        } catch (error) {
+          console.error("Error fetching medical history:", error);
+          medicalHistoryData = ["Không thể tải thông tin tiền sử bệnh"];
+        }
         
         // Tính tuổi từ ngày sinh
         let age;
@@ -88,8 +127,7 @@ const InteractivePatient: React.FC = () => {
         const patientDisplay: PatientDisplay = {
           ...patientData,
           age,
-          // Trong thực tế, dữ liệu này nên được lấy từ API
-          medicalHistory: ["Tiểu đường", "Cao huyết áp"],
+          medicalHistory: medicalHistoryData,
         };
         
         // Cập nhật state
@@ -128,7 +166,7 @@ const InteractivePatient: React.FC = () => {
           dateOfBirth: "1988-01-01",
           emergencyPhoneNumber: "0987654322",
           age: 35,
-          medicalHistory: ["Tiểu đường", "Cao huyết áp"]
+          medicalHistory: ["Chưa có thông tin tiền sử bệnh"]
         };
         
         setBooking(mockBooking);
@@ -141,8 +179,8 @@ const InteractivePatient: React.FC = () => {
     fetchData();
   }, [bookingId]);
   
-  // Hàm xử lý khi bác sĩ lưu thông tin khám
-  const handleSaveExamination = async () => {
+  // Hàm xử lý khi bác sĩ hoàn thành khám bệnh
+  const handleCompleteExamination = async () => {
     try {
       setSubmitting(true);
       
@@ -153,85 +191,49 @@ const InteractivePatient: React.FC = () => {
         return;
       }
       
+      // Kiểm tra lại xem booking này đã có examination chưa (double check)
+      try {
+        const hasExamination = await checkExaminationExists(bookingId);
+        if (hasExamination) {
+          alert("Bệnh nhân đã được khám cho lịch hẹn này!\n\nVui lòng tạo lịch hẹn mới để có thể khám tiếp.");
+          navigate(`/doctor/create-appointment?patientId=${booking.patientId}`);
+          return;
+        }
+      } catch (error) {
+        console.error("Error double-checking examination exists:", error);
+      }
+      
       // Tạo dữ liệu examination để gửi lên API
       const examinationData: ExaminationRequest = {
         bookingId: bookingId,
         examinationDate: new Date().toISOString(),
-        examinationDescription: examinationDescription,
-        result: examinationResult,
-        status: "in-progress", // Đặt trạng thái mặc định là "đang khám"
-        note: specialNote
+        examinationDescription: examinationDescription.trim(),
+        result: examinationResult.trim() || "", // Đảm bảo không null/undefined
+        status: "completed", // Đặt trạng thái là completed luôn
+        note: specialNote.trim() || "" // Đảm bảo không null/undefined
       };
       
-      // Gọi API tạo examination mới
+      console.log("Preparing to send examination data:", examinationData);
+      
+      // Gọi API tạo examination mới với trạng thái completed
       const response = await createExamination(examinationData);
       console.log("Created examination:", response);
-      
-      // Lưu lại ID của examination để sử dụng sau này
-      if (response && response.examinationId) {
-        setSavedExaminationId(response.examinationId);
-      }
-      
-      // Hiển thị thông báo thành công
-      alert("Đã lưu thông tin khám bệnh thành công!");
-      
-    } catch (error) {
-      console.error("Error saving examination:", error);
-      alert("Không thể lưu thông tin khám bệnh. Vui lòng thử lại.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-  
-  // Hàm xử lý khi bác sĩ hoàn thành khám bệnh
-  const handleCompleteExamination = async () => {
-    try {
-      setSubmitting(true);
-      
-      // Nếu chưa có examination nào được lưu, thực hiện lưu trước
-      if (!savedExaminationId) {
-        // Kiểm tra dữ liệu bắt buộc
-        if (!booking || !bookingId || !examinationDescription) {
-          alert("Vui lòng nhập mô tả khám bệnh!");
-          setSubmitting(false);
-          return;
-        }
-        
-        // Tạo dữ liệu examination để gửi lên API
-        const examinationData: ExaminationRequest = {
-          bookingId: bookingId,
-          examinationDate: new Date().toISOString(),
-          examinationDescription: examinationDescription,
-          result: examinationResult,
-          status: "in-progress",
-          note: specialNote
-        };
-        
-        // Gọi API tạo examination mới
-        const response = await createExamination(examinationData);
-        console.log("Created examination:", response);
-        
-        if (response && response.examinationId) {
-          // Cập nhật trạng thái examination sang completed
-          await completeExamination(response.examinationId);
-          console.log("Examination status updated to completed");
-        } else {
-          throw new Error("Không nhận được examinationId từ API");
-        }
-      } else {
-        // Nếu đã có examination, chỉ cần cập nhật trạng thái
-        await completeExamination(savedExaminationId);
-        console.log("Examination status updated to completed");
-      }
       
       // Hiển thị thông báo thành công
       alert("Đã hoàn thành khám bệnh thành công!");
       
       // Quay lại trang dashboard
       navigate("/doctor/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error completing examination:", error);
-      alert("Không thể hoàn thành khám bệnh. Vui lòng thử lại.");
+      
+      // Kiểm tra nếu lỗi do đã tồn tại examination
+      if (error.response?.status === 400 || error.response?.data?.message?.includes("examination")) {
+        alert("Bệnh nhân đã được khám cho lịch hẹn này!\n\nVui lòng tạo lịch hẹn mới để có thể khám tiếp.");
+        navigate(`/doctor/create-appointment?patientId=${booking?.patientId}`);
+      } else {
+        alert("Không thể hoàn thành khám bệnh. Vui lòng thử lại.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -345,50 +347,87 @@ const InteractivePatient: React.FC = () => {
       )}
 
       {/* Form nhập thông tin khám */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h2 className="text-lg font-medium mb-4 flex items-center">
-          <FileText className="mr-2 h-5 w-5 text-blue-600" />
-          Thông tin khám bệnh
-        </h2>
-        
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Mô tả quá trình khám, kiểm tra va phân tích <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            className="w-full h-40 p-3 border border-gray-300 rounded-md"
-            placeholder="Nhập mô tả quá trình khám..."
-            value={examinationDescription}
-            onChange={(e) => setExaminationDescription(e.target.value)}
-            required
-          />
+      {examinationExists ? (
+        // Hiển thị thông báo khi đã có examination
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-6">
+          <div className="flex items-center mb-4">
+            <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center mr-4">
+              <FileText className="h-6 w-6 text-yellow-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-medium text-yellow-800">Bệnh nhân đã được khám</h3>
+              <p className="text-yellow-700">Lịch hẹn này đã có kết quả khám bệnh.</p>
+            </div>
+          </div>
+          <div className="bg-yellow-100 rounded-lg p-4 mb-4">
+            <p className="text-yellow-800 font-medium mb-2">Lưu ý:</p>
+            <ul className="text-yellow-700 text-sm list-disc ml-5 space-y-1">
+              <li>Mỗi lịch hẹn chỉ được khám bệnh một lần</li>
+              <li>Để khám tiếp cho bệnh nhân, vui lòng tạo lịch hẹn mới</li>
+              <li>Bạn có thể xem lại kết quả khám cũ trong hồ sơ bệnh nhân</li>
+            </ul>
+          </div>
+          <div className="flex space-x-4">
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => navigate(`/doctor/create-appointment?patientId=${patient?.patientId}`)}
+            >
+              Tạo lịch hẹn mới
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/doctor/dashboard")}
+            >
+              Quay lại Dashboard
+            </Button>
+          </div>
         </div>
-        
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Kết quả chẩn đoán, kết quả kiểm tra
-          </label>
-          <textarea
-            className="w-full h-40 p-3 border border-gray-300 rounded-md"
-            placeholder="Nhập kết quả chẩn đoán..."
-            value={examinationResult}
-            onChange={(e) => setExaminationResult(e.target.value)}
-          />
+      ) : (
+        // Form nhập thông tin khám bình thường
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+          <h2 className="text-lg font-medium mb-4 flex items-center">
+            <FileText className="mr-2 h-5 w-5 text-blue-600" />
+            Thông tin khám bệnh
+          </h2>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              bệnh nhân bị gì "ExaminationDescription"<span className="text-red-500">*</span>
+            </label>
+            <textarea
+              className="w-full h-40 p-3 border border-gray-300 rounded-md"
+              placeholder="Nhập mô tả bệnh nhân bị gì..."
+              value={examinationDescription}
+              onChange={(e) => setExaminationDescription(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Kết quả chẩn đoán, kết quả kiểm tra "Result"
+            </label>
+            <textarea
+              className="w-full h-40 p-3 border border-gray-300 rounded-md"
+              placeholder="Nhập kết quả chẩn đoán..."
+              value={examinationResult}
+              onChange={(e) => setExaminationResult(e.target.value)}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Lưu ý đặc biệt cho bệnh nhân "Ex.note"
+            </label>
+            <textarea
+              className="w-full h-28 p-3 border border-gray-300 rounded-md"
+              placeholder="Nhập lưu ý đặc biệt cho bệnh nhân (chế độ ăn uống, vận động, dùng thuốc...)..."
+              value={specialNote}
+              onChange={(e) => setSpecialNote(e.target.value)}
+            />
+          </div>
         </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Lưu ý đặc biệt cho bệnh nhân
-          </label>
-          <textarea
-            className="w-full h-28 p-3 border border-gray-300 rounded-md"
-            placeholder="Nhập lưu ý đặc biệt cho bệnh nhân (chế độ ăn uống, vận động, dùng thuốc...)..."
-            value={specialNote}
-            onChange={(e) => setSpecialNote(e.target.value)}
-          />
-        </div>
-
-      </div>
+      )}
 
       {/* Buttons */}
       <div className="flex justify-end space-x-4">
@@ -399,24 +438,6 @@ const InteractivePatient: React.FC = () => {
           disabled={submitting}
         >
           Hủy
-        </Button>
-        <Button
-          variant="outline"
-          className="bg-blue-600 hover:bg-blue-700 text-white"
-          onClick={handleSaveExamination}
-          disabled={submitting}
-        >
-          {submitting ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-              Đang lưu...
-            </>
-          ) : (
-            <>
-              <Save className="mr-2 h-4 w-4" />
-              Lưu thông tin khám
-            </>
-          )}
         </Button>
         <Button
           className="bg-green-600 hover:bg-green-700 text-white"

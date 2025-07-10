@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { tr } from 'date-fns/locale';
 
 // Định nghĩa interfaces cho dữ liệu
 export interface Booking {
@@ -48,6 +47,21 @@ export interface Examination {
   status: string;
   note: string;
   createAt: string;
+}
+
+export interface MedicalRecord {
+  patientDetailId: string;
+  patientId: string;
+  patientName: string;
+  treatmentStatus: string;
+  medicalHistory: string;
+  name: string;
+}
+
+export interface PatientMedicalHistory {
+  patientId: string;
+  patientName: string;
+  medicalRecords: MedicalRecord[];
 }
 
 const dashboardAxios = axios.create({
@@ -113,17 +127,52 @@ export const createExamination = async (examinationData: ExaminationRequest): Pr
   }
 };
 
+
 /**
- * Cập nhật trạng thái của examination thành completed
- * @param examinationId ID của examination cần cập nhật trạng thái
- * @returns Kết quả của quá trình cập nhật trạng thái
+ * Lấy tiền sử bệnh của bệnh nhân theo patientId
+ * @param patientId ID của bệnh nhân cần lấy tiền sử bệnh
+ * @returns Thông tin tiền sử bệnh của bệnh nhân
  */
-export const completeExamination = async (examinationId: string): Promise<any> => {
+export const getPatientMedicalHistory = async (patientId: string): Promise<PatientMedicalHistory> => {
   try {
-    const response = await dashboardAxios.put(`/api/InteractivePatient/examination/${examinationId}/complete`);
+    const response = await dashboardAxios.get(`/api/DoctorPatients/patient/${patientId}/tienSuBenh`);
     return response.data;
   } catch (error) {
-    console.error(`Lỗi khi cập nhật trạng thái examination ${examinationId}:`, error);
+    console.error(`Lỗi khi lấy tiền sử bệnh của bệnh nhân với ID ${patientId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Lấy tất cả examinations theo patientId
+ * @param patientId ID của bệnh nhân cần lấy examinations
+ * @returns Danh sách examinations của bệnh nhân
+ */
+export const getExaminationsByPatientId = async (patientId: string): Promise<Examination[]> => {
+  try {
+    const response = await dashboardAxios.get(`/api/InteractivePatient/examinations/patient/${patientId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Lỗi khi lấy danh sách examinations của bệnh nhân với ID ${patientId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Kiểm tra xem booking đã có examination chưa
+ * @param bookingId ID của booking cần kiểm tra
+ * @returns True nếu đã có examination, false nếu chưa
+ */
+export const checkExaminationExists = async (bookingId: string): Promise<boolean> => {
+  try {
+    const response = await dashboardAxios.get(`/api/InteractivePatient/examination/booking/${bookingId}`);
+    return response.data && response.data.length > 0;
+  } catch (error: any) {
+    // Nếu lỗi 404 có nghĩa là chưa có examination
+    if (error.response?.status === 404) {
+      return false;
+    }
+    console.error(`Lỗi khi kiểm tra examination cho booking ${bookingId}:`, error);
     throw error;
   }
 };

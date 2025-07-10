@@ -126,7 +126,7 @@ const Dashboard: React.FC = () => {
 
   const handleViewProfile = (patientId: string) => {
     // Navigate to the patient's profile page
-    navigate(`/doctor/patient-profile/${patientId}`);
+    navigate(`/doctor/patients?patientId=${patientId}`);
   };
 
   const handleStartAppointment = async (bookingId: string) => {
@@ -632,9 +632,9 @@ const Dashboard: React.FC = () => {
                       size="sm"
                       variant="outline"
                       className="text-xs font-medium text-blue-600"
-                      onClick={() => navigate(`/doctor/examination/${examination.examinationId}`)}
+                      onClick={() => navigate(`/doctor/create-treatment-plan/${examination.examinationId}`)}
                     >
-                      Xem chi tiết
+                      Tạo kế hoạch điều trị
                     </Button>
                   </td>
                 </tr>
