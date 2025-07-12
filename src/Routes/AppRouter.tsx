@@ -40,6 +40,7 @@ import ProtectedRoute from "./ProtectedRouter";
 import RegisterSuccess from "../components/registerSuccess";
 // thêm trang PatientExaminations D:\ThuMucTam\SWP391--FrontEnd\SWP391--FrontEnd\src\pages\patient\Examinations.tsx
 import PatientExaminations from "../pages/patient/Examinations";
+import AdminServices from "../pages/admin/Services";
 
 
 
@@ -284,6 +285,16 @@ const AppRouter: React.FC = () => {
             <ProtectedRoute allowedRoles={["Admin"]}>
               <AdminLayout>
                 <AdminPatients />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/admin/services"
+          element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AdminLayout>
+                <AdminServices/>
               </AdminLayout>
             </ProtectedRoute>
           }
