@@ -108,8 +108,9 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <Header />
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-blue-50 to-blue-100 py-20 overflow-hidden">
+      <section className="relative bg-gradient-to-r from-blue-50 to-blue-100 py-20 overflow-hidden mt-20">{/* mt-20 để tránh bị che bởi fixed header */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center">
             <motion.div 
