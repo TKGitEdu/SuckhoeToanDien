@@ -38,6 +38,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             Dashboard
           </Link>
           <Link
+            to="/admin/services"
+            className="flex items-center gap-3 text-gray-700 hover:text-blue-600"
+          >
+            <Home size={20} />
+            Dịch vụ
+          </Link>
+          <Link
             to="/admin/patients"
             className="flex items-center gap-3 text-gray-700 hover:text-blue-600"
           >
