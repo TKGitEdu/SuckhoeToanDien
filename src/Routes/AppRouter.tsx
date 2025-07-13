@@ -43,7 +43,8 @@ import PatientExaminations from "../pages/patient/Examinations";
 // thêm trang CreateTreatmentPlan
 import CreateTreatmentPlan from "../pages/doctor/CreateTreatmentplan";
 
-
+import PaymentPage from "../pages/patient/PaymentPage";
+import PaymentCallbackPage from "../pages/patient/PaymentCallbackPage";
 
 const MainLayout = ({ children }: { children: React.ReactNode }) => (
   <>
@@ -156,6 +157,28 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        {/* trang này nhận bookingid để thực hiện thanh toán */}
+        <Route
+          path="/patient/payment/:bookingId"
+          element={
+            <ProtectedRoute allowedRoles={["Patient"]}>
+              <MainLayout>
+                <PaymentPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/patient/payment-callback"
+          element={
+            <ProtectedRoute allowedRoles={["Patient"]}>
+              <MainLayout>
+                <PaymentCallbackPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        
         {/* trang này nhận /patient/examinations?bookingId=BKG_1&examinationId=EXM_1 */}
         <Route
           path="/patient/examinations"
