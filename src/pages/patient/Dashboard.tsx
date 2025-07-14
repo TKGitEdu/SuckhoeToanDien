@@ -325,7 +325,7 @@ const PatientDashboard = () => {
                           {notification.type}
                         </span>
                         <span className="text-xs text-gray-500">
-                          {new Date(notification.time).toLocaleString('vi-VN')}
+                          {new Date(notification.time).toLocaleString('vi-VN',{ timeZone: 'UTC' })}
                         </span>
                       </div>
                       <div 
@@ -419,7 +419,7 @@ const PatientDashboard = () => {
                               <p className="text-gray-600">{booking.doctor?.doctorName || "Bác sĩ không xác định"}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-gray-900 font-medium">{new Date(booking.dateBooking).toLocaleDateString('vi-VN')}</p>
+                              <p className="text-gray-900 font-medium">{new Date(booking.dateBooking).toLocaleDateString('vi-VN', {timeZone: 'UTC'})}</p>
                               <p className="text-gray-600">{booking.slot?.startTime || 'N/A'} - {booking.slot?.endTime || 'N/A'}</p>
                             </div>
                           </div>
@@ -534,7 +534,7 @@ const PatientDashboard = () => {
                         <option value="">-- Chọn lịch hẹn --</option>
                         {upcomingAppointments.map((booking, index) => (
                           <option key={booking.bookingId} value={booking.bookingId}>
-                            {booking.service?.name || `Lịch hẹn ${index + 1}`} - {new Date(booking.dateBooking).toLocaleDateString()}
+                            {booking.service?.name || `Lịch hẹn ${index + 1}`} - {new Date(booking.dateBooking).toLocaleDateString('vi-VN', { timeZone: 'UTC' })}
                           </option>
                         ))}
                       </select>
@@ -550,7 +550,7 @@ const PatientDashboard = () => {
                           <option value="">-- Chọn buổi khám --</option>
                           {examinations.map((exam, index) => (
                             <option key={exam.examinationId} value={exam.examinationId}>
-                              Buổi khám số {index + 1} - {new Date(exam.createAt).toLocaleDateString()}
+                              Buổi khám số {index + 1} - {new Date(exam.createAt).toLocaleDateString('vi-VN', { timeZone: 'UTC' })}
                             </option>
                           ))}
                         </select>

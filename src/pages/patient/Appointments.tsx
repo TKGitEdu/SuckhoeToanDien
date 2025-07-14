@@ -7,7 +7,7 @@ import { bookingApiForBookingPage } from '../../api/patientApi/bookingApiForBook
 const AppointmentDetail = () => {
   const { bookingId } = useParams<{ bookingId: string }>();
   const [booking, setBooking] = useState<Booking | null>(null);
-  const [slots, setSlots] = useState<Slot[]>([]);
+  const [slot, setSlot] = useState<Slot | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [cancelLoading, setCancelLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,10 +46,8 @@ const AppointmentDetail = () => {
           throw new Error('Không tìm thấy dữ liệu lịch hẹn');
         }
 
-        // Lấy tất cả slots để tính toán thời gian chính xác
-        const allSlots = await bookingApiForBookingPage.getAllSlots();
-        setSlots(allSlots);
-
+        // Lấy thông tin slot từ bookingData (slot đã được backend ràng buộc đúng)
+        setSlot(bookingData.slot || null);
         setBooking(bookingData);
       } catch (error: any) {
         console.error("Lỗi khi lấy chi tiết lịch hẹn:", error);
@@ -129,28 +127,28 @@ const AppointmentDetail = () => {
 
   // Tính thời gian còn lại đến lịch hẹn (theo giờ) - sử dụng thông tin slot chính xác
   const calculateHoursToAppointment = () => {
-    if (!booking || !slots.length) return 0;
-    
-    // Tìm slot tương ứng với booking
-    const bookingSlot = slots.find(slot => slot.slotId === booking.slotId);
-    if (!bookingSlot) {
-      // Fallback về cách tính cũ nếu không tìm thấy slot
-      const appointmentTime = new Date(booking.dateBooking).getTime();
+    if (!booking) return 0;
+
+    // Ưu tiên dùng slot từ state slot
+    if (slot && slot.startTime) {
+      const appointmentDate = booking.dateBooking.split('T')[0];
+      const startTime = slot.startTime; // "08:00"
+      const appointmentDateTime = new Date(`${appointmentDate}T${startTime}:00+07:00`);
+      const appointmentTime = appointmentDateTime.getTime();
       const currentTime = new Date().getTime();
       const diffInMs = appointmentTime - currentTime;
+      console.log('appointmentDate:', appointmentDate);
+console.log('startTime:', startTime);
+console.log('appointmentDateTime:', appointmentDateTime.toString());
+console.log('currentTime:', new Date().toString());
       return Math.round(diffInMs / (1000 * 60 * 60));
     }
-    
-    // Tạo DateTime chính xác từ dateBooking và startTime của slot
-    const appointmentDate = booking.dateBooking.split('T')[0]; // Lấy phần ngày (YYYY-MM-DD)
-    const startTime = bookingSlot.startTime; // Định dạng "HH:MM"
-    
-    // Kết hợp ngày và giờ để tạo datetime chính xác
-    const appointmentDateTime = new Date(`${appointmentDate}T${startTime}:00`);
-    const currentTime = new Date();
-    
-    const diffInMs = appointmentDateTime.getTime() - currentTime.getTime();
-    return Math.round(diffInMs / (1000 * 60 * 60)); // Chuyển ms thành giờ và làm tròn
+
+    // Nếu không có slot, fallback về dateBooking
+    const appointmentTime = new Date(booking.dateBooking).getTime();
+    const currentTime = new Date().getTime();
+    const diffInMs = appointmentTime - currentTime;
+    return Math.round(diffInMs / (1000 * 60 * 60));
   };
 
   const hoursToAppointment = calculateHoursToAppointment();
@@ -198,7 +196,7 @@ const AppointmentDetail = () => {
               </div>
               <div>
                 <span className="font-medium">Ngày hẹn:</span> 
-                <span className="ml-2">{new Date(booking.dateBooking).toLocaleDateString('vi-VN')}</span>
+                <span className="ml-2">{new Date(booking.dateBooking).toLocaleDateString('vi-VN',{timeZone:'UTC'})}</span>
               </div>
               <div>
                 <span className="font-medium">Thời gian:</span> 

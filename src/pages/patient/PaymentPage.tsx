@@ -70,12 +70,43 @@ const PaymentPage: React.FC = () => {
     if (!booking) return;
     setProcessing(true);
     try {
+      // Gọi API tạo payment trước khi thanh toán
+      const paymentData = {
+        bookingId: booking.bookingId,
+        totalAmount: booking.payment?.totalAmount || booking.service?.price || 0,
+        status: 'pending',
+        method: selectedMethod,
+        confirmed: false,
+      };
+      let canContinue = false;
+      try {
+        const paymentRes = await bookingService.CreatePayment(paymentData);
+        if (paymentRes?.success) {
+          canContinue = true;
+        } else if (paymentRes?.message?.includes('Đã tồn tại hóa đơn cho lịch hẹn này')) {
+          canContinue = true;
+        } else {
+          alert(paymentRes?.message || 'Không tạo được payment!');
+          setProcessing(false);
+          return;
+        }
+      } catch (err: any) {
+        // Nếu lỗi trả về từ backend là đã tồn tại hóa đơn thì vẫn cho tiếp tục
+        if (err?.response?.data?.message?.includes('Đã tồn tại hóa đơn cho lịch hẹn này')) {
+          canContinue = true;
+        } else {
+          alert(err?.response?.data?.message || 'Không tạo được payment!');
+          setProcessing(false);
+          return;
+        }
+      }
+      if (!canContinue) return;
+
       const payload: any = {
         appUser: booking.patient?.name || 'guest',
         amount: booking.payment?.totalAmount || booking.service?.price || 0,
         // callback_url: `${window.location.origin}/patient/payment-callback`,
         description: `Thanh toán dịch vụ ${booking.service?.name || ''} cho bệnh nhân ${booking.patient?.name || ''}`,
-        
       };
       if (selectedMethod === 'atm' && selectedBank) {
         payload.bank_code = selectedBank;

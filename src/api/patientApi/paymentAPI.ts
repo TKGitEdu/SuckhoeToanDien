@@ -93,6 +93,18 @@ export const bookingService = {
         return res.data;
     },
 
+    // Tạo payment trong database
+    CreatePayment: async (paymentData: {
+      bookingId: string;
+      totalAmount: number;
+      status: string;
+      method: string;
+      confirmed: boolean;
+    }) => {
+      const res = await paymentAxios.post('/api/Payment', paymentData);
+      return res.data;
+    },
+
     
 }
 
