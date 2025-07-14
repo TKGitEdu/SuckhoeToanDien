@@ -91,6 +91,8 @@ export const bookingService = {
     getBookingDetails: async (bookingid: string): Promise<Booking[]> => {
         const res = await paymentAxios.get(`/api/Booking/details/${bookingid}`);
         return res.data;
-    }
+    },
+
+    
 }
 
