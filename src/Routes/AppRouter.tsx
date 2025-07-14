@@ -210,7 +210,7 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        <Route
+        {/* <Route trang này không có sử dụng.
           path="/patient/payments"
           element={
             <ProtectedRoute allowedRoles={["Patient"]}>
@@ -219,7 +219,7 @@ const AppRouter: React.FC = () => {
               </MainLayout>
             </ProtectedRoute>
           }
-        />
+        /> */}
         {/* Doctor */}
         <Route
           path="/doctor/dashboard"

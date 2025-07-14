@@ -1,7 +1,7 @@
 import axios  from "axios";
 
 export const paymentAxios = axios.create({
-    baseURL: "https://localhost:7147",
+    baseURL: "https://bev2-kt7c.onrender.com/",
     headers: {
         "Content-Type": "application/json",
     },
