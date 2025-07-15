@@ -141,11 +141,13 @@ const BookingPage = () => {
         throw new Error("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.");
       }
 
-
-      // Format date as ISO string
-   const dateString = data.appointmentDate
-  ? `${data.appointmentDate.getFullYear()}-${String(data.appointmentDate.getMonth() + 1).padStart(2, '0')}-${String(data.appointmentDate.getDate()).padStart(2, '0')}`
-  : new Date().toISOString().split('T')[0];
+const dateString = data.appointmentDate
+  ? new Date(Date.UTC(
+      data.appointmentDate.getFullYear(),
+      data.appointmentDate.getMonth(),
+      data.appointmentDate.getDate()
+    )).toISOString()
+  : new Date().toISOString();
 
       const bookingData: BookingRequest = {
         patientId: patientId,
