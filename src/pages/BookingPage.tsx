@@ -142,9 +142,9 @@ const BookingPage = () => {
       }
 
       // Format date as ISO string
-      const dateString = data.appointmentDate 
-        ? data.appointmentDate.toISOString()
-        : new Date().toISOString();
+      const dateString = data.appointmentDate
+        ? `${data.appointmentDate.getFullYear()}-${String(data.appointmentDate.getMonth() + 1).padStart(2, '0')}-${String(data.appointmentDate.getDate()).padStart(2, '0')}`
+        : new Date().toISOString().split('T')[0];
 
       const bookingData: BookingRequest = {
         patientId: patientId,
