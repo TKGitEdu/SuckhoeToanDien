@@ -7,7 +7,7 @@ import { bookingApiForBookingPage } from '../../api/patientApi/bookingApiForBook
 const AppointmentDetail = () => {
   const { bookingId } = useParams<{ bookingId: string }>();
   const [booking, setBooking] = useState<Booking | null>(null);
-  const [slots, setSlots] = useState<Slot[]>([]);
+  const [slot, setSlot] = useState<Slot | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [cancelLoading, setCancelLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,10 +46,8 @@ const AppointmentDetail = () => {
           throw new Error('Không tìm thấy dữ liệu lịch hẹn');
         }
 
-        // Lấy tất cả slots để tính toán thời gian chính xác
-        const allSlots = await bookingApiForBookingPage.getAllSlots();
-        setSlots(allSlots);
-
+        // Lấy thông tin slot từ bookingData (slot đã được backend ràng buộc đúng)
+        setSlot(bookingData.slot || null);
         setBooking(bookingData);
       } catch (error: any) {
         console.error("Lỗi khi lấy chi tiết lịch hẹn:", error);
@@ -129,28 +127,28 @@ const AppointmentDetail = () => {
 
   // Tính thời gian còn lại đến lịch hẹn (theo giờ) - sử dụng thông tin slot chính xác
   const calculateHoursToAppointment = () => {
-    if (!booking || !slots.length) return 0;
-    
-    // Tìm slot tương ứng với booking
-    const bookingSlot = slots.find(slot => slot.slotId === booking.slotId);
-    if (!bookingSlot) {
-      // Fallback về cách tính cũ nếu không tìm thấy slot
-      const appointmentTime = new Date(booking.dateBooking).getTime();
+    if (!booking) return 0;
+
+    // Ưu tiên dùng slot từ state slot
+    if (slot && slot.startTime) {
+      const appointmentDate = booking.dateBooking.split('T')[0];
+      const startTime = slot.startTime; // "08:00"
+      const appointmentDateTime = new Date(`${appointmentDate}T${startTime}:00+07:00`);
+      const appointmentTime = appointmentDateTime.getTime();
       const currentTime = new Date().getTime();
       const diffInMs = appointmentTime - currentTime;
+      console.log('appointmentDate:', appointmentDate);
+console.log('startTime:', startTime);
+console.log('appointmentDateTime:', appointmentDateTime.toString());
+console.log('currentTime:', new Date().toString());
       return Math.round(diffInMs / (1000 * 60 * 60));
     }
-    
-    // Tạo DateTime chính xác từ dateBooking và startTime của slot
-    const appointmentDate = booking.dateBooking.split('T')[0]; // Lấy phần ngày (YYYY-MM-DD)
-    const startTime = bookingSlot.startTime; // Định dạng "HH:MM"
-    
-    // Kết hợp ngày và giờ để tạo datetime chính xác
-    const appointmentDateTime = new Date(`${appointmentDate}T${startTime}:00`);
-    const currentTime = new Date();
-    
-    const diffInMs = appointmentDateTime.getTime() - currentTime.getTime();
-    return Math.round(diffInMs / (1000 * 60 * 60)); // Chuyển ms thành giờ và làm tròn
+
+    // Nếu không có slot, fallback về dateBooking
+    const appointmentTime = new Date(booking.dateBooking).getTime();
+    const currentTime = new Date().getTime();
+    const diffInMs = appointmentTime - currentTime;
+    return Math.round(diffInMs / (1000 * 60 * 60));
   };
 
   const hoursToAppointment = calculateHoursToAppointment();
@@ -198,7 +196,7 @@ const AppointmentDetail = () => {
               </div>
               <div>
                 <span className="font-medium">Ngày hẹn:</span> 
-                <span className="ml-2">{new Date(booking.dateBooking).toLocaleDateString('vi-VN')}</span>
+                <span className="ml-2">{new Date(booking.dateBooking).toLocaleDateString('vi-VN',{timeZone:'UTC'})}</span>
               </div>
               <div>
                 <span className="font-medium">Thời gian:</span> 
@@ -308,53 +306,61 @@ const AppointmentDetail = () => {
           </div>
         )}
 
-        {/* Khối thanh toán riêng biệt */}
-        {(booking.status === "Chờ thanh toán" || 
-          booking.status.toLowerCase() === "pending" ||
-          !booking.payment || 
-          (booking.payment && booking.payment.status === "Pending")) && 
-          booking.status !== "Đã hủy" && 
-          booking.status !== "cancelled" && (
-          <div className="mt-6 border-t pt-6">
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                    🚀 Hoàn tất thanh toán để xác nhận lịch hẹn
-                  </h3>
-                  <p className="text-blue-700 mb-3">
-                    Lịch hẹn của bạn sẽ được xác nhận ngay sau khi thanh toán thành công.
-                  </p>
-                  <div className="text-sm text-blue-600">
-                    <div className="mb-1">
-                      <span className="font-medium">Dịch vụ:</span> {booking.service?.name || "N/A"}
-                    </div>
-                    <div className="mb-1">
-                      <span className="font-medium">Bác sĩ:</span> {booking.doctor?.doctorName || "N/A"}
-                    </div>
-                    <div>
-                      <span className="font-medium">Tổng tiền:</span> 
-                      <span className="text-lg font-bold text-blue-800 ml-1">
-                        {(booking.payment?.totalAmount || booking.service?.price)?.toLocaleString('vi-VN') || "N/A"} VND
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="ml-6">
-                  <Link 
-                    to={`/patient/payment/${booking.bookingId}`}
-                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
-                  >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                    </svg>
-                    Thanh toán ngay
-                  </Link>
-                </div>
-              </div>
+       {/* Khối thanh toán riêng biệt */}
+{(
+  (booking.status === "Chờ thanh toán" ||
+    booking.status.toLowerCase() === "pending" ||
+    !booking.payment ||
+    (booking.payment && booking.payment.status === "Pending")) &&
+  booking.status !== "Đã hủy" &&
+  booking.status !== "cancelled"
+) && (
+  <div className="mt-6 border-t pt-6">
+    <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold text-blue-900 mb-2">
+            🚀 {booking.payment?.status === "Pending"
+              ? "Lịch hẹn sẽ được cập nhật sau"
+              : "Hoàn tất thanh toán "}
+          </h3>
+          <p className="text-blue-700 mb-3">
+            {booking.payment?.status === "pending"
+              ? "Bạn đã thanh toán thành công. Vui lòng chờ admin xác nhận, lịch hẹn sẽ được cập nhật trạng thái."
+              : "Lịch hẹn của bạn sẽ được cập nhật sau khi thanh toán thành công."}
+          </p>
+          <div className="text-sm text-blue-600">
+            <div className="mb-1">
+              <span className="font-medium">Dịch vụ:</span> {booking.service?.name || "N/A"}
+            </div>
+            <div className="mb-1">
+              <span className="font-medium">Bác sĩ:</span> {booking.doctor?.doctorName || "N/A"}
+            </div>
+            <div>
+              <span className="font-medium">Tổng tiền:</span>
+              <span className="text-lg font-bold text-blue-800 ml-1">
+                {(booking.payment?.totalAmount || booking.service?.price)?.toLocaleString('vi-VN') || "N/A"} VND
+              </span>
             </div>
           </div>
+        </div>
+        {(!booking.payment || booking.payment.status !== "pending") && (
+          <div className="ml-6">
+            <Link
+              to={`/patient/payment/${booking.bookingId}`}
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              Thanh toán ngay
+            </Link>
+          </div>
         )}
+      </div>
+    </div>
+  </div>
+)}
 
         {booking.examination && (
           <div className="mt-6 border-t pt-6">

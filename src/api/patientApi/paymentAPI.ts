@@ -70,11 +70,11 @@ export interface Booking {
     serviceId: string;
     doctorId: string;
     description: string;
-    doctor: Doctor[];
-    patient: Patient[];
-    service: Service[];
-    payment: Payment[];
-    slot: Slot[];
+    doctor: Doctor;
+    patient: Patient;
+    service: Service;
+    payment: Payment;
+    slot: Slot;
 }
 
 // Tạo đơn hàng ZaloPay
@@ -88,11 +88,34 @@ export const bookingService = {
         const res = await paymentAxios.post('/api/ZaloPay/create-order', fullPayload);
         return res.data;
     },
-    getBookingDetails: async (bookingid: string): Promise<Booking[]> => {
+    getBookingDetails: async (bookingid: string): Promise<Booking> => {
         const res = await paymentAxios.get(`/api/Booking/details/${bookingid}`);
         return res.data;
     },
 
-    
+    // Tạo payment trong database
+    CreatePayment: async (paymentData: {
+      bookingId: string;
+      totalAmount: number;
+      status: string;
+      method: string;
+      confirmed: boolean;
+    }) => {
+      const res = await paymentAxios.post('/api/Payment', paymentData);
+      return res.data;
+    },
+
+    // Cập nhật payment trong database
+    updatePayment: async (paymentId: string, paymentData: {
+      paymentId: string;
+      bookingId: string;
+      totalAmount: number;
+      status: string;
+      method: string;
+      confirmed: boolean;
+    }) => {
+      const res = await paymentAxios.put(`/api/Payment/${paymentId}`, paymentData);
+      return res.data;
+    },
 }
 
