@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import { patientAPI, type Patient } from "../../api/adminApi/patientAPI";
-import { Trash2, Pencil } from "lucide-react"; 
-import { Button } from "../../components/ui/button";
 
 export default function AdminPatients() {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -49,7 +47,7 @@ export default function AdminPatients() {
               <th className="text-left px-4 py-3">Email</th>
               <th className="text-left px-4 py-3">Địa chỉ</th>
               <th className="text-left px-4 py-3">Tình trạng</th>
-              <th className="text-left px-4 py-3"></th>
+           
             </tr>
           </thead>
           <tbody className="text-gray-700">
@@ -65,26 +63,6 @@ export default function AdminPatients() {
                   {patient.patientDetails.length > 0
                     ? patient.patientDetails[0].treatmentStatus
                     : "Chưa cập nhật"}
-                </td>
-                <td className="px-4 py-3 space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(patient.patientId)}
-                    className="flex items-center gap-1 mb-2 hover:cursor-pointer"
-                  >
-                    <Pencil size={16} />
-                    Cập nhật
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDelete(patient.patientId)}
-                    className="flex items-center gap-1 hover:cursor-pointer"
-                  >
-                    <Trash2 size={16} />
-                    Xóa
-                  </Button>
                 </td>
               </tr>
             ))}
