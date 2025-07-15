@@ -41,6 +41,9 @@ import RegisterSuccess from "../components/registerSuccess";
 // thêm trang PatientExaminations D:\ThuMucTam\SWP391--FrontEnd\SWP391--FrontEnd\src\pages\patient\Examinations.tsx
 import PatientExaminations from "../pages/patient/Examinations";
 import AdminServices from "../pages/admin/Services";
+import Bookings from "../pages/admin/Bookings";
+import Examination from "../pages/admin/Examination";
+import TreatmentMedications from "../pages/admin/Medicine";
 
 
 
@@ -279,6 +282,16 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
+         <Route
+          path="/admin/bookings"
+          element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AdminLayout>
+                <Bookings />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/admin/patients"
           element={
@@ -289,6 +302,17 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/admin/examinations"
+          element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AdminLayout>
+                <Examination />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        
          <Route
           path="/admin/services"
           element={
@@ -305,6 +329,16 @@ const AppRouter: React.FC = () => {
             <ProtectedRoute allowedRoles={["Admin"]}>
               <AdminLayout>
                 <AdminFeedbacks />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/admin/medicines"
+          element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AdminLayout>
+                <TreatmentMedications />
               </AdminLayout>
             </ProtectedRoute>
           }
