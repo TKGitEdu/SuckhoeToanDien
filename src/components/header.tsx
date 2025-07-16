@@ -19,14 +19,14 @@ const Header: React.FC = () => {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-   useEffect(() => {
+  useEffect(() => {
     const storedUser = localStorage.getItem("userInfo");
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
   }, []);
 
-    const handleLogout = () => {
+  const handleLogout = () => {
     logout();
     setUser(null);
     localStorage.removeItem("userInfo");
@@ -56,9 +56,6 @@ const Header: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
-            <Syringe size={24} className="text-white" />
-          </div>
           <Link to="/">
             <span className="text-xl sm:text-2xl font-bold text-gray-800">FertilityCare</span>
           </Link>
@@ -69,16 +66,44 @@ const Header: React.FC = () => {
           <Link to="/" className={`${location.pathname === '/' ? 'text-blue-600 font-medium' : 'text-gray-600'} hover:text-blue-600 transition-colors`}>
             Trang chủ
           </Link>
-          <Link to="/services" className={`${location.pathname.includes('/services') ? 'text-blue-600 font-medium' : 'text-gray-600'} hover:text-blue-600 transition-colors`}>
+          <Link
+            to="/services"
+            className={`${
+              location.pathname.includes("/services")
+                ? "text-blue-600 font-medium"
+                : "text-gray-600"
+            } hover:text-blue-600 transition-colors`}
+          >
             Dịch vụ
           </Link>
-          <Link to="/doctors" className={`${location.pathname.includes('/doctors') ? 'text-blue-600 font-medium' : 'text-gray-600'} hover:text-blue-600 transition-colors`}>
+          <Link
+            to="/doctors"
+            className={`${
+              location.pathname.includes("/doctors")
+                ? "text-blue-600 font-medium"
+                : "text-gray-600"
+            } hover:text-blue-600 transition-colors`}
+          >
             Bác sĩ
           </Link>
-          <Link to="/blog" className={`${location.pathname.includes('/blog') ? 'text-blue-600 font-medium' : 'text-gray-600'} hover:text-blue-600 transition-colors`}>
+          <Link
+            to="/blog"
+            className={`${
+              location.pathname.includes("/blog")
+                ? "text-blue-600 font-medium"
+                : "text-gray-600"
+            } hover:text-blue-600 transition-colors`}
+          >
             Blog
           </Link>
-          <Link to="/booking" className={`${location.pathname === '/booking' ? 'text-blue-600 font-medium' : 'text-gray-600'} hover:text-blue-600 transition-colors`}>
+          <Link
+            to="/booking"
+            className={`${
+              location.pathname === "/booking"
+                ? "text-blue-600 font-medium"
+                : "text-gray-600"
+            } hover:text-blue-600 transition-colors`}
+          >
             Đặt lịch
           </Link>
         </nav>
