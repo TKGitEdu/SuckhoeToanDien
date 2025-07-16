@@ -320,7 +320,7 @@ console.log('currentTime:', new Date().toString());
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-blue-900 mb-2">
-            🚀 {booking.payment?.status === "Pending"
+            🚀 {booking.payment?.status === "pending"
               ? "Lịch hẹn sẽ được cập nhật sau"
               : "Hoàn tất thanh toán "}
           </h3>
