@@ -45,6 +45,16 @@ function getCookie(name: string) {
   return match ? match[2] : null;
 }
 
+// Hàm parse query string thành object
+function parseQuery(queryString: string) {
+  const params = new URLSearchParams(queryString);
+  const obj: Record<string, string> = {};
+  params.forEach((value, key) => {
+    obj[key] = value;
+  });
+  return obj;
+}
+
 const PaymentCallbackPage: React.FC = () => {
   const searchParams = new URLSearchParams(window.location.search);
   const amount = searchParams.get('amount');
