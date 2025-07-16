@@ -285,19 +285,18 @@ console.log('currentTime:', new Date().toString());
               <div>
                 <span className="font-medium">Trạng thái thanh toán:</span> 
                 <span className={`ml-2 px-2 py-1 rounded-full text-sm ${
-                  booking.payment.status === "Paid" ? "bg-green-100 text-green-800" :
+                  booking.payment.status === "pending" ? "bg-green-100 text-green-800" :
                   booking.payment.status === "Pending" ? "bg-yellow-100 text-yellow-800" :
                   "bg-gray-100 text-gray-800"
                 }`}>
-                  {booking.payment.status === "Paid" ? "Đã thanh toán" : 
-                   booking.payment.status === "Pending" ? "Chờ thanh toán" : 
-                   booking.payment.status || "Không có thông tin"}
+                  {booking.payment.status === "pending" ? "Bạn đã thanh toán, chờ cập nhật mới nhất từ hệ thống" : 
+                   booking.payment.status === "trAgain" ? "Vui lòng thanh toán" : 
+                   booking.payment.status || "Thông tin sẽ được cập nhật sau khi thanh toán"}
                 </span>
-                {booking.payment.status === "Pending" && (
+                {booking.payment.status === "trAgain" && (
                   <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                     <p className="text-yellow-800 text-sm">
-                      ⚠️ Lịch hẹn của bạn chưa được xác nhận do chưa thanh toán. 
-                      Vui lòng thanh toán để hoàn tất đặt lịch.
+                      ⚠️ Lịch hẹn của bạn sẽ được ưu tiên xác nhận khi hoàn tất thủ tục thanh toán. 
                     </p>
                   </div>
                 )}
@@ -308,12 +307,7 @@ console.log('currentTime:', new Date().toString());
 
        {/* Khối thanh toán riêng biệt */}
 {(
-  (booking.status === "Chờ thanh toán" ||
-    booking.status.toLowerCase() === "pending" ||
-    !booking.payment ||
-    (booking.payment && booking.payment.status === "Pending")) &&
-  booking.status !== "Đã hủy" &&
-  booking.status !== "cancelled"
+  (booking.status === "Pending" || !booking.payment || (booking.payment && booking.payment.status === "Pending")) && booking.status !== "cancelled"
 ) && (
   <div className="mt-6 border-t pt-6">
     <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6">
@@ -400,26 +394,36 @@ console.log('currentTime:', new Date().toString());
           </div>
         )}
 
-        <div className="mt-8 flex justify-end space-x-4">
-          <Link 
-            to="/patient/dashboard"
-            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-          >
-            Quay lại
-          </Link>
+        <div className="mt-8 flex flex-col items-end space-y-3">
+  {/* Thông báo phí hủy lịch hẹn */}
+  {canCancelBooking && canCancelByTime && (
+    <div className="mb-2 w-full lg:w-auto">
+      <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-2 rounded-md text-sm">
+        ⚠️ Khi hủy lịch hẹn, bạn sẽ mất phí và phải liên hệ admin để được hoàn trả.
+      </div>
+    </div>
+  )}
+  <div className="flex justify-end space-x-4 w-full">
+    <Link 
+      to="/patient/dashboard"
+      className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+    >
+      Quay lại
+    </Link>
 
-          {canCancelBooking && canCancelByTime && (
-            <button 
-              className={`px-4 py-2 rounded-md text-white ${
-                cancelLoading ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
-              }`}
-              onClick={handleCancelBooking}
-              disabled={cancelLoading}
-            >
-              {cancelLoading ? "Đang hủy..." : "Hủy lịch hẹn"}
-            </button>
-          )}
-        </div>
+    {canCancelBooking && canCancelByTime && (
+      <button 
+        className={`px-4 py-2 rounded-md text-white ${
+          cancelLoading ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
+        }`}
+        onClick={handleCancelBooking}
+        disabled={cancelLoading}
+      >
+        {cancelLoading ? "Đang hủy..." : "Hủy lịch hẹn"}
+      </button>
+    )}
+  </div>
+</div>
       </div>
     </div>
   );
