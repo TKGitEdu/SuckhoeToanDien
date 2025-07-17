@@ -8,7 +8,7 @@ export default function AdminPatients() {
   useEffect(() => {
     const fetchPatients = async () => {
       try {
-        const response = await patientAPI.getAllDoctor();
+        const response = await patientAPI.getAllPatient();
         setPatients(response);
       } catch (error) {
         console.error("Lỗi khi lấy danh sách bệnh nhân:", error);

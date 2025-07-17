@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { servicesAPI, type Service } from "../../api/adminApi/servicesAPI";
 import { Button } from "../../components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function AdminServices() {
   const [services, setServices] = useState<Service[]>([]);
@@ -76,182 +77,194 @@ export default function AdminServices() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Danh sách dịch vụ</h1>
-        <Button
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:cursor-pointer hover:bg-blue-700 transition duration-200"
-          onClick={() => {
-            setForm({
-              name: "",
-              description: "",
-              price: 0,
-              status: "",
-              category: "",
-            });
-            setEditingService(null);
-            setModalOpen(true);
-          }}
-        >
-          + Thêm dịch vụ
-        </Button>
-      </div>
+    <div className="p-8 bg-gradient-to-br from-blue-50 to-gray-100 min-h-screen font-sans">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-10">
+          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-500">
+            Quản lý dịch vụ
+          </h1>
+          <Button
+            className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+            onClick={() => {
+              setForm({
+                name: "",
+                description: "",
+                price: 0,
+                status: "",
+                category: "",
+              });
+              setEditingService(null);
+              setModalOpen(true);
+            }}
+          >
+            + Thêm dịch vụ mới
+          </Button>
+        </div>
 
-      {loading ? (
-        <p className="text-gray-600">Đang tải...</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
-            <thead className="bg-blue-600 text-white">
-              <tr>
-                <th className="px-4 py-3 text-left">Tên</th>
-                <th className="px-4 py-3 text-left">Mô tả</th>
-                <th className="px-4 py-3 text-left">Giá</th>
-                <th className="px-4 py-3 text-left">Trạng thái</th>
-                <th className="px-4 py-3 text-left">Danh mục</th>
-                <th className="px-4 py-3 text-left">Hành động</th>
-              </tr>
-            </thead>
-            <tbody className="text-gray-700">
-              {services.map((s, idx) => (
-                <tr
-                  key={s.serviceId}
-                  className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                >
-                  <td className="px-4 py-3">{s.name}</td>
-                  <td className="px-4 py-3">{s.description}</td>
-                  <td className="px-4 py-3">
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="h-12 w-12 border-4 border-t-indigo-600 border-gray-200 rounded-full"
+            ></motion.div>
+          </div>
+        ) : (
+          <div className="grid gap-6">
+            {services.map((s, idx) => (
+              <motion.div
+                key={s.serviceId}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: idx * 0.1 }}
+                className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
+                  <div className="font-semibold text-gray-800">{s.name}</div>
+                  <div className="text-gray-600 md:col-span-2">{s.description}</div>
+                  <div className="text-gray-800 font-medium">
                     {s.price.toLocaleString("vi-VN")} ₫
-                  </td>
-                  <td className="px-4 py-3">
+                  </div>
+                  <div>
                     <span
-                      className={`px-2 py-1 text-xs rounded-full ${
+                      className={`px-3 py-1 text-xs font-semibold rounded-full ${
                         s.status === "Active"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
                       }`}
                     >
-                      {s.status}
+                      {s.status === "Active" ? "Hoạt động" : "Ngừng hoạt động"}
                     </span>
-                  </td>
-                  <td className="px-4 py-3">{s.category}</td>
-                  <td className="px-4 py-3 space-x-2">
+                  </div>
+                  <div className="flex space-x-3">
                     <Button
-                      className="text-white bg-blue-500 hover:bg-blue-900 hover:cursor-pointer"
+                      className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-all duration-200 transform hover:scale-105"
                       onClick={() => handleEdit(s)}
                     >
                       Sửa
                     </Button>
                     <Button
-                      className="text-white bg-red-500 hover:bg-red-900 hover:cursor-pointer"
+                      className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all duration-200 transform hover:scale-105"
                       onClick={() => handleDelete(s.serviceId)}
                     >
                       Xóa
                     </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md transform transition-all duration-300 scale-100">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">
-              {editingService ? "Chỉnh sửa dịch vụ" : "Thêm dịch vụ"}
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Tên
-                </label>
-                <input
-                  type="text"
-                  placeholder="Tên dịch vụ"
-                  className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Mô tả
-                </label>
-                <textarea
-                  placeholder="Mô tả dịch vụ"
-                  className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  rows={4}
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Giá
-                </label>
-                <input
-                  type="number"
-                  placeholder="Giá dịch vụ"
-                  className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={form.price}
-                  onChange={(e) =>
-                    setForm({ ...form, price: parseInt(e.target.value) || 0 })
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Trạng thái
-                </label>
-                <select
-                  className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                >
-                  <option value="Active">Hoạt động</option>
-                  <option value="Inactive">Ngừng hoạt động</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Danh mục
-                </label>
-                <input
-                  type="text"
-                  placeholder="Danh mục"
-                  className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={form.category}
-                  onChange={(e) =>
-                    setForm({ ...form, category: e.target.value })
-                  }
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button
-                  type="button"
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:cursor-pointer hover:bg-gray-300 transition duration-200"
-                  onClick={() => setModalOpen(false)}
-                >
-                  Hủy
-                </Button>
-                <Button
-                  type="button"
-                  className="px-4 py-2 bg-blue-600 text-white hover:cursor-pointer rounded-md hover:bg-blue-700 transition duration-200"
-                  onClick={handleSubmit}
-                >
-                  {editingService ? "Lưu" : "Thêm"}
-                </Button>
-              </div>
-            </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
-        </div>
-      )}
+        )}
+
+        <AnimatePresence>
+          {modalOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md"
+              >
+Cameras on
+                <h2 className="text-2xl font-bold mb-6 text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-500">
+                  {editingService ? "Chỉnh sửa dịch vụ" : "Thêm dịch vụ mới"}
+                </h2>
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Tên dịch vụ
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Nhập tên dịch vụ"
+                      className="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 transition-all duration-200"
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Mô tả
+                    </label>
+                    <textarea
+                      placeholder="Nhập mô tả dịch vụ"
+                      className="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 transition-all duration-200"
+                      rows={4}
+                      value={form.description}
+                      onChange={(e) =>
+                        setForm({ ...form, description: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Giá
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Nhập giá dịch vụ"
+                      className="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 transition-all duration-200"
+                      value={form.price}
+                      onChange={(e) =>
+                        setForm({ ...form, price: parseInt(e.target.value) || 0 })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Trạng thái
+                    </label>
+                    <select
+                      className="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 transition-all duration-200"
+                      value={form.status}
+                      onChange={(e) => setForm({ ...form, status: e.target.value })}
+                    >
+                      <option value="Active">Hoạt động</option>
+                      <option value="Inactive">Ngừng hoạt động</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Danh mục
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Nhập danh mục"
+                      className="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 transition-all duration-200"
+                      value={form.category}
+                      onChange={(e) =>
+                        setForm({ ...form, category: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-3">
+                    <Button
+                      type="button"
+                      className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-all duration-200 transform hover:scale-105"
+                      onClick={() => setModalOpen(false)}
+                    >
+                      Hủy
+                    </Button>
+                    <Button
+                      type="button"
+                      className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                      onClick={handleSubmit}
+                    >
+                      {editingService ? "Lưu" : "Thêm"}
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

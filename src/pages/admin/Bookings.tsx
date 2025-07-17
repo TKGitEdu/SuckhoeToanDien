@@ -10,7 +10,7 @@ const Bookings: React.FC = () => {
     const fetchBookings = async () => {
       try {
         const response = await BookingAPI.getAllBookings();
-        setBookings(response);
+        setBookings( response); 
       } catch (err) {
         setError("Không thể tải dữ liệu lịch hẹn.");
       } finally {
@@ -19,6 +19,16 @@ const Bookings: React.FC = () => {
     };
     fetchBookings();
   }, []);
+
+  const handleCancel = async (bookingId: string) => {
+    if (!window.confirm("Bạn có chắc muốn hủy lịch hẹn này?")) return;
+    try {
+      await BookingAPI.cancelBooking(bookingId);
+      setBookings((prev) => prev.filter((b) => b.bookingId !== bookingId));
+    } catch {
+      alert("Hủy lịch hẹn thất bại!");
+    }
+  };
 
   if (loading) return <p className="p-4">Đang tải dữ liệu lịch hẹn...</p>;
   if (error) return <p className="p-4 text-red-500">{error}</p>;
@@ -38,6 +48,7 @@ const Bookings: React.FC = () => {
               <th className="px-4 py-3 text-left">Khung giờ</th>
               <th className="px-4 py-3 text-left">Trạng thái</th>
               <th className="px-4 py-3 text-left">Ghi chú</th>
+              <th className="px-4 py-3 text-left">Hành động</th>
             </tr>
           </thead>
           <tbody className="text-gray-700">
@@ -53,6 +64,14 @@ const Bookings: React.FC = () => {
                 <td className="px-4 py-3">{booking.slot?.slotName}</td>
                 <td className="px-4 py-3">{booking.status}</td>
                 <td className="px-4 py-3">{booking.note}</td>
+                <td className="px-4 py-3">
+                  <button
+                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition hover:cursor-pointer"
+                    onClick={() => handleCancel(booking.bookingId)}
+                  >
+                    Hủy
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
