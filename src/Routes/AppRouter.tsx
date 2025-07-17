@@ -43,6 +43,11 @@ import PatientExaminations from "../pages/patient/Examinations";
 // thêm trang CreateTreatmentPlan
 import CreateTreatmentPlan from "../pages/doctor/CreateTreatmentplan";
 
+import AdminServices from "../pages/admin/Services";
+import Bookings from "../pages/admin/Bookings";
+import Examination from "../pages/admin/Examination";
+import TreatmentMedications from "../pages/admin/Medicine";
+
 import PaymentPage from "../pages/patient/PaymentPage";
 import PaymentCallbackPage from "../pages/patient/PaymentCallbackPage";
 
@@ -313,6 +318,16 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
+         <Route
+          path="/admin/bookings"
+          element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AdminLayout>
+                <Bookings />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/admin/patients"
           element={
@@ -324,11 +339,42 @@ const AppRouter: React.FC = () => {
           }
         />
         <Route
+          path="/admin/examinations"
+          element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AdminLayout>
+                <Examination />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        
+         <Route
+          path="/admin/services"
+          element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AdminLayout>
+                <AdminServices/>
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/admin/feedbacks"
           element={
             <ProtectedRoute allowedRoles={["Admin"]}>
               <AdminLayout>
                 <AdminFeedbacks />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/admin/medicines"
+          element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AdminLayout>
+                <TreatmentMedications />
               </AdminLayout>
             </ProtectedRoute>
           }

@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Tạo instance axios với cấu hình xác thực
 const bookingAxios = axios.create({
-  baseURL: 'https://bev2-kt7c.onrender.com/',
+  baseURL: 'https://localhost:7147',
   headers: {
     'Content-Type': 'application/json',
   }
