@@ -61,4 +61,11 @@ export const BookingAPI = {
   getAllBookings: async (): Promise<BookingResponse[]> => {
     return await axiosClient.get("/api/Booking/all");
   },
+  getBookingById: async (bookingId: string): Promise<BookingResponse> => {
+    return await axiosClient.get(`/api/Booking/details/${bookingId}`);
+  },
+
+  cancelBooking : async (bookingId: string): Promise<void> => {
+    return await axiosClient.delete(`/api/Booking/cancel/${bookingId}`);
+  }
 }

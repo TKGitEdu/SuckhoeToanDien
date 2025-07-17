@@ -40,10 +40,34 @@ export type Patient = {
   patientDetails: PatientDetail[];
 };
 
+export type PatientUpdateRequest = {
+  patientId: string;
+  userId: string;
+  name: string;
+  phone: string;
+  email: string;
+  dateOfBirth: string;
+  address: string;
+  gender: string;
+  bloodType: string;
+  emergencyPhoneNumber: string;
+}
+
 
 
 export const patientAPI = {
-   getAllDoctor: async (): Promise<Patient[]> => {
+   getAllPatient: async (): Promise<Patient[]> => {
     return await axiosClient.get("/api/Patient"); 
   },
+  getById: async (patientId: string): Promise<Patient> => {
+    return await axiosClient.get(`/api/Patient/${patientId}`);
+  },
+
+  updatePatient: async ( patientData: Partial<PatientUpdateRequest>): Promise<void> => {
+    return await axiosClient.put(`/api/Patient/Update/`, patientData);
+  },
+
+  deletePatient: async (patientId: string): Promise<void> => {
+    return await axiosClient.delete(`/api/Patient/Delete/${patientId}`);
+  }
 }
