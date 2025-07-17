@@ -234,16 +234,6 @@ const TreatmentMedications: React.FC = () => {
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Mã phác đồ</label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      value={form.treatmentPlanId}
-                      onChange={e => setForm({ ...form, treatmentPlanId: e.target.value })}
-                      required
-                    />
-                  </div>
                   <div className="flex justify-end gap-2 mt-5">
                     <button
                       type="button"

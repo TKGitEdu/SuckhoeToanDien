@@ -12,7 +12,7 @@ export default function AdminServices() {
     name: "",
     description: "",
     price: 0,
-    status: "",
+    status: "Active", // Set default status to "Active"
     category: "",
   });
   const [confirmStatus, setConfirmStatus] = useState<{
@@ -29,7 +29,12 @@ export default function AdminServices() {
     setLoading(true);
     try {
       const data = await servicesAPI.getAllService();
-      setServices(data);
+      // Normalize status to handle case-insensitive "active"
+      const normalizedData = data.map((service: Service) => ({
+        ...service,
+        status: service.status.toLowerCase() === "active" ? "Active" : service.status,
+      }));
+      setServices(normalizedData);
     } catch (err) {
       console.error("Lỗi khi lấy dịch vụ:", err);
     } finally {
@@ -43,7 +48,7 @@ export default function AdminServices() {
       name: service.name,
       description: service.description,
       price: service.price,
-      status: service.status,
+      status: service.status.toLowerCase() === "active" ? "Active" : service.status,
       category: service.category,
     });
     setModalOpen(true);
@@ -51,14 +56,19 @@ export default function AdminServices() {
 
   const handleSubmit = async () => {
     try {
+      // Ensure status is not empty or null
+      const normalizedForm = {
+        ...form,
+        status: form.status.toLowerCase() === "active" || !form.status ? "Active" : form.status,
+      };
       if (editingService) {
         await servicesAPI.update(editingService.serviceId, {
-          ...form,
+          ...normalizedForm,
           serviceId: editingService.serviceId,
         });
       } else {
         await servicesAPI.create({
-          ...form,
+          ...normalizedForm,
           serviceId: "",
         });
       }
@@ -74,21 +84,23 @@ export default function AdminServices() {
 
   // Gọi khi chọn dropdown trạng thái
   const handleStatusSelect = (service: Service, newStatus: string) => {
-    setConfirmStatus({ service, newStatus });
+    const normalizedStatus = newStatus.toLowerCase() === "active" ? "Active" : newStatus;
+    setConfirmStatus({ service, newStatus: normalizedStatus });
   };
 
   // Xác nhận update trạng thái
   const handleConfirmStatus = async () => {
     if (!confirmStatus.service) return;
     try {
+      const normalizedStatus = confirmStatus.newStatus.toLowerCase() === "active" ? "Active" : confirmStatus.newStatus;
       await servicesAPI.update(confirmStatus.service.serviceId, {
         ...confirmStatus.service,
-        status: confirmStatus.newStatus,
+        status: normalizedStatus,
       });
       setServices((prev) =>
         prev.map((s) =>
           s.serviceId === confirmStatus.service?.serviceId
-            ? { ...s, status: confirmStatus.newStatus }
+            ? { ...s, status: normalizedStatus }
             : s
         )
       );
@@ -115,7 +127,7 @@ export default function AdminServices() {
                 name: "",
                 description: "",
                 price: 0,
-                status: "",
+                status: "Active", // Set default status to "Active"
                 category: "",
               });
               setEditingService(null);
@@ -161,10 +173,10 @@ export default function AdminServices() {
                   <div>
                     <span
                       className={`inline-block px-2 py-1 rounded-lg ${
-                        s.status === "Active" ? "text-green-600 bg-green-100" : "text-red-600 bg-red-100"
+                        s.status.toLowerCase() === "active" ? "text-green-600 bg-green-100" : "text-red-600 bg-red-100"
                       }`}
                     >
-                      {s.status === "Active" ? "Hoạt động" : "Ngừng hoạt động"}
+                      {s.status.toLowerCase() === "active" ? "Hoạt động" : "Ngừng hoạt động"}
                     </span>
                   </div>
                   <div className="text-gray-700">{s.category}</div>
@@ -180,7 +192,7 @@ export default function AdminServices() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-Blur-md"
             >
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
@@ -302,7 +314,7 @@ export default function AdminServices() {
                   Xác nhận cập nhật trạng thái
                 </h2>
                 <p className="mb-6">
-                  Bạn có chắc muốn đổi trạng thái dịch vụ <b>{confirmStatus.service.name}</b> thành <b>{confirmStatus.newStatus === "Active" ? "Hoạt động" : "Ngừng hoạt động"}</b>?
+                  Bạn có chắc muốn đổi trạng thái dịch vụ <b>{confirmStatus.service.name}</b> thành <b>{confirmStatus.newStatus.toLowerCase() === "active" ? "Hoạt động" : "Ngừng hoạt động"}</b>?
                 </p>
                 <div className="flex justify-end space-x-2">
                   <Button
