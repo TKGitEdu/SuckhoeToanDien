@@ -67,5 +67,9 @@ export const BookingAPI = {
 
   cancelBooking : async (bookingId: string): Promise<void> => {
     return await axiosClient.delete(`/api/Booking/cancel/${bookingId}`);
+  },
+
+  updateBooking : async (bookingId: string, data: Partial<BookingResponse>): Promise<BookingResponse> => {
+    return await axiosClient.put(`/api/Booking/update/${bookingId}`, data); 
   }
 }
