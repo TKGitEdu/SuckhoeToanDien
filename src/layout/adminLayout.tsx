@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { LogOut, Home, Users, Settings, Beaker, List, BriefcaseMedical, CalendarDays } from "lucide-react";
+import { LogOut,DollarSign, Home, Users, Settings, Beaker, List, BriefcaseMedical, CalendarDays } from "lucide-react";
 
 type AdminLayoutProps = {
   children: ReactNode;
@@ -30,9 +30,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { path: "/admin/services", label: "Dịch vụ", icon: <List size={20} /> },
     { path: "/admin/patients", label: "Quản lý bệnh nhân", icon: <Users size={20} /> },
     { path: "/admin/doctors", label: "Quản lý bác sĩ", icon: <Users size={20} /> },
-    { path: "/admin/bookings", label: "Quản lý lịch hẹn", icon: <CalendarDays size={20} /> },
+    { path: "/admin/bookings", label: "Lịch hẹn", icon: <CalendarDays size={20} /> },
     { path: "/admin/examinations", label: "Xét nghiệm", icon: <Beaker size={20} /> },
-    { path: "/admin/medicines", label: "Quản lí thuốc", icon: <BriefcaseMedical size={20} /> },
+     { path: "/admin/medicines", label: "Quản lí thuốc", icon: <BriefcaseMedical size={20} /> },
+    { path: "/admin/payments", label: "Giao dịch thanh toán", icon: <DollarSign size={20} /> },
     { path: "/admin/settings", label: "Cài đặt", icon: <Settings size={20} /> },
   ];
 
