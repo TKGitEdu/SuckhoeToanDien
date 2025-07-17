@@ -15,6 +15,11 @@ export default function AdminServices() {
     status: "",
     category: "",
   });
+  const [confirmStatus, setConfirmStatus] = useState<{
+    service: Service | null;
+    newStatus: string;
+  }>({ service: null, newStatus: "" });
+  const [successMsg, setSuccessMsg] = useState<string>("");
 
   useEffect(() => {
     fetchServices();
@@ -29,17 +34,6 @@ export default function AdminServices() {
       console.error("Lỗi khi lấy dịch vụ:", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (confirm("Bạn có chắc chắn muốn xóa dịch vụ này?")) {
-      try {
-        await servicesAPI.delete(id);
-        await fetchServices();
-      } catch (err) {
-        console.error("Lỗi khi xóa:", err);
-      }
     }
   };
 
@@ -71,8 +65,39 @@ export default function AdminServices() {
       setModalOpen(false);
       setEditingService(null);
       await fetchServices();
+      setSuccessMsg("Cập nhật dịch vụ thành công!");
+      setTimeout(() => setSuccessMsg(""), 2500);
     } catch (err) {
       console.error("Lỗi khi lưu dịch vụ:", err);
+    }
+  };
+
+  // Gọi khi chọn dropdown trạng thái
+  const handleStatusSelect = (service: Service, newStatus: string) => {
+    setConfirmStatus({ service, newStatus });
+  };
+
+  // Xác nhận update trạng thái
+  const handleConfirmStatus = async () => {
+    if (!confirmStatus.service) return;
+    try {
+      await servicesAPI.update(confirmStatus.service.serviceId, {
+        ...confirmStatus.service,
+        status: confirmStatus.newStatus,
+      });
+      setServices((prev) =>
+        prev.map((s) =>
+          s.serviceId === confirmStatus.service?.serviceId
+            ? { ...s, status: confirmStatus.newStatus }
+            : s
+        )
+      );
+      setConfirmStatus({ service: null, newStatus: "" });
+      setSuccessMsg("Cập nhật trạng thái thành công!");
+      setTimeout(() => setSuccessMsg(""), 2500);
+    } catch (err) {
+      alert("Cập nhật trạng thái thất bại!");
+      setConfirmStatus({ service: null, newStatus: "" });
     }
   };
 
@@ -84,7 +109,7 @@ export default function AdminServices() {
             Quản lý dịch vụ
           </h1>
           <Button
-            className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+            className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:cursor-pointer"
             onClick={() => {
               setForm({
                 name: "",
@@ -100,6 +125,13 @@ export default function AdminServices() {
             + Thêm dịch vụ mới
           </Button>
         </div>
+
+        {/* Thông báo nhỏ */}
+        {successMsg && (
+          <div className="fixed top-6 right-6 z-[100] bg-green-500 text-white px-4 py-2 rounded shadow transition">
+            {successMsg}
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center items-center h-64">
@@ -117,7 +149,8 @@ export default function AdminServices() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: idx * 0.1 }}
-                className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300"
+                className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg hover:bg-indigo-50 transition-all duration-300 cursor-pointer"
+                onClick={() => handleEdit(s)}
               >
                 <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
                   <div className="font-semibold text-gray-800">{s.name}</div>
@@ -127,29 +160,14 @@ export default function AdminServices() {
                   </div>
                   <div>
                     <span
-                      className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                        s.status === "Active"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
+                      className={`inline-block px-2 py-1 rounded-lg ${
+                        s.status === "Active" ? "text-green-600 bg-green-100" : "text-red-600 bg-red-100"
                       }`}
                     >
                       {s.status === "Active" ? "Hoạt động" : "Ngừng hoạt động"}
                     </span>
                   </div>
-                  <div className="flex space-x-3">
-                    <Button
-                      className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-all duration-200 transform hover:scale-105"
-                      onClick={() => handleEdit(s)}
-                    >
-                      Sửa
-                    </Button>
-                    <Button
-                      className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all duration-200 transform hover:scale-105"
-                      onClick={() => handleDelete(s.serviceId)}
-                    >
-                      Xóa
-                    </Button>
-                  </div>
+                  <div className="text-gray-700">{s.category}</div>
                 </div>
               </motion.div>
             ))}
@@ -171,7 +189,6 @@ export default function AdminServices() {
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md"
               >
-Cameras on
                 <h2 className="text-2xl font-bold mb-6 text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-500">
                   {editingService ? "Chỉnh sửa dịch vụ" : "Thêm dịch vụ mới"}
                 </h2>
@@ -221,7 +238,7 @@ Cameras on
                       Trạng thái
                     </label>
                     <select
-                      className="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 transition-all duration-200"
+                      className="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 transition-all duration-200 hover:cursor-pointer"
                       value={form.status}
                       onChange={(e) => setForm({ ...form, status: e.target.value })}
                     >
@@ -246,19 +263,62 @@ Cameras on
                   <div className="flex justify-end space-x-3">
                     <Button
                       type="button"
-                      className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-all duration-200 transform hover:scale-105"
+                      className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-all duration-200 transform hover:scale-105 hover:cursor-pointer"
                       onClick={() => setModalOpen(false)}
                     >
                       Hủy
                     </Button>
                     <Button
                       type="button"
-                      className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                      className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 hover:cursor-pointer"
                       onClick={handleSubmit}
                     >
                       {editingService ? "Lưu" : "Thêm"}
                     </Button>
                   </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Popup xác nhận cập nhật trạng thái */}
+        <AnimatePresence>
+          {confirmStatus.service && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm"
+              >
+                <h2 className="text-lg font-semibold mb-4 text-gray-800">
+                  Xác nhận cập nhật trạng thái
+                </h2>
+                <p className="mb-6">
+                  Bạn có chắc muốn đổi trạng thái dịch vụ <b>{confirmStatus.service.name}</b> thành <b>{confirmStatus.newStatus === "Active" ? "Hoạt động" : "Ngừng hoạt động"}</b>?
+                </p>
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    type="button"
+                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-all duration-200 hover:cursor-pointer"
+                    onClick={() => setConfirmStatus({ service: null, newStatus: "" })}
+                  >
+                    Hủy
+                  </Button>
+                  <Button
+                    type="button"
+                    className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:cursor-pointer"
+                    onClick={handleConfirmStatus}
+                  >
+                    Xác nhận
+                  </Button>
                 </div>
               </motion.div>
             </motion.div>

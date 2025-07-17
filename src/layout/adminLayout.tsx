@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { LogOut, Home, Users, Settings,Beaker,List , BriefcaseMedicalIcon,CalendarDays } from "lucide-react";
+import { LogOut, Home, Users, Settings, Beaker, List, BriefcaseMedical, CalendarDays } from "lucide-react";
 
 type AdminLayoutProps = {
   children: ReactNode;
@@ -25,7 +25,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     navigate("/");
   };
 
-  // Define sidebar links with their paths and labels
   const sidebarLinks = [
     { path: "/admin/dashboard", label: "Dashboard", icon: <Home size={20} /> },
     { path: "/admin/services", label: "Dịch vụ", icon: <List size={20} /> },
@@ -33,15 +32,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { path: "/admin/doctors", label: "Quản lý bác sĩ", icon: <Users size={20} /> },
     { path: "/admin/bookings", label: "Quản lý lịch hẹn", icon: <CalendarDays size={20} /> },
     { path: "/admin/examinations", label: "Xét nghiệm", icon: <Beaker size={20} /> },
-    { path: "/admin/medicines", label: "Quản lí thuốc", icon: <BriefcaseMedicalIcon size={20} /> },
+    { path: "/admin/medicines", label: "Quản lí thuốc", icon: <BriefcaseMedical size={20} /> },
     { path: "/admin/settings", label: "Cài đặt", icon: <Settings size={20} /> },
   ];
 
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-lg px-6 py-8 flex flex-col">
-        <h2 className="text-2xl font-bold text-blue-600 mb-10">Quản trị</h2>
+      <aside className="w-64 bg-white shadow-lg px-6 py-8 flex flex-col fixed top-0 left-0 h-full">
+        <h2 className="text-2xl font-bold text-blue-600 mb-10">Administrator </h2>
         <nav className="flex-1 space-y-2">
           {sidebarLinks.map((link) => (
             <Link
@@ -58,22 +57,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </Link>
           ))}
         </nav>
-      </aside>
-
-      <main className="relative  flex-1 p-8">
-        <span className="text-3xl  font-bold text-gray-800 mb-6">
-          Welcome, <span className="text-red-500 font-bold">{user?.fullName || "Admin"}</span>
-        </span>
-
         <button
           onClick={handleLogout}
-          className="absolute top-8 hover:cursor-pointer   right-8 flex items-center gap-2 text-red-500 hover:text-red-700 transition-colors duration-200"
+          className="flex items-center hover:cursor-pointer gap-2 px-4 py-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors duration-200"
         >
           <LogOut size={20} />
           Đăng xuất
         </button>
+      </aside>
 
-        <div>{children}</div>
+      <main className="flex-1 ml-64 p-8">
+        <div className="bg-white rounded-lg shadow-md p-6 min-h-[calc(100vh-4rem)]">
+          {children}
+        </div>
       </main>
     </div>
   );

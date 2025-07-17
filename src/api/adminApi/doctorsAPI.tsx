@@ -33,6 +33,19 @@ export type BookingResponse ={
 }
 
 
+export type CreateDoctorRequest = {
+   userId: string;
+  doctorName: string;
+  specialization: string;
+  phone: string;
+  email: string;
+  username: string;
+  password: string;
+  address: string;
+  gender: string;
+}
+
+
 
 
 export const doctorAPI = {
@@ -47,7 +60,10 @@ export const doctorAPI = {
   },
   updateDoctor: async (doctorId: string, doctorData: Partial<Doctor>): Promise<Doctor> => {
     return await axiosClient.put(`/api/Doctor/Update/${doctorId}`, doctorData);
-  }
+  },
 
+  createDoctor: async (doctorData: CreateDoctorRequest): Promise<void> => {
+    return await axiosClient.post("/api/Doctor/Create", doctorData);
+  }
 
 }
