@@ -3,7 +3,7 @@ import type { AxiosInstance, AxiosError } from "axios";
 
 // Axios instance for doctor patients API
 const patientsAxios: AxiosInstance = axios.create({
-  baseURL: "https://localhost:7147",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
     "Accept": "text/plain",

@@ -4,7 +4,7 @@ import type { Booking } from "../patientApi/bookingAPI";
 
 // Axios instance for doctor appointments API
 const appointmentsAxios = axios.create({
-  baseURL: "https://localhost:7147",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
