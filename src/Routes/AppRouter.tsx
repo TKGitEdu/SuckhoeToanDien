@@ -50,6 +50,7 @@ import TreatmentMedications from "../pages/admin/Medicine";
 
 import PaymentPage from "../pages/patient/PaymentPage";
 import PaymentCallbackPage from "../pages/patient/PaymentCallbackPage";
+import AdminPayment from "../pages/admin/Payment";
 
 const MainLayout = ({ children }: { children: React.ReactNode }) => (
   <>
@@ -74,7 +75,6 @@ const AppRouter: React.FC = () => {
         />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-
          <Route path="/success" element={<RegisterSuccess />} />
         <Route
           path="/services"
@@ -304,6 +304,16 @@ const AppRouter: React.FC = () => {
             <ProtectedRoute allowedRoles={["Admin"]}>
               <AdminLayout>
                 <AdminDashboard />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/payments"
+          element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AdminLayout>
+                <AdminPayment/>
               </AdminLayout>
             </ProtectedRoute>
           }

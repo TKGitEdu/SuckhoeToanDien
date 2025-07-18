@@ -46,7 +46,7 @@ const Bookings: React.FC = () => {
     <div className="p-8 bg-gradient-to-br from-blue-50 to-purple-200 min-h-screen font-sans">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-purple-600 mb-10">
-          Quản lý lịch hẹn
+           Lịch hẹn
         </h1>
         <div className="overflow-x-auto">
           <table className="min-w-full bg-white border border-gray-200 rounded-xl shadow-lg">
@@ -60,7 +60,6 @@ const Bookings: React.FC = () => {
                 <th className="text-left px-6 py-4 font-semibold">Khung giờ</th>
                 <th className="text-left px-6 py-4 font-semibold">Trạng thái</th>
                 <th className="text-left px-6 py-4 font-semibold">Ghi chú</th>
-                <th className="text-left px-6 py-4 font-semibold">Hành động</th>
               </tr>
             </thead>
             <tbody className="text-gray-700 divide-y divide-gray-100">
@@ -95,17 +94,7 @@ const Bookings: React.FC = () => {
                   <td className="px-6 py-4 text-gray-600 whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]">
                     {booking.note || ""}
                   </td>
-                  <td className="px-6 py-4">
-                    <button
-                      className="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 rounded-lg hover:from-red-600 hover:to-red-700 transition hover:cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCancel(booking.bookingId);
-                      }}
-                    >
-                      Hủy
-                    </button>
-                  </td>
+                  
                 </motion.tr>
               ))}
             </tbody>

@@ -23,7 +23,7 @@ export interface BookingDashboard {
 // Có thể import Booking từ bookingAPI nếu muốn dùng đầy đủ thông tin booking
 
 const dashboardAxios = axios.create({
-  baseURL: "https://localhost:7147",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },

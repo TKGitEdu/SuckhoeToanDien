@@ -6,13 +6,18 @@ type Booking = {
   note: string;
 };
 
-type Doctor = {
+ export type Doctor = {
   doctorId: string;
+  userId: string;
   doctorName: string;
   specialization: string;
   phone: string;
   email: string;
+   address: string;
+   gender: string;
+  dateOfBirth: string;
   user: {
+    userId: string;
     fullName: string;
     email: string;
     phone: string;
@@ -45,6 +50,18 @@ export type CreateDoctorRequest = {
   gender: string;
 }
 
+export type UpdateDoctorRequest = {
+  doctorId:string;
+   userId: string;
+  doctorName: string;
+  specialization: string;
+  phone: string;
+  email: string;
+  address: string;
+  gender: string;
+  dateOfBirth: string;
+}
+
 
 
 
@@ -58,8 +75,8 @@ export const doctorAPI = {
   deleteDoctor: async (doctorId: string): Promise<void> => {
     return await axiosClient.delete(`/api/Doctor/Delete/${doctorId}`);
   },
-  updateDoctor: async (doctorId: string, doctorData: Partial<Doctor>): Promise<Doctor> => {
-    return await axiosClient.put(`/api/Doctor/Update/${doctorId}`, doctorData);
+  updateDoctor: async ( doctorData: UpdateDoctorRequest): Promise<void> => {
+    return await axiosClient.put(`/api/Doctor/Update`, doctorData);
   },
 
   createDoctor: async (doctorData: CreateDoctorRequest): Promise<void> => {

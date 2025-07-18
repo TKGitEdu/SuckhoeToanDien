@@ -285,18 +285,18 @@ console.log('currentTime:', new Date().toString());
               <div>
                 <span className="font-medium">Trạng thái thanh toán:</span> 
                 <span className={`ml-2 px-2 py-1 rounded-full text-sm ${
-                  booking.payment.status === "pending" ? "bg-green-100 text-green-800" :
-                  booking.payment.status === "Pending" ? "bg-yellow-100 text-yellow-800" :
+                  booking.payment.status === "done" ? "bg-green-100 text-green-800" :
+                  booking.payment.status === "tryAgain" ? "bg-yellow-100 text-yellow-800" :
                   "bg-gray-100 text-gray-800"
                 }`}>
                   {booking.payment.status === "pending" ? "Bạn đã thanh toán, chờ cập nhật mới nhất từ hệ thống" : 
-                   booking.payment.status === "trAgain" ? "Vui lòng thanh toán" : 
+                   booking.payment.status === "tryAgain" ? "Vui lòng thanh toán" : 
                    booking.payment.status || "Thông tin sẽ được cập nhật sau khi thanh toán"}
                 </span>
-                {booking.payment.status === "trAgain" && (
+                {booking.payment.status === "tryAgain" && (
                   <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                     <p className="text-yellow-800 text-sm">
-                      ⚠️ Lịch hẹn của bạn sẽ được ưu tiên xác nhận khi hoàn tất thủ tục thanh toán. 
+                      Bạn đã hoàn tất thủ tục thanh toán, vui lòng chờ lịch hẹn và khám bệnh. 
                     </p>
                   </div>
                 )}
