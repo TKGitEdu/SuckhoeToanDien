@@ -94,7 +94,7 @@ const PaymentCallbackPage: React.FC = () => {
 
         const totalAmount = Number(amount) || booking.service?.price || 0;
         const method = paymentMethod || 'zalopay';
-        const paymentStatus = isSuccess ? 'pending' : 'tryAgain';
+        const paymentStatus = isSuccess ? 'done' : 'tryAgain';
 
         if (!booking.payment) {
           await bookingService.CreatePayment({
