@@ -61,30 +61,28 @@ const AppointmentDetail = () => {
   }, [bookingId]);
 
   const handleCancelBooking = async () => {
-    if (!booking) return;
+  if (!booking) return;
 
-    // Kiểm tra thời gian còn lại đến lịch hẹn
-    if (hoursToAppointment < minHoursToCancel) {
-      alert(`Không thể hủy lịch hẹn khi ${timeRemainingText} đến lịch hẹn. Vui lòng liên hệ trực tiếp với phòng khám để hủy lịch hẹn.`);
-      return;
-    }
+  if (hoursToAppointment < minHoursToCancel) {
+    alert(`Không thể hủy lịch hẹn khi ${timeRemainingText} đến lịch hẹn. Vui lòng liên hệ trực tiếp với phòng khám để hủy lịch hẹn.`);
+    return;
+  }
 
-    if (!window.confirm("Bạn có chắc chắn muốn hủy lịch hẹn này?")) return;
+  if (!window.confirm("Bạn có chắc chắn muốn hủy lịch hẹn này?")) return;
 
-    try {
-      setCancelLoading(true);
-      await cancelUpdateBooking(booking.bookingId, { status: "Đã hủy" });
-      
-      // Cập nhật trạng thái cục bộ
-      setBooking(prev => prev ? { ...prev, status: "Đã hủy" } : null);
-      alert("Hủy lịch hẹn thành công!");
-    } catch (err: any) {
-      console.error("Lỗi khi hủy lịch hẹn:", err);
-      alert(err.message || "Hủy lịch hẹn thất bại. Vui lòng thử lại sau.");
-    } finally {
-      setCancelLoading(false);
-    }
-  };
+  try {
+    setCancelLoading(true);
+    await cancelUpdateBooking(booking.bookingId);
+
+    setBooking(prev => prev ? { ...prev, status: "cancelled" } : null);
+    alert("Hủy lịch hẹn thành công!");
+  } catch (err: any) {
+    console.error("Lỗi khi hủy lịch hẹn:", err);
+    alert(err.message || "Hủy lịch hẹn thất bại. Vui lòng thử lại sau.");
+  } finally {
+    setCancelLoading(false);
+  }
+};
 
   if (loading) {
     return (
@@ -289,7 +287,7 @@ console.log('currentTime:', new Date().toString());
                   booking.payment.status === "tryAgain" ? "bg-yellow-100 text-yellow-800" :
                   "bg-gray-100 text-gray-800"
                 }`}>
-                  {booking.payment.status === "pending" ? "Bạn đã thanh toán, chờ cập nhật mới nhất từ hệ thống" : 
+                  {booking.payment.status === "done" ? "Bạn đã thanh toán, chờ cập nhật mới nhất từ hệ thống" : 
                    booking.payment.status === "tryAgain" ? "Vui lòng thanh toán" : 
                    booking.payment.status || "Thông tin sẽ được cập nhật sau khi thanh toán"}
                 </span>
