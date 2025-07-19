@@ -63,8 +63,8 @@ const PatientDashboard = () => {
     if (userInfo) {
       try {
         const user = JSON.parse(userInfo);
-        setPatientName(user.fullName || user.username || "Bệnh nhân");
-        setUserId(user.userId || "");
+        setPatientName(user.fullName);
+        setUserId(user.userId);
         setLoading(false);
 
         // Nếu có userId, lấy thông báo của người dùng

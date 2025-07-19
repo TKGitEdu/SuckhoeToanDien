@@ -132,7 +132,7 @@ const DoctorAppointments = () => {
             serviceId: booking.serviceId,
             date: formatDate(booking.dateBooking),
             time: booking.slot?.startTime ? formatTime(booking.slot.startTime) : "Không xác định",
-            status: booking.status || "Pending",
+            status: booking.status || "pending",
             type: getServiceType(booking.service),
             history: booking.examination !== undefined,
             notes: booking.note || booking.description,
@@ -541,7 +541,7 @@ const DoctorAppointments = () => {
                   >
                     <option value="">Tất cả trạng thái</option>
                     <option value="confirmed">Đã xác nhận</option>
-                    <option value="Pending">Đang chờ</option>
+                    <option value="pending">Đang chờ</option>
                     <option value="completed">Đã hoàn thành</option>
                     <option value="cancelled">Đã hủy</option>
                     <option value="rescheduled">Đã đổi lịch</option>
@@ -809,7 +809,7 @@ const DoctorAppointments = () => {
                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                             appointment.status === 'confirmed' 
                               ? 'bg-green-100 text-green-800' 
-                              : appointment.status === 'Pending'
+                              : appointment.status === 'pending'
                               ? 'bg-yellow-100 text-yellow-800'
                               : appointment.status === 'completed'
                               ? 'bg-blue-100 text-blue-800'
@@ -820,7 +820,7 @@ const DoctorAppointments = () => {
                               : 'bg-gray-100 text-gray-800'
                           }`}>
                             {appointment.status === 'confirmed' ? 'Đã xác nhận' : 
-                             appointment.status === 'Pending' ? 'Đang chờ' : // code backend, database nó vậy khỏi sửa nữa mệt quá
+                             appointment.status === 'pending' ? 'Đang chờ' : // code backend, database nó vậy khỏi sửa nữa mệt quá
                              appointment.status === 'completed' ? 'Đã hoàn thành' :
                              appointment.status === 'rescheduled' ? 'Đã dời lịch' :
                              appointment.status === 'cancelled' ? 'Đã hủy' : 'Đang chờ'}
@@ -968,7 +968,7 @@ const DoctorAppointments = () => {
                           variant="outline" 
                           className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
                           onClick={() => {
-                            if (appointment && (appointment.status === 'Pending' || appointment.status === 'confirmed'|| appointment.status === 'rescheduled')) {
+                            if (appointment && (appointment.status === 'pending' || appointment.status === 'confirmed'|| appointment.status === 'rescheduled')) {
                               handleRescheduleAppointment(selectedAppointment);
                             } else {
                               alert("Chỉ có thể đổi lịch hẹn có trạng thái 'Đang chờ' hoặc 'Đã xác nhận' hoặc 'Đã dời lịch'");
@@ -983,7 +983,7 @@ const DoctorAppointments = () => {
                           variant="outline" 
                           className="bg-white border-red-300 text-red-700 hover:bg-red-50"
                           onClick={() => {
-                            if (appointment && (appointment.status === 'Pending' || appointment.status === 'confirmed'|| appointment.status === 'rescheduled')) {
+                            if (appointment && (appointment.status === 'pending' || appointment.status === 'confirmed'|| appointment.status === 'rescheduled')) {
                               handleCancelAppointment(selectedAppointment);
                             } else {
                               alert("Chỉ có thể hủy lịch hẹn có trạng thái 'Đang chờ' hoặc 'Đã xác nhận' hoặc 'Đã dời lịch'");
@@ -1008,7 +1008,7 @@ const DoctorAppointments = () => {
                         <Button 
                           className={`${appointment.status === 'confirmed' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}
                           onClick={() => {
-                            if (appointment.status === 'Pending' || appointment.status === 'rescheduled') {
+                            if (appointment.status.toLowerCase() === 'pending' || appointment.status === 'rescheduled') {
                               handleConfirmAppointment(selectedAppointment);
                             } else if (appointment.status === 'confirmed') {
                               // Nếu đã confirmed thì chuyển đến trang interactive-patient với bookingId
@@ -1019,7 +1019,7 @@ const DoctorAppointments = () => {
                               alert("Lịch hẹn đã bị hủy. Không thể xác nhận.");
                             }
                           }}
-                          disabled={appointment.status !== 'Pending' && appointment.status !== 'confirmed' && appointment.status !== 'rescheduled'}
+                          disabled={appointment.status.toLowerCase() !== 'pending' && appointment.status !== 'confirmed' && appointment.status !== 'rescheduled'}
                         >
                           {appointment.status === 'confirmed' ? (
                             <>
@@ -1065,7 +1065,7 @@ const DoctorAppointments = () => {
                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                                   appointment.status === 'confirmed' 
                                     ? 'bg-green-100 text-green-800' 
-                                    : appointment.status === 'Pending'
+                                    : appointment.status.toLowerCase() === 'pending'
                                     ? 'bg-yellow-100 text-yellow-800'
                                     : appointment.status === 'completed'
                                     ? 'bg-blue-100 text-blue-800'
@@ -1076,7 +1076,7 @@ const DoctorAppointments = () => {
                                     : 'bg-gray-100 text-gray-800'
                                 }`}>
                                   {appointment.status === 'confirmed' ? 'Đã xác nhận' : 
-                                   appointment.status === 'Pending' ? 'Đang chờ' : // code backend, database nó vậy khỏi sửa nữa mệt quá
+                                   appointment.status.toLowerCase() === 'pending' ? 'Đang chờ' : // code backend, database nó vậy khỏi sửa nữa mệt quá
                                    appointment.status === 'completed' ? 'Đã hoàn thành' :
                                    appointment.status === 'rescheduled' ? 'Đã dời lịch' :
                                    appointment.status === 'cancelled' ? 'Đã hủy' : 'không biết'}

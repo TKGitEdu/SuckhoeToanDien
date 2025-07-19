@@ -61,30 +61,28 @@ const AppointmentDetail = () => {
   }, [bookingId]);
 
   const handleCancelBooking = async () => {
-    if (!booking) return;
+  if (!booking) return;
 
-    // Kiểm tra thời gian còn lại đến lịch hẹn
-    if (hoursToAppointment < minHoursToCancel) {
-      alert(`Không thể hủy lịch hẹn khi ${timeRemainingText} đến lịch hẹn. Vui lòng liên hệ trực tiếp với phòng khám để hủy lịch hẹn.`);
-      return;
-    }
+  if (hoursToAppointment < minHoursToCancel) {
+    alert(`Không thể hủy lịch hẹn khi ${timeRemainingText} đến lịch hẹn. Vui lòng liên hệ trực tiếp với phòng khám để hủy lịch hẹn.`);
+    return;
+  }
 
-    if (!window.confirm("Bạn có chắc chắn muốn hủy lịch hẹn này?")) return;
+  if (!window.confirm("Bạn có chắc chắn muốn hủy lịch hẹn này?")) return;
 
-    try {
-      setCancelLoading(true);
-      await cancelUpdateBooking(booking.bookingId, { status: "Đã hủy" });
-      
-      // Cập nhật trạng thái cục bộ
-      setBooking(prev => prev ? { ...prev, status: "Đã hủy" } : null);
-      alert("Hủy lịch hẹn thành công!");
-    } catch (err: any) {
-      console.error("Lỗi khi hủy lịch hẹn:", err);
-      alert(err.message || "Hủy lịch hẹn thất bại. Vui lòng thử lại sau.");
-    } finally {
-      setCancelLoading(false);
-    }
-  };
+  try {
+    setCancelLoading(true);
+    await cancelUpdateBooking(booking.bookingId);
+
+    setBooking(prev => prev ? { ...prev, status: "cancelled" } : null);
+    alert("Hủy lịch hẹn thành công!");
+  } catch (err: any) {
+    console.error("Lỗi khi hủy lịch hẹn:", err);
+    alert(err.message || "Hủy lịch hẹn thất bại. Vui lòng thử lại sau.");
+  } finally {
+    setCancelLoading(false);
+  }
+};
 
   if (loading) {
     return (
@@ -289,7 +287,7 @@ console.log('currentTime:', new Date().toString());
                   booking.payment.status === "tryAgain" ? "bg-yellow-100 text-yellow-800" :
                   "bg-gray-100 text-gray-800"
                 }`}>
-                  {booking.payment.status === "pending" ? "Bạn đã thanh toán, chờ cập nhật mới nhất từ hệ thống" : 
+                  {booking.payment.status === "done" ? "Bạn đã thanh toán, chờ cập nhật mới nhất từ hệ thống" : 
                    booking.payment.status === "tryAgain" ? "Vui lòng thanh toán" : 
                    booking.payment.status || "Thông tin sẽ được cập nhật sau khi thanh toán"}
                 </span>
@@ -307,7 +305,7 @@ console.log('currentTime:', new Date().toString());
 
        {/* Khối thanh toán riêng biệt */}
 {(
-  (booking.status === "Pending" || !booking.payment || (booking.payment && booking.payment.status === "Pending")) && booking.status !== "cancelled"
+  (booking.status.toLowerCase() === "pending" || !booking.payment || (booking.payment && booking.payment.status.toLowerCase() === "pending")) && booking.status !== "cancelled"
 ) && (
   <div className="mt-6 border-t pt-6">
     <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6">
@@ -319,7 +317,7 @@ console.log('currentTime:', new Date().toString());
               : "Hoàn tất thanh toán "}
           </h3>
           <p className="text-blue-700 mb-3">
-            {booking.payment?.status === "pending"
+            {booking.payment?.status === "done"
               ? "Bạn đã thanh toán thành công. Vui lòng chờ admin xác nhận, lịch hẹn sẽ được cập nhật trạng thái."
               : "Lịch hẹn của bạn sẽ được cập nhật sau khi thanh toán thành công."}
           </p>
@@ -338,7 +336,7 @@ console.log('currentTime:', new Date().toString());
             </div>
           </div>
         </div>
-        {(!booking.payment || booking.payment.status !== "pending") && (
+        {(!booking.payment || booking.payment.status !== "done") && (
           <div className="ml-6">
             <Link
               to={`/patient/payment/${booking.bookingId}`}
@@ -380,12 +378,12 @@ console.log('currentTime:', new Date().toString());
                 <span className="font-medium">Trạng thái khám:</span> 
                 <span className={`ml-2 px-2 py-1 rounded-full text-sm ${
                   booking.examination.status === "Completed" ? "bg-green-100 text-green-800" :
-                  booking.examination.status === "In Progress" ? "bg-blue-100 text-blue-800" :
+                  booking.examination.status === "in-progress" ? "bg-blue-100 text-blue-800" :
                   booking.examination.status === "Scheduled" ? "bg-yellow-100 text-yellow-800" :
                   "bg-gray-100 text-gray-800"
                 }`}>
                   {booking.examination.status === "Completed" ? "Đã hoàn thành" : 
-                   booking.examination.status === "In Progress" ? "Đang tiến hành" :
+                   booking.examination.status === "in-progress" ? "Đang tiến hành" :
                    booking.examination.status === "Scheduled" ? "Đã lên lịch" :
                    booking.examination.status || "Không có thông tin"}
                 </span>
@@ -399,7 +397,7 @@ console.log('currentTime:', new Date().toString());
   {canCancelBooking && canCancelByTime && (
     <div className="mb-2 w-full lg:w-auto">
       <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-2 rounded-md text-sm">
-        ⚠️ Khi hủy lịch hẹn, bạn sẽ mất phí và phải liên hệ admin để được hoàn trả.
+        ⚠️ Khi hủy lịch hẹn, bạn sẽ mất phí đặt lịch.
       </div>
     </div>
   )}

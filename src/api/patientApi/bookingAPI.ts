@@ -106,16 +106,15 @@ export const bookingApi = {  // GET: api/Booking/mybookings
     }
   }
 };
-// Cập nhật thông tin đặt lịch (ví dụ: hủy lịch hẹn)
-export const cancelUpdateBooking = async (bookingId: string, updateData: Partial<Booking>): Promise<Booking> => {
+// Cập nhật thông tin đặt lịch (ví dụ: hủy lịch hẹn) bookingController.cs
+export const cancelUpdateBooking = async (bookingId: string): Promise<Booking> => {
   try {
-    const response = await bookingAxios.put(`/api/Booking/update/${bookingId}`, updateData);
+    const response = await bookingAxios.put(`/api/Booking/update?bookingid=${bookingId}`);
     return response.data;
   } catch (error) {
     console.error(`Lỗi khi cập nhật booking ${bookingId}:`, error);
     throw error;
   }
-  
 };
 export const getPatientDetailIdByPatientId = async (patientId: string): Promise<string> => {
   try {
