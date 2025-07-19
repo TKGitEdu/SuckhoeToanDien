@@ -9,7 +9,6 @@ import {
   getBookingById, 
   getPatientById, 
   createExamination,
-  getPatientMedicalHistory,
   checkExaminationExists
 } from "../../api/doctorApi/interactivePatientAPI";
 import type { 
@@ -21,7 +20,6 @@ import type {
 // Interface để hiển thị thông tin bệnh nhân
 interface PatientDisplay extends PatientType {
   age?: number;
-  medicalHistory: string[];
 }
 
 // Interface để hiển thị thông tin booking
@@ -92,24 +90,6 @@ const InteractivePatient: React.FC = () => {
         const patientData = await getPatientById(bookingData.patientId);
         console.log("Patient data:", patientData);
         
-        // Lấy tiền sử bệnh của bệnh nhân
-        let medicalHistoryData = [];
-        try {
-          const medicalHistory = await getPatientMedicalHistory(bookingData.patientId);
-          console.log("Medical history:", medicalHistory);
-          
-          // Trích xuất tiền sử bệnh từ response
-          if (medicalHistory.medicalRecords && medicalHistory.medicalRecords.length > 0) {
-            medicalHistoryData = medicalHistory.medicalRecords.map(record => 
-              record.medicalHistory || "Chưa có thông tin tiền sử bệnh"
-            );
-          } else {
-            medicalHistoryData = ["Chưa có thông tin tiền sử bệnh"];
-          }
-        } catch (error) {
-          console.error("Error fetching medical history:", error);
-          medicalHistoryData = ["Không thể tải thông tin tiền sử bệnh"];
-        }
         
         // Tính tuổi từ ngày sinh
         let age;
@@ -126,8 +106,7 @@ const InteractivePatient: React.FC = () => {
         // Chuẩn bị dữ liệu bệnh nhân để hiển thị
         const patientDisplay: PatientDisplay = {
           ...patientData,
-          age,
-          medicalHistory: medicalHistoryData,
+          age
         };
         
         // Cập nhật state
@@ -334,14 +313,6 @@ const InteractivePatient: React.FC = () => {
               <p><span className="font-medium">Email:</span> {patient.email}</p>
               <p><span className="font-medium">Địa chỉ:</span> {patient.address}</p>
             </div>
-          </div>
-          <div className="mt-4">
-            <p className="font-medium">Tiền sử bệnh:</p>
-            <ul className="list-disc ml-8 mt-2">
-              {patient.medicalHistory.map((item, index) => (
-                <li key={index}>{item}</li>
-              ))}
-            </ul>
           </div>
         </div>
       )}

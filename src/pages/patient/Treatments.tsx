@@ -164,13 +164,13 @@ const mapTreatmentStepToStage = (treatmentStep: TreatmentStep): Stage => {
   // Hàm ánh xạ TreatmentPlan sang Treatment
   const mapToTreatment = (plan: TreatmentPlan, medications: Medication[], appointments: Appointment[], testResults: TestResult[], steps: TreatmentStep[] = []): Treatment => {
     // Xác định tiến độ dựa trên trạng thái và số giai đoạn hoàn thành
-    const completedProcesses = plan.treatmentProcesses.filter(p => p.status === "Completed").length;
+    const completedProcesses = plan.treatmentProcesses.filter(p => p.status === "completed").length;
     const totalProcesses = plan.treatmentProcesses.length;
     const progress = totalProcesses > 0 ? Math.round((completedProcesses / totalProcesses) * 100) : 0;
 
     // Lấy giai đoạn hiện tại và tiếp theo
-    const currentProcess = plan.treatmentProcesses.find(p => p.status === "InProgress");
-    const nextProcess = plan.treatmentProcesses.find(p => p.status === "Pending");
+    const currentProcess = plan.treatmentProcesses.find(p => p.status === "in-progress");
+    const nextProcess = plan.treatmentProcesses.find(p => p.status === "pending");
 
     // Ánh xạ treatment steps thành stages
     const stages: Stage[] = steps.map(step => mapTreatmentStepToStage(step));

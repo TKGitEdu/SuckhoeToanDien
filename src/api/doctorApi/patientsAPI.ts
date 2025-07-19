@@ -157,6 +157,12 @@ export interface NewAppointment {
   description: string;
   note?: string;
 }
+export interface ExaminationDetail {
+  examinationDate: string;
+  examinationDescription: string;
+  result: string;
+  status: string;
+}
 
 /**
  * Get all patients associated with a doctor
@@ -300,3 +306,25 @@ export const createAppointmentForPatient = async (appointment: NewAppointment): 
   }
 };
 
+/**
+ * Get examination details (history of each examination) by patient ID
+ * @param patientId The ID of the patient
+ * @returns Promise with an array of examination details
+ */
+export const getExaminationDetailsByPatientId = async (
+  patientId: string
+): Promise<ExaminationDetail[]> => {
+  if (!patientId) throw new Error("Patient ID is required");
+  try {
+    const response = await patientsAxios.get(
+      `/api/DoctorPatients/patient/${patientId}/treatment-history`
+    );
+    return response.data;
+  } catch (error) {
+    handleApiError(
+      error as AxiosError,
+      `Lỗi khi lấy lịch sử từng khám bệnh của bệnh nhân ${patientId}`
+    );
+    return []; // Return empty array on error
+  }
+};

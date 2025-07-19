@@ -49,20 +49,6 @@ export interface Examination {
   createAt: string;
 }
 
-export interface MedicalRecord {
-  patientDetailId: string;
-  patientId: string;
-  patientName: string;
-  treatmentStatus: string;
-  medicalHistory: string;
-  name: string;
-}
-
-export interface PatientMedicalHistory {
-  patientId: string;
-  patientName: string;
-  medicalRecords: MedicalRecord[];
-}
 
 const dashboardAxios = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -123,22 +109,6 @@ export const createExamination = async (examinationData: ExaminationRequest): Pr
     return response.data;
   } catch (error) {
     console.error('Lỗi khi tạo examination:', error);
-    throw error;
-  }
-};
-
-
-/**
- * Lấy tiền sử bệnh của bệnh nhân theo patientId
- * @param patientId ID của bệnh nhân cần lấy tiền sử bệnh
- * @returns Thông tin tiền sử bệnh của bệnh nhân
- */
-export const getPatientMedicalHistory = async (patientId: string): Promise<PatientMedicalHistory> => {
-  try {
-    const response = await dashboardAxios.get(`/api/DoctorPatients/patient/${patientId}/tienSuBenh`);
-    return response.data;
-  } catch (error) {
-    console.error(`Lỗi khi lấy tiền sử bệnh của bệnh nhân với ID ${patientId}:`, error);
     throw error;
   }
 };

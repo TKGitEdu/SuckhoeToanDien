@@ -479,8 +479,8 @@ const DoctorPatients = () => {
                             onClick={() => {
                               // In a real implementation, you'd use a form in a modal
                               // This is a simplified example to demonstrate the function
-                              
-                              // Get all treatment plans from the API
+
+                              // lấy treatmentprocess từ API
                               getPatientTreatmentHistory(selectedPatient.patientId)
                                 .then(history => {
                                   if (history.treatmentPlans && history.treatmentPlans.length > 0) {

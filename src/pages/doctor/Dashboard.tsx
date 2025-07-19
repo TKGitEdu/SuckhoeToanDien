@@ -272,7 +272,15 @@ const Dashboard: React.FC = () => {
           transition={{ duration: 0.3 }}
           className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
         >
-          <h2 className="text-lg font-medium p-6">Danh sách lịch hẹn</h2>
+          <div className="flex items-center justify-between p-6">
+              <h2 className="text-lg font-medium">Danh sách lịch hẹn</h2>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={handleNavigateToAppointments}
+              >
+                Xem quản lý lịch hẹn
+              </Button>
+          </div>
           <div className="divide-y divide-gray-100">
             {appointments.length > 0 ? (
               appointments.map((appointment) => (
