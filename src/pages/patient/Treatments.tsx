@@ -359,6 +359,16 @@ const mapTreatmentStepToStage = (treatmentStep: TreatmentStep): Stage => {
                 Đang thực hiện
               </button>
               <button
+                onClick={() => setActiveFilter("pending")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  activeFilter === "pending"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Chờ xác nhận
+              </button>
+              <button
                 onClick={() => setActiveFilter("completed")}
                 className={`px-4 py-2 rounded-lg text-sm font-medium ${
                   activeFilter === "completed"
@@ -428,18 +438,22 @@ const mapTreatmentStepToStage = (treatmentStep: TreatmentStep): Stage => {
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        treatment.giaidoan === 'in-progress' 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : treatment.giaidoan === 'completed'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                      }`}>
-                        {treatment.giaidoan === 'in-progress'
-                          ? 'Đang thực hiện'
-                          : treatment.giaidoan === 'completed'
-                            ? 'Đã hoàn thành'
-                            : 'Đã hủy'}
-                      </span>
+  treatment.giaidoan === 'in-progress'
+    ? 'bg-blue-100 text-blue-800'
+    : treatment.giaidoan === 'completed'
+      ? 'bg-green-100 text-green-800'
+      : treatment.giaidoan === 'pending'
+        ? 'bg-yellow-100 text-yellow-800'
+        : 'bg-red-100 text-red-800'
+}`}>
+  {treatment.giaidoan === 'in-progress'
+    ? 'Đang thực hiện'
+    : treatment.giaidoan === 'completed'
+      ? 'Đã hoàn thành'
+      : treatment.giaidoan === 'pending'
+        ? 'Chờ xác nhận'
+        : 'Đã hủy'}
+</span>
                       
                     </div>
                     
@@ -477,18 +491,22 @@ const mapTreatmentStepToStage = (treatmentStep: TreatmentStep): Stage => {
                         <p className="text-gray-600">Bác sĩ phụ trách: {selectedTreatment.doctor}</p>
                       </div>
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        selectedTreatment.giaidoan === 'in-progress' 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : selectedTreatment.giaidoan === 'completed'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                      }`}>
-                        {selectedTreatment.giaidoan === 'in-progress'
-                          ? 'Đang thực hiện'
-                          : selectedTreatment.giaidoan === 'completed'
-                            ? 'Đã hoàn thành'
-                            : 'Đã hủy'}
-                      </span>
+  selectedTreatment.giaidoan === 'in-progress'
+    ? 'bg-blue-100 text-blue-800'
+    : selectedTreatment.giaidoan === 'completed'
+      ? 'bg-green-100 text-green-800'
+      : selectedTreatment.giaidoan === 'pending'
+        ? 'bg-yellow-100 text-yellow-800'
+        : 'bg-red-100 text-red-800'
+}`}>
+  {selectedTreatment.giaidoan === 'in-progress'
+    ? 'Đang thực hiện'
+    : selectedTreatment.giaidoan === 'completed'
+      ? 'Đã hoàn thành'
+      : selectedTreatment.giaidoan === 'pending'
+        ? 'Chờ xác nhận'
+        : 'Đã hủy'}
+</span>
                     </div>
                     
                     <div className="flex flex-wrap gap-4 mt-4">
@@ -519,6 +537,7 @@ const mapTreatmentStepToStage = (treatmentStep: TreatmentStep): Stage => {
                           </div>
                         </div>
                       )}
+
                     </div>
                   </div>
                   
@@ -877,9 +896,9 @@ const mapTreatmentStepToStage = (treatmentStep: TreatmentStep): Stage => {
                                     <div className="flex items-center justify-between">
                                       <h4 className="font-medium text-gray-900">{result.type}</h4>
                                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                        result.status === 'Hoàn thành'
+                                        result.status === 'completed'
                                           ? 'bg-green-100 text-green-800'
-                                          : result.status === 'Đang thực hiện'
+                                          : result.status === 'in-progress'
                                             ? 'bg-blue-100 text-blue-800'
                                             : 'bg-yellow-100 text-yellow-800'
                                       }`}>

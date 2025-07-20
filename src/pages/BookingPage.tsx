@@ -10,6 +10,7 @@ import { bookingApiForBookingPage} from "../api/patientApi/bookingApiForBookingP
 import type { Service, Doctor, Slot, BookingRequest } from "../api/patientApi/bookingApiForBookingPage";
 import { useRef } from "react";
 
+
 type FormData = {
   fullName: string;
   email: string;
@@ -21,6 +22,8 @@ type FormData = {
   message: string;
   slotId: string;
 };
+
+
 
 const BookingPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -44,7 +47,13 @@ const BookingPage = () => {
   });
   
   const navigate = useNavigate();
-
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken"); // hoặc "userInfo" nếu bạn lưu userInfo
+    if (!token) {
+      alert("Bạn cần đăng nhập hoặc đăng ký để đặt lịch.");
+      navigate("/login"); // hoặc "/register" nếu muốn chuyển đến đăng ký
+    }
+  }, [navigate]);
   // Get services data
   useEffect(() => {
     const fetchServices = async () => {

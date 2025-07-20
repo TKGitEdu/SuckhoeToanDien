@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bookmark } from "lucide-react";
+import { Bookmark, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import treatmentPlanAPI from "../../api/patientApi/treatmentPlanAPI";
 import type { TreatmentPlan, TreatmentStep } from "../../api/patientApi/treatmentPlanAPI";
-import { bookingApi, getPatientDetailIdByPatientId} from "../../api/patientApi/bookingAPI";
+import { bookingApi, getPatientDetailIdByPatientId } from "../../api/patientApi/bookingAPI";
 import type { Booking } from "../../api/patientApi/bookingAPI";
 
 export default function ComponentTrackingTRM() {
@@ -20,6 +20,7 @@ export default function ComponentTrackingTRM() {
     const userInfo = localStorage.getItem("userInfo");
     return userInfo ? JSON.parse(userInfo).userId : null;
   });
+  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
 
   // Hàm lấy thông tin patient từ localStorage
   const getPatientInfoFromLocalStorage = () => {
@@ -28,7 +29,6 @@ export default function ComponentTrackingTRM() {
       if (!userInfo) return null;
       
       const parsedUserInfo = JSON.parse(userInfo);
-      // Lấy patientId từ localStorage, cái này có tui có lưu rồi
       const patientId = localStorage.getItem("patientId");
       
       return {
@@ -73,7 +73,6 @@ export default function ComponentTrackingTRM() {
       setUserId(patientInfo.userId);
       setPatientId(patientInfo.patientId);
       
-      // Chỉ cần gọi API để lấy patientDetailId
       setLoading(true);
       setError(null);
       
@@ -88,7 +87,6 @@ export default function ComponentTrackingTRM() {
         })
         .finally(() => setLoading(false));
     } else {
-      // Reset tất cả state nếu không có thông tin patient
       setUserId(null);
       setPatientId(null);
       setPatientDetailId(null);
@@ -97,7 +95,7 @@ export default function ComponentTrackingTRM() {
       setBookings([]);
       setLoading(false);
     }
-  }, []);  // Chỉ chạy một lần khi component mount
+  }, []);
 
   // Lấy bookings và treatmentPlans
   useEffect(() => {
@@ -109,9 +107,8 @@ export default function ComponentTrackingTRM() {
         treatmentPlanAPI.getAllTreatmentPlansByPatient(patientId),
       ])
         .then(async ([bookingsData, plans]) => {
-          setBookings(bookingsData); // Lưu tất cả bookings để kiểm tra trạng thái
+          setBookings(bookingsData);
 
-          // Lọc treatmentPlans dựa trên patientDetailId, doctorId, và serviceId
           const matchedPlans = plans.filter((plan) =>
             bookingsData.some(
               (booking) =>
@@ -123,7 +120,6 @@ export default function ComponentTrackingTRM() {
           );
           setTreatmentPlans(matchedPlans);
 
-          // Lấy treatment steps cho từng treatment plan
           const stepsPromises = matchedPlans.map(plan => 
             treatmentPlanAPI.getTreatmentStepsByTreatmentPlanId(plan.treatmentPlanId)
               .then(steps => ({ planId: plan.treatmentPlanId, steps }))
@@ -153,7 +149,7 @@ export default function ComponentTrackingTRM() {
     }
   }, [patientId, patientDetailId]);
 
-  // Hàm parse treatmentDescription (deprecated - giữ lại để không break existing code)
+  // Hàm parse treatmentDescription (deprecated)
   function parseTreatmentDescription(description: string): string[] {
     if (!description) return [];
     return description
@@ -162,7 +158,7 @@ export default function ComponentTrackingTRM() {
       .filter(Boolean);
   }
 
-  // Hàm tính tiến độ điều trị mới dựa trên treatment steps
+  // Hàm tính tiến độ điều trị
   function calculateTreatmentProgressFromSteps(treatmentPlanId: string, currentStatus: string): {
     progress: number;
     currentStage: string;
@@ -182,7 +178,6 @@ export default function ComponentTrackingTRM() {
       };
     }
 
-    // Sắp xếp các steps theo stepOrder để có thứ tự chính xác
     const sortedSteps: TreatmentStep[] = steps.sort((a, b) => a.stepOrder - b.stepOrder);
     
     let completedSteps = 0;
@@ -190,24 +185,17 @@ export default function ComponentTrackingTRM() {
     let nextStage = "Hoàn thành";
 
     if (currentStatus) {
-      // Tìm step matching chính xác với currentStatus bằng stepName
       const currentStepIndex = sortedSteps.findIndex(step => 
         step.stepName.toLowerCase() === currentStatus.toLowerCase()
       );
 
       if (currentStepIndex !== -1) {
-        // Tìm thấy step hiện tại, đếm số bước đã hoàn thành
         completedSteps = currentStepIndex + 1;
         currentStage = sortedSteps[currentStepIndex].stepName;
-        
-        // Tìm bước tiếp theo
-        if (currentStepIndex + 1 < sortedSteps.length) {
-          nextStage = sortedSteps[currentStepIndex + 1].stepName;
-        } else {
-          nextStage = "Hoàn thành";
-        }
+        nextStage = currentStepIndex + 1 < sortedSteps.length 
+          ? sortedSteps[currentStepIndex + 1].stepName 
+          : "Hoàn thành";
       } else {
-        // Nếu không tìm thấy step matching, kiểm tra các trạng thái đặc biệt
         const statusLower = currentStatus.toLowerCase();
         
         if (statusLower === "completed" || statusLower === "hoàn thành") {
@@ -219,26 +207,25 @@ export default function ComponentTrackingTRM() {
           currentStage = "Đã hủy";
           nextStage = "Không áp dụng";
         } else if (statusLower === "in-progress" || statusLower === "đang tiến hành") {
-          // Nếu đang tiến hành nhưng không match step cụ thể, coi như bước đầu
           completedSteps = 1;
           currentStage = sortedSteps[0]?.stepName || "Đang tiến hành";
           nextStage = sortedSteps[1]?.stepName || "Hoàn thành";
+        } else if( statusLower === "pending") {
+          completedSteps = 0;
+          currentStage = "bắt đầu";
+          nextStage = sortedSteps[0]?.stepName || "Chưa xác định";
         } else {
-          // Trường hợp status không match với bất kỳ stepName nào
-          // Coi như chưa bắt đầu hoặc bước đầu tiên
           completedSteps = 0;
           currentStage = currentStatus;
           nextStage = sortedSteps[0]?.stepName || "Chưa xác định";
         }
       }
     } else {
-      // Không có status, coi như chưa bắt đầu
       completedSteps = 0;
       currentStage = "Chưa bắt đầu";
       nextStage = sortedSteps[0]?.stepName || "Chưa xác định";
     }
 
-    // Tính phần trăm tiến độ
     const progress = sortedSteps.length > 0 ? Math.round((completedSteps / sortedSteps.length) * 100) : 0;
 
     return {
@@ -250,7 +237,7 @@ export default function ComponentTrackingTRM() {
     };
   }
 
-  // Hàm tính tiến độ điều trị cũ (deprecated - giữ lại để fallback)
+  // Hàm tính tiến độ điều trị cũ (deprecated)
   function calculateTreatmentProgress(status: string, steps: string[]): number {
     if (!status || steps.length === 0) return 0;
     const currentIndex = steps.findIndex(
@@ -261,17 +248,30 @@ export default function ComponentTrackingTRM() {
     return Math.round(((currentIndex + 1) / steps.length) * 100);
   }
 
+  // Hàm toggle trạng thái mở rộng ghi chú
+  const toggleNoteExpansion = (planId: string) => {
+    setExpandedNotes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(planId)) {
+        newSet.delete(planId);
+      } else {
+        newSet.add(planId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="mt-8 bg-white rounded-xl shadow-lg border border-gray-200 max-w-4xl mx-auto"
+      className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
       role="region"
       aria-label="Theo dõi điều trị"
     >
-      <div className="p-6 border-b border-gray-200">
-        <h2 className="text-2xl font-bold text-gray-900">Theo dõi điều trị</h2>
+      <div className="p-4 border-b border-gray-100">
+        <h2 className="text-xl font-bold text-gray-900">Theo dõi điều trị</h2>
       </div>
 
       <AnimatePresence>
@@ -281,12 +281,12 @@ export default function ComponentTrackingTRM() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="p-6 flex justify-center items-center gap-3"
+            className="p-4 flex justify-center items-center gap-2"
             role="status"
             aria-live="polite"
           >
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
-            <span className="text-gray-600 text-lg">Đang tải dữ liệu...</span>
+            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-600"></div>
+            <span className="text-gray-600 text-sm">Đang tải...</span>
           </motion.div>
         ) : error ? (
           <motion.div
@@ -294,12 +294,12 @@ export default function ComponentTrackingTRM() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="p-6 text-center"
+            className="p-4 text-center"
             role="alert"
           >
-            <p className="text-red-600 text-lg font-medium">{error}</p>
+            <p className="text-red-600 text-sm font-medium">{error}</p>
             <Button
-              className="mt-4 bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
+              className="mt-2 bg-blue-600 hover:bg-blue-700 text-sm"
               onClick={() => {
                 const patientInfo = getPatientInfoFromLocalStorage();
                 
@@ -307,7 +307,6 @@ export default function ComponentTrackingTRM() {
                   setLoading(true);
                   setError(null);
                   
-                  // Chỉ cần thử lại lấy patientDetailId
                   getPatientDetailIdByPatientId(patientInfo.patientId)
                     .then((detailId) => {
                       setUserId(patientInfo.userId);
@@ -335,19 +334,10 @@ export default function ComponentTrackingTRM() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="divide-y divide-gray-200"
+            className="divide-y divide-gray-100"
           >
             {treatmentPlans.map((plan) => {
-              // Debug logging để kiểm tra dữ liệu
-              console.log(`=== Processing plan ${plan.treatmentPlanId} ===`);
-              console.log("Plan status:", plan.status);
-              console.log("Treatment steps for this plan:", treatmentSteps[plan.treatmentPlanId]);
-              
-              // Sử dụng hàm mới để tính toán tiến độ với plan.status chính xác
               const progressData = calculateTreatmentProgressFromSteps(plan.treatmentPlanId, plan.status);
-              console.log("Progress data calculated:", progressData);
-              
-              // Fallback về logic cũ nếu không có treatment steps
               const steps = parseTreatmentDescription(plan.treatmentDescription);
               const fallbackProgress = calculateTreatmentProgress(plan.status, steps);
               const fallbackCurrentStage = plan.status || "Chưa bắt đầu";
@@ -357,19 +347,16 @@ export default function ComponentTrackingTRM() {
                 ) + 1
               ] || "Hoàn thành";
 
-              // Sử dụng dữ liệu từ treatment steps nếu có, nếu không thì dùng fallback
               const progress = progressData.totalSteps > 0 ? progressData.progress : fallbackProgress;
               const currentStage = progressData.totalSteps > 0 ? progressData.currentStage : fallbackCurrentStage;
               const nextStage = progressData.totalSteps > 0 ? progressData.nextStage : fallbackNextStage;
-              
-              console.log("Final values:", { progress, currentStage, nextStage });
               
               const nextDate = plan.endDate
                 ? new Date(plan.endDate).toLocaleDateString("vi-VN")
                 : "Chưa xác định";
               const notes = plan.treatmentProcesses?.[0]?.result || "Không có ghi chú";
+              const isNoteLong = notes.length > 100;
 
-              // Tìm booking tương ứng
               const relatedBooking = bookings.find(
                 (booking) =>
                   booking.patientId === patientId &&
@@ -384,109 +371,126 @@ export default function ComponentTrackingTRM() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className={`p-6 hover:bg-gray-50 transition-colors duration-200 ${
+                  className={`p-4 hover:bg-gray-50 transition-colors duration-200 ${
                     relatedBooking?.status.toLowerCase() === "cancelled" ? "opacity-50" : ""
                   }`}
                   role="article"
                   aria-labelledby={`treatment-${plan.treatmentPlanId}`}
                 >
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4 gap-4">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Bookmark
-                          className="h-5 w-5 text-blue-600"
-                          aria-hidden="true"
-                        />
-                        <h3
-                          id={`treatment-${plan.treatmentPlanId}`}
-                          className="text-lg font-semibold text-gray-900"
-                        >
-                          Điều trị {plan.method || "Chưa xác định"}
-                        </h3>
-                      </div>
-                      <p className="text-gray-600 mt-1 text-sm">
-                        Bác sĩ: {plan.doctor?.doctorName || "Chưa phân công"}
-                      </p>
-                      {relatedBooking?.status.toLowerCase() === "cancelled" && (
-                        <p className="text-red-500 text-sm font-medium">Lịch hẹn đã bị hủy</p>
-                      )}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Bookmark className="h-4 w-4 text-blue-600" aria-hidden="true" />
+                      <h3
+                        id={`treatment-${plan.treatmentPlanId}`}
+                        className="text-base font-semibold text-gray-900"
+                      >
+                        {plan.method || "Chưa xác định"}
+                      </h3>
                     </div>
-                    <p className="text-sm text-gray-500">
-                      Ngày bắt đầu: {new Date(plan.startDate).toLocaleDateString("vi-VN")}
+                    <p className="text-xs text-gray-500">
+                      {new Date(plan.startDate).toLocaleDateString("vi-VN")}
                     </p>
                   </div>
 
-                  <div className="mb-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-700">
-                        Tiến độ điều trị
-                        {progressData.totalSteps > 0 && (
-                          <span className="text-xs text-gray-500 ml-2">
-                            ({progressData.completedSteps}/{progressData.totalSteps} bước)
-                          </span>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-medium text-gray-700">
+                          Tiến độ
+                          {progressData.totalSteps > 0 && (
+                            <span className="text-xs text-gray-500 ml-1">
+                              ({progressData.completedSteps}/{progressData.totalSteps})
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-xs font-medium text-blue-600">{progress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${progress}%` }}
+                          transition={{ duration: 0.5, ease: "easeOut" }}
+                          className="bg-blue-600 h-2 rounded-full"
+                          role="progressbar"
+                          aria-valuenow={progress}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">Hiện tại:</span>
+                        <span className="text-xs font-medium text-gray-900">{currentStage}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">Tiếp theo:</span>
+                        <span className="text-xs font-medium text-blue-600">{nextStage}</span>
+                        <span className="text-xs text-gray-500">({nextDate})</span>
+                      </div>
+                    </div>
+
+                    {!!notes && (
+                      <div className="bg-yellow-50 p-2 rounded-md border border-yellow-100">
+                        <p className="text-xs text-gray-700 font-medium mb-1">Ghi chú:</p>
+                        <p 
+                          className={`text-xs text-gray-600 ${
+                            isNoteLong && !expandedNotes.has(plan.treatmentPlanId) ? 'overflow-hidden' : ''
+                          }`}
+                          style={{
+                            display: isNoteLong && !expandedNotes.has(plan.treatmentPlanId) ? '-webkit-box' : 'block',
+                            WebkitLineClamp: isNoteLong && !expandedNotes.has(plan.treatmentPlanId) ? 2 : 'unset',
+                            WebkitBoxOrient: 'vertical',
+                            lineHeight: '1.4em',
+                            maxHeight: isNoteLong && !expandedNotes.has(plan.treatmentPlanId) ? '2.8em' : 'none'
+                          }}
+                        >
+                          {notes}
+                        </p>
+                        {isNoteLong && (
+                          <button
+                            onClick={() => toggleNoteExpansion(plan.treatmentPlanId)}
+                            className="text-xs text-blue-600 hover:text-blue-800 mt-1 focus:outline-none"
+                          >
+                            {expandedNotes.has(plan.treatmentPlanId) ? (
+                              <span className="flex items-center gap-1">
+                                <ChevronUp className="h-3 w-3" /> Thu gọn
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1">
+                                <ChevronDown className="h-3 w-3" /> Xem thêm
+                              </span>
+                            )}
+                          </button>
                         )}
-                      </span>
-                      <span className="text-sm font-medium text-blue-600">
-                        {progress}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progress}%` }}
-                        transition={{ duration: 0.5 }}
-                        className="bg-blue-600 h-3 rounded-full"
-                        role="progressbar"
-                        aria-valuenow={progress}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                      />
-                    </div>
-                    {progressData.totalSteps > 0 && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Dựa trên {progressData.totalSteps} bước điều trị đã được lên kế hoạch
-                      </p>
+                      </div>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                      <p className="text-sm text-gray-500 mb-1">
-                        Giai đoạn hiện tại
-                      </p>
-                      <p className="font-medium text-gray-900">{currentStage}</p>
-                    </div>
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                      <p className="text-sm text-gray-500 mb-1">
-                        Giai đoạn tiếp theo
-                      </p>
-                      <p className="font-medium text-gray-900">{nextStage}</p>
-                      <p className="text-sm text-blue-600 mt-1">
-                        Ngày: {nextDate}
-                      </p>
-                    </div>
-                  </div>
-
-                  {!!notes && (
-                    <div className="bg-yellow-50 p-4 rounded-lg mb-4 border border-yellow-100">
-                      <p className="text-sm text-gray-700 font-medium mb-1">
-                        Ghi chú từ bác sĩ:
-                      </p>
-                      <p className="text-gray-600 text-sm">{notes}</p>
-                    </div>
+                  <div className="flex justify-between items-center mt-3">
+                  {relatedBooking?.status.toLowerCase() === "cancelled" && (
+                    <span className="text-xs text-red-500 font-medium">Lịch hẹn đã hủy</span>
                   )}
-
-                  <div className="flex justify-end">
-                    <Link to={`/patient/treatments/${plan.treatmentPlanId}`}>
-                      <Button
-                        className="bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
-                        aria-label={`Xem chi tiết điều trị ${plan.method || "Chưa xác định"}`}
-                        disabled={relatedBooking?.status.toLowerCase() === "cancelled"}
-                      >
-                        Xem chi tiết
-                      </Button>
-                    </Link>
-                  </div>
+                  {relatedBooking?.status.toLowerCase() === "pending" && (
+                    <span className="text-xs text-yellow-500 font-medium">Chờ xác nhận</span>
+                  )}
+                  {relatedBooking?.status.toLowerCase() === "in-progress" && (
+                    <span className="text-xs text-blue-500 font-medium">Đang tiến hành</span>
+                  )}
+                  {relatedBooking?.status.toLowerCase() === "completed" && (
+                    <span className="text-xs text-green-500 font-medium">Hoàn thành</span>
+                  )}
+                  <Link to={`/patient/treatments/${plan.treatmentPlanId}`}>
+                    <Button
+                      className="text-xs bg-blue-600 hover:bg-blue-700"
+                      aria-label={`Xem chi tiết điều trị ${plan.method || "Chưa xác định"}`}
+                      disabled={relatedBooking?.status.toLowerCase() === "cancelled"}
+                    >
+                      Chi tiết
+                    </Button>
+                  </Link>
+                </div>
                 </motion.div>
               );
             })}
@@ -497,15 +501,13 @@ export default function ComponentTrackingTRM() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="p-6 text-center"
+            className="p-4 text-center"
             role="alert"
           >
-            <p className="text-gray-500 text-lg">
-              Bạn chưa có quá trình điều trị hoặc lịch hẹn nào
-            </p>
-            <Link to="/services" className="mt-4 inline-block">
+            <p className="text-gray-500 text-sm">Chưa có quá trình điều trị</p>
+            <Link to="/services" className="mt-2 inline-block">
               <Button
-                className="bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
+                className="text-xs bg-blue-600 hover:bg-blue-700"
                 aria-label="Tìm hiểu dịch vụ điều trị"
               >
                 Tìm hiểu dịch vụ

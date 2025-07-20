@@ -246,7 +246,7 @@ const CreateTreatmentPlan: React.FC = () => {
             <input
               type="text"
               className="w-full p-3 border border-gray-300 rounded-md"
-              placeholder="Nhập trạng thái điều trị..."
+              placeholder="Nhập trạng thái điều trị... stepName"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
               required
@@ -289,7 +289,7 @@ const CreateTreatmentPlan: React.FC = () => {
           </label>
           <textarea
             className="w-full h-32 p-3 border border-gray-300 rounded-md"
-            placeholder="Nhập mô tả chi tiết về kế hoạch điều trị..."
+            placeholder="Nhập mô tả chi tiết về kế hoạch điều trị... stepName;stepName;...;stepName"
             value={treatmentDescription}
             onChange={(e) => setTreatmentDescription(e.target.value)}
             required
