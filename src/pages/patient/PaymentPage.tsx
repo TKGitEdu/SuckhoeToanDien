@@ -1,12 +1,12 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { bookingService } from '../../api/patientApi/paymentAPI';
+import { motion } from 'framer-motion';
 
 const paymentMethods = [
   { id: 'zalopay', label: 'Ví ZaloPay', icon: '/src/assets/images/logo-zalopay.svg' },
-   { id: 'visa', label: 'Visa/Mastercard/JCB', icon: '/src/assets/images/gold.jpg' },
-   { id: 'atm', label: 'Thẻ ATM', icon: '/src/assets/images/atm-card.gif' },// (qua ZaloPay)
+  { id: 'visa', label: 'Visa/Mastercard/JCB', icon: '/src/assets/images/gold.jpg' },
+  { id: 'atm', label: 'Thẻ ATM', icon: '/src/assets/images/atm-card.gif' }, // (qua ZaloPay)
 ];
 
 const banks = [
@@ -67,101 +67,170 @@ const PaymentPage: React.FC = () => {
   }, [bookingId, navigate]);
 
   const handlePayment = async () => {
-  if (!booking) return;
-  setProcessing(true);
-  try {
-    // Lưu bookingId vào cookie để callback page xử lý tiếp
-    document.cookie = `bookingId=${booking.bookingId}; path=/; max-age=600`;// 10 phút
-    document.cookie = `paymentMethod=${selectedMethod}; path=/; max-age=600`;
+    if (!booking) return;
+    setProcessing(true);
+    try {
+      // Lưu bookingId vào cookie để callback page xử lý tiếp
+      document.cookie = `bookingId=${booking.bookingId}; path=/; max-age=1200`; // 20 phút
+      document.cookie = `paymentMethod=${selectedMethod}; path=/; max-age=600`;
 
-    if (selectedMethod === 'atm' && selectedBank) {
-      document.cookie = `bankCode=${selectedBank}; path=/; max-age=600`;
+      if (selectedMethod === 'atm' && selectedBank) {
+        document.cookie = `bankCode=${selectedBank}; path=/; max-age=600`;
+      }
+
+      const payload: any = {
+        appUser: booking.patient?.name || 'guest',
+        amount: booking.payment?.totalAmount || booking.service?.price || 0,
+        description: `Thanh toán dịch vụ ${booking.service?.name || ''} cho bệnh nhân ${booking.patient?.name || ''}`,
+      };
+      if (selectedMethod === 'atm' && selectedBank) {
+        payload.bank_code = selectedBank;
+      }
+      const result = await bookingService.createZaloPayOrder(payload);
+      if (result && result.orderUrl) {
+        window.location.href = result.orderUrl;
+      } else {
+        alert(result?.message || 'Không tạo được đơn hàng ZaloPay!');
+      }
+    } catch (err) {
+      alert('Có lỗi khi tạo đơn thanh toán!');
+    } finally {
+      setProcessing(false);
     }
+  };
 
-
-    const payload: any = {
-      appUser: booking.patient?.name || 'guest',
-      amount: booking.payment?.totalAmount || booking.service?.price || 0,
-      description: `Thanh toán dịch vụ ${booking.service?.name || ''} cho bệnh nhân ${booking.patient?.name || ''}`,
-    };
-    if (selectedMethod === 'atm' && selectedBank) {
-      payload.bank_code = selectedBank;
-    }
-    const result = await bookingService.createZaloPayOrder(payload);
-    if (result && result.orderUrl) {
-      window.location.href = result.orderUrl;
-    } else {
-      alert(result?.message || 'Không tạo được đơn hàng ZaloPay!');
-    }
-  } catch (err) {
-    alert('Có lỗi khi tạo đơn thanh toán!');
-  } finally {
-    setProcessing(false);
-  }
-};
-
-  if (loading) return <div className="p-8 text-center">Đang tải thông tin...</div>;
-  if (!booking) return <div className="p-8 text-center text-red-600">Không tìm thấy booking!</div>;
-
-  return (
-    <div className="max-w-2xl mx-auto bg-white rounded-lg shadow p-8 mt-8">
-      <h1 className="text-2xl font-bold mb-4 text-blue-700">Thanh toán dịch vụ</h1>
-      <div className="mb-6 space-y-2">
-        <div><b>Bệnh nhân:</b> {booking.patient?.name}</div>
-        <div><b>Dịch vụ:</b> {booking.service?.name}</div>
-        <div><b>Bác sĩ:</b> {booking.doctor?.doctorName}</div>
-        <div><b>Số tiền cần thanh toán:</b> <span className="text-lg text-blue-600 font-bold">{(booking.payment?.totalAmount || booking.service?.price || 0).toLocaleString('vi-VN')} VNĐ</span></div>
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600"></div>
       </div>
+    );
+  }
 
-      <div className="mb-6">
-        <p className="mb-2 font-semibold">Vui lòng chọn hình thức thanh toán:</p>
-        <div className="flex flex-wrap gap-4">
-          {paymentMethods.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              className={`flex items-center border-2 rounded-lg px-4 py-2 transition-all ${selectedMethod === m.id ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
-              onClick={() => setSelectedMethod(m.id)}
-            >
-              <img src={m.icon} alt={m.label} className="w-8 h-8 mr-2" />
-              <span>{m.label}</span>
-              {selectedMethod === m.id && (
-                <svg className="w-5 h-5 ml-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-              )}
-            </button>
-          ))}
+  if (!booking) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-sm">
+          Không tìm thấy booking!
         </div>
       </div>
+    );
+  }
 
-      {selectedMethod === 'atm' && (
-        <div className="mb-6">
-          <p className="mb-2 font-semibold">Chọn ngân hàng:</p>
-          <div className="flex flex-wrap gap-3 bank-group">
-            {banks.map((bank) => (
-              <button
-                key={bank.id}
+  return (
+    <div className="max-w-3xl mx-auto px-4 py-12 bg-gray-50 min-h-screen">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="bg-white rounded-xl shadow-lg border border-gray-100 p-8"
+      >
+        <h1 className="text-3xl font-bold text-gray-800 mb-6 border-b-2 border-gray-300 pb-4">
+          Thanh Toán Dịch Vụ
+        </h1>
+        <div className="mb-8 bg-blue-50 p-6 rounded-lg border border-blue-200">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Thông tin thanh toán</h2>
+          <div className="space-y-3 text-sm">
+            <div className="flex items-center">
+              <span className="w-1/3 font-medium text-gray-700">Bệnh nhân:</span>
+              <span className="w-2/3 text-gray-900">{booking.patient?.name}</span>
+            </div>
+            <div className="flex items-center">
+              <span className="w-1/3 font-medium text-gray-700">Dịch vụ:</span>
+              <span className="w-2/3 text-gray-900">{booking.service?.name}</span>
+            </div>
+            <div className="flex items-center">
+              <span className="w-1/3 font-medium text-gray-700">Bác sĩ:</span>
+              <span className="w-2/3 text-gray-900">{booking.doctor?.doctorName}</span>
+            </div>
+            <div className="flex items-center">
+              <span className="w-1/3 font-medium text-gray-700">Số tiền cần thanh toán:</span>
+              <span className="w-2/3 text-lg font-bold text-blue-600">
+                {(booking.payment?.totalAmount || booking.service?.price || 0).toLocaleString('vi-VN')} VNĐ
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b-2 border-gray-300 pb-2">
+            Chọn phương thức thanh toán
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {paymentMethods.map((m) => (
+              <motion.button
+                key={m.id}
                 type="button"
-                className={`bank-item flex items-center border-2 rounded-lg px-3 py-2 transition-all ${selectedBank === bank.id ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:border-green-300'}`}
-                onClick={() => setSelectedBank(bank.id)}
+                className={`flex items-center p-4 border-2 rounded-lg transition-all duration-200 ${
+                  selectedMethod === m.id
+                    ? 'border-blue-600 bg-blue-50 shadow-md'
+                    : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                }`}
+                onClick={() => setSelectedMethod(m.id)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <img src={bank.icon} alt={bank.name} className="w-8 h-8 mr-2" />
-                <span>{bank.name}</span>
-                {selectedBank === bank.id && (
-                  <svg className="w-5 h-5 ml-2 text-green-600 checkmark" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <img src={m.icon} alt={m.label} className="w-10 h-10 mr-3" />
+                <span className="text-sm font-medium text-gray-800">{m.label}</span>
+                {selectedMethod === m.id && (
+                  <svg className="w-5 h-5 ml-auto text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
                 )}
-              </button>
+              </motion.button>
             ))}
           </div>
         </div>
-      )}
 
-      <button
-        onClick={handlePayment}
-        disabled={processing || (selectedMethod === 'atm' && !selectedBank)}
-        className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold text-lg hover:bg-blue-700 transition disabled:opacity-60"
-      >
-        {processing ? 'Đang chuyển hướng...' : 'Thanh toán ngay'}
-      </button>
+        {selectedMethod === 'atm' && (
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b-2 border-gray-300 pb-2">
+              Chọn ngân hàng
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+              {banks.map((bank) => (
+                <motion.button
+                  key={bank.id}
+                  type="button"
+                  className={`flex items-center p-4 border-2 rounded-lg transition-all duration-200 ${
+                    selectedBank === bank.id
+                      ? 'border-green-600 bg-green-50 shadow-md'
+                      : 'border-gray-200 hover:border-green-300 hover:bg-green-50'
+                  }`}
+                  onClick={() => setSelectedBank(bank.id)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <img src={bank.icon} alt={bank.name} className="w-10 h-10 mr-3" />
+                  <span className="text-sm font-medium text-gray-800">{bank.name}</span>
+                  {selectedBank === bank.id && (
+                    <svg className="w-5 h-5 ml-auto text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <motion.button
+          onClick={handlePayment}
+          disabled={processing || (selectedMethod === 'atm' && !selectedBank)}
+          className={`w-full py-3 rounded-lg font-semibold text-lg text-white ${
+            processing || (selectedMethod === 'atm' && !selectedBank)
+              ? 'bg-blue-400 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
+          } transition-all duration-200`}
+          whileHover={{ scale: processing || (selectedMethod === 'atm' && !selectedBank) ? 1 : 1.02 }}
+          whileTap={{ scale: processing || (selectedMethod === 'atm' && !selectedBank) ? 1 : 0.98 }}
+        >
+          {processing ? 'Đang chuyển hướng...' : 'Thanh toán ngay'}
+        </motion.button>
+      </motion.div>
+      <div className="mt-6 text-center text-sm text-gray-600">
+        <p>Vui lòng kiểm tra kỹ thông tin trước khi thanh toán. Nếu có thắc mắc, liên hệ tổng đài hỗ trợ.</p>
+      </div>
     </div>
   );
 };

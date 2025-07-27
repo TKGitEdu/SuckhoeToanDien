@@ -481,14 +481,21 @@ export default function ComponentTrackingTRM() {
                   {relatedBooking?.status.toLowerCase() === "completed" && (
                     <span className="text-xs text-green-500 font-medium">Hoàn thành</span>
                   )}
-                  <Link to={`/patient/treatments/${plan.treatmentPlanId}`}>
-                    <Button
-                      className="text-xs bg-blue-600 hover:bg-blue-700"
-                      aria-label={`Xem chi tiết điều trị ${plan.method || "Chưa xác định"}`}
-                      disabled={relatedBooking?.status.toLowerCase() === "cancelled"}
+                  <Link
+                      to={relatedBooking?.status.toLowerCase() === "cancelled" ? "#" : `/patient/treatments/${plan.treatmentPlanId}`}
+                      onClick={e => {
+                        if (relatedBooking?.status.toLowerCase() === "cancelled") {
+                          e.preventDefault();
+                        }
+                      }}
                     >
-                      Chi tiết
-                    </Button>
+                      <Button
+                        className={`text-xs ${relatedBooking?.status.toLowerCase() === "cancelled" ? "bg-blue-300 cursor-not-allowed opacity-50" : "bg-blue-600 hover:bg-blue-700"}`}
+                        aria-label={`Xem chi tiết điều trị ${plan.method || "Chưa xác định"}`}
+                        disabled={relatedBooking?.status.toLowerCase() === "cancelled"}
+                      >
+                        Chi tiết
+                      </Button>
                   </Link>
                 </div>
                 </motion.div>

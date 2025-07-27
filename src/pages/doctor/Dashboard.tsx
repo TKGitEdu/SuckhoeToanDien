@@ -149,538 +149,643 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="text-center py-10">Đang tải...</div>;
-  if (error) return <div className="text-center text-red-500 py-10">{error}</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-gray-50">
+        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-6 rounded-lg shadow-sm">
+          {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4 sm:p-6 bg-gray-100 min-h-screen overflow-x-hidden">
-      <motion.div
-        initial={shouldReduceMotion ? {} : { opacity: 0, y: -20 }}
-        animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4"
-      >
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Chào mừng trở lại, Dr. {userInfo?.doctor?.doctorName || userInfo?.fullName || "Bác sĩ"}</h1>
-          <p className="text-sm sm:text-base text-gray-600">Quản lý lịch hẹn và bệnh nhân của bác sĩ.</p>
-        </div>
-      </motion.div>
-
-      {/* Thống kê nhanh */}
-<div className="flex flex-row overflow-x-auto snap-x snap-mandatory gap-3 mb-4 sm:mb-6 sm:grid sm:grid-cols-3 sm:overflow-x-visible">
-  {[
-    { icon: Calendar, title: "Số lịch hẹn", value: appointments.length, bg: "bg-blue-100", color: "text-blue-600" },
-    { icon: Users, title: "Bệnh nhân đang điều trị", value: activePatientsCount, bg: "bg-green-100", color: "text-green-600" },
-    { icon: Microscope, title: "Danh sách buổi khám", value: examinationShow.length, bg: "bg-purple-100", color: "text-purple-600" },
-  ].map((item, index) => (
-    <motion.div
-      key={item.title}
-      initial={shouldReduceMotion ? {} : { opacity: 0, scale: 0.95 }}
-      animate={shouldReduceMotion ? {} : { opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3, delay: index * 0.1 }}
-      className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3 sm:gap-4 min-w-[200px] sm:min-w-0 snap-start"
-    >
-      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full ${item.bg} flex items-center justify-center`}>
-        <item.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${item.color}`} />
-      </div>
-      <div>
-        <h3 className="text-sm sm:text-base font-medium text-gray-500 whitespace-nowrap">{item.title}</h3>
-        <p className="text-lg sm:text-2xl font-bold">{item.value}</p>
-      </div>
-    </motion.div>
-  ))}
-</div>
-
-      {/* Danh sách lịch hẹn và Thông báo */}
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 mb-4 sm:mb-6">
-        {/* Danh sách lịch hẹn */}
+    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
+      <div className="max-w-7xl mx-auto">
         <motion.div
-          initial={shouldReduceMotion ? {} : { opacity: 0, y: 20 }}
+          initial={shouldReduceMotion ? {} : { opacity: 0, y: -20 }}
           animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+          transition={{ duration: 0.4 }}
+          className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4"
         >
-          <div className="flex items-center justify-between p-4 sm:p-6">
-            <h2 className="text-base sm:text-lg font-medium">Danh sách lịch hẹn</h2>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]" onClick={handleNavigateToAppointments}>
-              Xem quản lý lịch hẹn
-            </Button>
-          </div>
-          <div className="divide-y divide-gray-100">
-            {appointments.length > 0 ? (
-  appointments.map((appointment) => (
-    <div key={appointment.id} className="p-4 sm:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div className="flex-1">
-          <p className="font-medium text-base sm:text-lg">{appointment.patientName}</p>
-          <p className="text-sm text-gray-500">ID: {appointment.patientId}</p>
-          <p className="text-sm text-gray-500">{appointment.service}</p>
-        </div>
-        <div className="flex flex-col items-start sm:items-end gap-2">
-          {/* <span
-            className={`inline-block px-2 py-1 text-xs sm:text-sm font-medium rounded-full ${
-              appointment.status === "confirmed" ? "bg-green-100 text-green-800" :
-              appointment.status === "pending" ? "bg-yellow-100 text-yellow-800" :
-              appointment.status === "cancelled" ? "bg-red-100 text-red-800" :
-              appointment.status === "completed" ? "bg-green-100 text-green-800" :
-              "bg-gray-100 text-gray-800"
-            }`}
-          >
-            {appointment.status === "confirmed" ? "Đã xác nhận" :
-             appointment.status === "pending" ? "Đang chờ" :
-             appointment.status === "cancelled" ? "Đã hủy" :
-             appointment.status === "completed" ? "Đã hoàn thành" :
-             appointment.status}
-          </span> */}
-          <div className="flex flex-wrap gap-2 sm:gap-3">
-            <Button
-              variant="outline"
-              className="text-sm font-medium text-blue-600 min-w-[100px]"
-              onClick={() => handleViewProfile(appointment.patientId)}
-            >
-              Xem hồ sơ
-            </Button>
-            {appointment.status === "confirmed" ? (
-              <Button
-                className="text-sm font-medium min-w-[100px] bg-green-600 text-white hover:bg-green-700"
-                onClick={() => handleStartAppointment(appointment.id)}
-              >
-                Bắt đầu khám
-              </Button>
-            ) : appointment.status === "pending" ? (
-              <Button
-                className="text-sm font-medium min-w-[100px] bg-yellow-200 text-yellow-700 cursor-not-allowed"
-                disabled
-              >
-                Chờ xác nhận
-              </Button>
-            ) : appointment.status === "cancelled" ? (
-              <Button
-                className="text-sm font-medium min-w-[100px] bg-red-200 text-red-700 cursor-not-allowed"
-                disabled
-              >
-                Đã hủy
-              </Button>
-            ) : appointment.status === "completed" ? (
-              <Button
-                className="text-sm font-medium min-w-[100px] bg-green-200 text-green-700 cursor-not-allowed"
-                disabled
-              >
-                Đã hoàn thành
-              </Button>
-            ) : (
-              <Button
-                className="text-sm font-medium min-w-[100px] bg-gray-300 text-gray-500 cursor-not-allowed"
-                disabled
-              >
-                Không khả dụng
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  ))
-) : (
-  <div className="p-4 sm:p-6 text-center">
-    <p className="text-sm sm:text-base text-gray-500">Không có lịch hẹn nào</p>
-  </div>
-)}
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">
+              Chào mừng trở lại, Dr. {userInfo?.doctor?.doctorName || userInfo?.fullName || "Bác sĩ"}
+            </h1>
+            <p className="text-base text-gray-600 mt-2">Quản lý lịch hẹn, thông báo và kế hoạch điều trị của bạn.</p>
           </div>
         </motion.div>
 
-        {/* Thông báo */}
+        {/* Quick Stats */}
         <motion.div
           initial={shouldReduceMotion ? {} : { opacity: 0, y: 20 }}
           animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6"
+          transition={{ duration: 0.4 }}
+          className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8"
         >
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h2 className="text-base sm:text-lg font-medium">Thông báo</h2>
-            <div className="flex items-center gap-2 sm:gap-3">
-              {notifications.filter((n) => !n.doctorIsRead).length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs sm:text-sm text-blue-600 hover:bg-blue-50"
-                  onClick={handleReadAllNotifications}
-                >
-                  Đọc tất cả
-                </Button>
-              )}
-              <div className="relative">
-                <Bell className="h-5 w-5 text-gray-500" />
-                {notifications.filter((n) => !n.doctorIsRead).length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                    {notifications.filter((n) => !n.doctorIsRead).length}
-                  </span>
-                )}
+          {[
+            { icon: Calendar, title: "Số lịch hẹn", value: appointments.length, bg: "bg-blue-50", color: "text-blue-600" },
+            { icon: Users, title: "Bệnh nhân đang điều trị", value: activePatientsCount, bg: "bg-green-50", color: "text-green-600" },
+            { icon: Microscope, title: "Danh sách buổi khám", value: examinationShow.length, bg: "bg-purple-50", color: "text-purple-600" },
+          ].map((item, index) => (
+            <motion.div
+              key={item.title}
+              initial={shouldReduceMotion ? {} : { opacity: 0, scale: 0.95 }}
+              animate={shouldReduceMotion ? {} : { opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: index * 0.1 }}
+              className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow duration-200"
+              whileHover={{ scale: shouldReduceMotion ? 1 : 1.02 }}
+            >
+              <div className={`w-12 h-12 rounded-full ${item.bg} flex items-center justify-center`}>
+                <item.icon className={`h-6 w-6 ${item.color}`} />
               </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-600">{item.title}</h3>
+                <p className="text-2xl font-bold text-gray-800">{item.value}</p>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Appointments and Notifications */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Appointments */}
+          <motion.div
+            initial={shouldReduceMotion ? {} : { opacity: 0, y: 20 }}
+            animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+          >
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-blue-50">
+              <h2 className="text-lg font-semibold text-gray-800">Danh sách lịch hẹn</h2>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg px-4 py-2"
+                onClick={handleNavigateToAppointments}
+              >
+                Xem quản lý lịch hẹn
+              </Button>
             </div>
-          </div>
-          <div className="max-h-80 sm:max-h-96 overflow-y-auto">
-            {notifications.length > 0 ? (
-              <div className="divide-y divide-gray-100">
-                {(showAllNotifications ? notifications : notifications.slice(0, 3)).map((notification) => (
-                  <div
-                    key={notification.notificationId}
-                    className={`flex items-start justify-between py-3 px-2 rounded-lg ${!notification.doctorIsRead ? "bg-blue-50" : ""} cursor-pointer hover:bg-gray-50`}
-                    onClick={() => !notification.doctorIsRead && handleMarkNotificationAsRead(notification.notificationId)}
+            <div className="divide-y divide-gray-200">
+              {appointments.length > 0 ? (
+                appointments.map((appointment) => (
+                  <motion.div
+                    key={appointment.id}
+                    initial={shouldReduceMotion ? {} : { opacity: 0, y: 10 }}
+                    animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="p-6 hover:bg-gray-50 transition-colors duration-200"
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 mr-2">
-                          <div
-                            className={`text-sm ${expandedNotifications.has(notification.notificationId) ? "" : "overflow-hidden"}`}
-                            style={{
-                              display: expandedNotifications.has(notification.notificationId) ? "block" : "-webkit-box",
-                              WebkitLineClamp: expandedNotifications.has(notification.notificationId) ? "unset" : 2,
-                              WebkitBoxOrient: "vertical",
-                              lineHeight: "1.4em",
-                              maxHeight: expandedNotifications.has(notification.notificationId) ? "none" : "2.8em",
-                            }}
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <div className="flex-1">
+                        <p className="font-semibold text-lg text-gray-800">{appointment.patientName}</p>
+                        <p className="text-sm text-gray-500">ID: {appointment.patientId}</p>
+                        <p className="text-sm text-gray-500">{appointment.service}</p>
+                      </div>
+                      <div className="flex flex-col items-start sm:items-end gap-2">
+                        <span
+                          className={`px-3 py-1 text-sm font-medium rounded-full ${
+                            appointment.status === "confirmed" ? "bg-green-100 text-green-800" :
+                            appointment.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+                            appointment.status === "cancelled" ? "bg-red-100 text-red-800" :
+                            appointment.status === "completed" ? "bg-green-100 text-green-800" :
+                            "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {appointment.status === "confirmed" ? "Đã xác nhận" :
+                           appointment.status === "pending" ? "Đang chờ" :
+                           appointment.status === "cancelled" ? "Đã hủy" :
+                           appointment.status === "completed" ? "Đã hoàn thành" :
+                           appointment.status}
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            className="text-blue-600 hover:bg-blue-50 font-medium border-blue-200"
+                            onClick={() => handleViewProfile(appointment.patientId)}
                           >
-                            {notification.messageForDoctor}
-                          </div>
-                          {notification.messageForDoctor.length > 80 && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleNotificationExpansion(notification.notificationId);
-                              }}
-                              className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 mt-1 focus:outline-none"
-                            >
-                              {expandedNotifications.has(notification.notificationId) ? "Thu gọn" : "Xem thêm"}
-                            </button>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-end ml-2">
-                          <span
-                            className={`inline-block px-2 py-1 text-xs sm:text-sm font-medium rounded-full mb-1 ${
-                              notification.type === "appointment" ? "bg-blue-100 text-blue-800" :
-                              notification.type === "test-result" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {notification.type}
-                          </span>
-                          {!notification.doctorIsRead && (
+                            Xem hồ sơ
+                          </Button>
+                          {appointment.status === "confirmed" ? (
                             <Button
-                              variant="ghost"
-                              size="sm"
-                              className="p-1 h-auto"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMarkNotificationAsRead(notification.notificationId);
-                              }}
+                              className="bg-green-600 hover:bg-green-700 text-white font-medium"
+                              onClick={() => handleStartAppointment(appointment.id)}
                             >
-                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              Bắt đầu khám
+                            </Button>
+                          ) : appointment.status === "pending" ? (
+                            <Button
+                              className="bg-yellow-100 text-yellow-800 font-medium cursor-not-allowed"
+                              disabled
+                            >
+                              Đang chờ
+                            </Button>
+                          ) : appointment.status === "cancelled" ? (
+                            <Button
+                              className="bg-red-100 text-red-800 font-medium cursor-not-allowed"
+                              disabled
+                            >
+                              Đã hủy
+                            </Button>
+                          ) : appointment.status === "completed" ? (
+                            <Button
+                              className="bg-green-100 text-green-800 font-medium cursor-not-allowed"
+                              disabled
+                            >
+                              Đã hoàn thành
+                            </Button>
+                          ) : (
+                            <Button
+                              className="bg-gray-100 text-gray-600 font-medium cursor-not-allowed"
+                              disabled
+                            >
+                              Không khả dụng
                             </Button>
                           )}
                         </div>
                       </div>
-                      <div className="mt-1">
-                        <p className="text-xs sm:text-sm text-gray-500">{new Date(notification.time).toLocaleString("vi-VN")}</p>
-                        <p className="text-xs sm:text-sm text-gray-500">BN: {notification.patientName}</p>
-                      </div>
                     </div>
+                  </motion.div>
+                ))
+              ) : (
+                <div className="p-6 text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Calendar className="h-8 w-8 text-gray-400" />
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm sm:text-base text-gray-500 text-center">Không có thông báo mới</p>
-            )}
-            {notifications.length > 3 && (
-              <div className="pt-3 text-center">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-blue-600 hover:bg-blue-50 text-sm"
-                  onClick={toggleShowAllNotifications}
-                >
-                  {showAllNotifications ? "Thu gọn" : `Xem thêm ${notifications.length - 3} thông báo`}
-                </Button>
-              </div>
-            )}
-          </div>
-        </motion.div>
-      </div>
+                  <p className="text-base text-gray-500">Không có lịch hẹn nào</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
 
-      {/* Kế hoạch điều trị */}
-      <motion.div
-        initial={shouldReduceMotion ? {} : { opacity: 0, y: 20 }}
-        animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6"
-      >
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <h2 className="text-base sm:text-lg font-medium">Kế hoạch điều trị</h2>
-          <Button variant="outline" className="text-blue-600 hover:bg-blue-50 min-w-[100px]" onClick={() => navigate("/doctor/treatment-records")}>
-            Xem tất cả
-          </Button>
-        </div>
-        {treatmentPlans.length > 0 ? (
-          <div className="space-y-3 sm:space-y-4">
-            <div className="hidden sm:block">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-left text-sm text-gray-500">
-                    <th className="pb-2">Bệnh nhân</th>
-                    <th className="pb-2">Phương pháp</th>
-                    <th className="pb-2">Ngày bắt đầu</th>
-                    <th className="pb-2">Ngày kết thúc</th>
-                    <th className="pb-2">Trạng thái</th>
-                    <th className="pb-2">Hành động</th>
-                  </tr>
-                </thead>
-                <tbody>
-  {treatmentPlans.slice(0, 5).map((plan) => (
-    <tr key={plan.treatmentPlanId} className="border-t">
-      <td className="py-3 font-medium">{plan.patientDetailName}</td>
-      <td className="py-3">{plan.method}</td>
-      <td className="py-3 text-sm text-gray-600">{new Date(plan.startDate).toLocaleDateString("vi-VN")}</td>
-      <td className="py-3 text-sm text-gray-600">{new Date(plan.endDate).toLocaleDateString("vi-VN")}</td>
-      <td className="py-3">
-        <span
-          className={`inline-block px-2 py-1 text-xs sm:text-sm font-medium rounded-full ${
-            plan.giaidoan === "completed" ? "bg-green-100 text-green-800" :
-            plan.giaidoan === "in-progress"? "bg-blue-100 text-blue-800" :
-            plan.giaidoan === "pending"? "bg-yellow-100 text-yellow-800" : "bg-gray-100 text-gray-800"
-          }`}
-        >
-          {plan.giaidoan === "completed" || plan.giaidoan === "Hoàn thành"
-            ? "Đã hoàn thành"
-            : plan.giaidoan}
-        </span>
-      </td>
-      <td className="py-3">
-        {(plan.giaidoan === "completed") ? (
-          <span className="inline-block px-2 py-1 text-xs sm:text-sm font-medium rounded-full bg-green-50 text-green-700 border border-green-200">
-            Đã hoàn thành
-          </span>
-        ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-blue-600 hover:bg-blue-50 min-w-[100px]"
-            onClick={() => handleUpdateTreatmentPlan(plan.treatmentPlanId)}
+          {/* Notifications */}
+          <motion.div
+            initial={shouldReduceMotion ? {} : { opacity: 0, y: 20 }}
+            animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
           >
-            Cập nhật
-          </Button>
-        )}
-      </td>
-    </tr>
-  ))}
-</tbody>
-              </table>
-            </div>
-            <div className="sm:hidden space-y-3">
-              {treatmentPlans.slice(0, 5).map((plan) => (
-  <div key={plan.treatmentPlanId} className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-    <p className="font-medium text-base">{plan.patientDetailName}</p>
-    <p className="text-sm text-gray-500">Phương pháp: {plan.method}</p>
-    <p className="text-sm text-gray-500">Bắt đầu: {new Date(plan.startDate).toLocaleDateString("vi-VN")}</p>
-    <p className="text-sm text-gray-500">Kết thúc: {new Date(plan.endDate).toLocaleDateString("vi-VN")}</p>
-    <div className="flex items-center justify-between mt-2">
-      <span
-        className={`inline-block px-2 py-1 text-sm font-medium rounded-full ${
-          plan.giaidoan === "completed"? "bg-green-100 text-green-800" :
-          plan.giaidoan === "in-progress" ? "bg-blue-100 text-blue-800" :
-          plan.giaidoan === "pending" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100 text-gray-800"
-        }`}
-      >
-        {plan.giaidoan === "completed"? "Đã hoàn thành": plan.giaidoan}
-      </span>
-      {(plan.giaidoan === "completed") ? (
-        <span className="inline-block px-2 py-1 text-sm font-medium rounded-full bg-green-50 text-green-700 border border-green-200">
-          Đã hoàn thành
-        </span>
-      ) : (
-        <Button
-          size="default"
-          variant="outline"
-          className="text-blue-600 hover:bg-blue-50 min-w-[100px]"
-          onClick={() => handleUpdateTreatmentPlan(plan.treatmentPlanId)}
-        >
-          Cập nhật
-        </Button>
-      )}
-    </div>
-  </div>
-))}
-            </div>
-            {treatmentPlans.length > 5 && (
-              <div className="pt-3 sm:pt-4 border-t">
-                <Button
-                  variant="ghost"
-                  className="w-full text-blue-600 hover:bg-blue-50 text-sm"
-                  onClick={() => navigate("/doctor/treatment-records")}
-                >
-                  Xem thêm {treatmentPlans.length - 5} kế hoạch điều trị khác
-                </Button>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">Thông báo</h2>
+              <div className="flex items-center gap-3">
+                {notifications.filter((n) => !n.doctorIsRead).length > 0 && (
+                  <Button
+                    variant="ghost"
+                    className="text-blue-600 hover:bg-blue-50 text-sm font-medium"
+                    onClick={handleReadAllNotifications}
+                  >
+                    Đọc tất cả
+                  </Button>
+                )}
+                <div className="relative">
+                  <Bell className="h-6 w-6 text-gray-500" />
+                  {notifications.filter((n) => !n.doctorIsRead).length > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {notifications.filter((n) => !n.doctorIsRead).length}
+                    </span>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-center py-6 sm:py-8">
-            <p className="text-sm sm:text-base text-gray-500 mb-4">Không có kế hoạch điều trị nào</p>
+            </div>
+            <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+              {notifications.length > 0 ? (
+                <div className="divide-y divide-gray-200">
+                  {(showAllNotifications ? notifications : notifications.slice(0, 3)).map((notification) => (
+                    <motion.div
+                      key={notification.notificationId}
+                      initial={shouldReduceMotion ? {} : { opacity: 0, y: 10 }}
+                      animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className={`flex items-start justify-between py-3 px-3 rounded-lg ${
+                        !notification.doctorIsRead ? "bg-blue-50" : ""
+                      } cursor-pointer hover:bg-gray-50 transition-colors duration-200`}
+                      onClick={() => !notification.doctorIsRead && handleMarkNotificationAsRead(notification.notificationId)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 mr-3">
+                            <div
+                              className={`text-sm text-gray-700 ${
+                                expandedNotifications.has(notification.notificationId) ? "" : "overflow-hidden"
+                              }`}
+                              style={{
+                                display: expandedNotifications.has(notification.notificationId) ? "block" : "-webkit-box",
+                                WebkitLineClamp: expandedNotifications.has(notification.notificationId) ? "unset" : 2,
+                                WebkitBoxOrient: "vertical",
+                                lineHeight: "1.5em",
+                                maxHeight: expandedNotifications.has(notification.notificationId) ? "none" : "3em",
+                              }}
+                            >
+                              {notification.messageForDoctor}
+                            </div>
+                            {notification.messageForDoctor.length > 80 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleNotificationExpansion(notification.notificationId);
+                                }}
+                                className="text-sm text-blue-600 hover:text-blue-800 mt-2 focus:outline-none"
+                              >
+                                {expandedNotifications.has(notification.notificationId) ? "Thu gọn" : "Xem thêm"}
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end ml-2">
+                            <span
+                              className={`px-3 py-1 text-xs font-medium rounded-full mb-2 ${
+                                notification.type === "appointment" ? "bg-blue-100 text-blue-800" :
+                                notification.type === "test-result" ? "bg-yellow-100 text-yellow-800" : 
+                                "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {notification.type === "appointment" ? "Lịch hẹn" :
+                               notification.type === "test-result" ? "Kết quả xét nghiệm" : notification.type}
+                            </span>
+                            {!notification.doctorIsRead && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-1 h-auto"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMarkNotificationAsRead(notification.notificationId);
+                                }}
+                              >
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-500">{new Date(notification.time).toLocaleString("vi-VN")}</p>
+                          <p className="text-xs text-gray-500">BN: {notification.patientName}</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Bell className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <p className="text-base text-gray-500">Không có thông báo mới</p>
+                </div>
+              )}
+              {notifications.length > 3 && (
+                <div className="pt-4 text-center">
+                  <Button
+                    variant="ghost"
+                    className="text-blue-600 hover:bg-blue-50 text-sm font-medium"
+                    onClick={toggleShowAllNotifications}
+                  >
+                    {showAllNotifications ? "Thu gọn" : `Xem thêm ${notifications.length - 3} thông báo`}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Treatment Plans */}
+        <motion.div
+          initial={shouldReduceMotion ? {} : { opacity: 0, y: 20 }}
+          animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-800">Kế hoạch điều trị</h2>
             <Button
               variant="outline"
-              className="text-blue-600 hover:bg-blue-50 min-w-[120px]"
+              className="text-blue-600 hover:bg-blue-50 font-medium border-blue-200"
               onClick={() => navigate("/doctor/treatment-records")}
             >
-              Tạo kế hoạch điều trị mới
+              Xem tất cả
             </Button>
           </div>
-        )}
-      </motion.div>
-
-      {/* Danh sách buổi khám */}
-      <motion.div
-        initial={shouldReduceMotion ? {} : { opacity: 0, y: 20 }}
-        animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 mt-4 sm:mt-6"
-      >
-        <h2 className="text-base sm:text-lg font-medium mb-3 sm:mb-4">Danh sách buổi khám</h2>
-        {examinationShow.length > 0 ? (
-          <div className="space-y-3 sm:space-y-0">
-            <div className="hidden sm:block">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-left text-sm text-gray-500">
-                    <th className="pb-2">Bệnh nhân</th>
-                    <th className="pb-2">Mô tả buổi khám</th>
-                    <th className="pb-2">Ngày khám</th>
-                    <th className="pb-2">Trạng thái</th>
-                    <th className="pb-2">Hành động</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {examinationShow.map((examination) => (
-                    <tr
-                      key={examination.examinationId}
-                      className={`border-t transition-colors ${
-                        examination.status === "pending" ? "bg-yellow-50" :
-                        examination.status === "in-progress" ? "bg-blue-50" :
-                        examination.status === "completed" ? "bg-green-50" : "bg-gray-50"
-                      }`}
-                    >
-                      <td className="py-2 font-medium flex items-center gap-2">
-                        {examination.status === "pending" && (
-                          <svg className="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                            <path stroke="currentColor" strokeWidth="2" d="M12 6v6l4 2" />
-                          </svg>
-                        )}
-                        {examination.status === "in-progress" && (
-                          <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                            <path stroke="currentColor" strokeWidth="2" d="M12 8v4l3 3" />
-                          </svg>
-                        )}
-                        {examination.status === "completed" && (
-                          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                            <path stroke="currentColor" strokeWidth="2" d="M9 12l2 2 4-4" />
-                          </svg>
-                        )}
-                        {examination.patientName || "Bệnh nhân"}
-                      </td>
-                      <td className="py-2">{examination.examinationDescription}</td>
-                      <td className="py-2 text-sm text-gray-600">{new Date(examination.examinationDate).toLocaleDateString("vi-VN")}</td>
-                      <td className="py-2">
-                        <span
-                          className={`inline-block px-2 py-1 text-xs sm:text-sm font-medium rounded-full ${
-                            examination.status === "pending" ? "bg-yellow-100 text-yellow-800" :
-                            examination.status === "in-progress" ? "bg-blue-100 text-blue-800" :
-                            examination.status === "completed" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {examination.status === "pending" ? "Đang chờ" :
-                           examination.status === "in-progress" ? "Đang xử lý" :
-                           examination.status === "completed" ? "Hoàn thành" : examination.status}
-                        </span>
-                      </td>
-                      <td className="py-2">
-                        <Button
-                          size="default"
-                          variant="outline"
-                          className="text-sm font-medium text-blue-600 min-w-[100px]"
-                          onClick={() => navigate(`/doctor/create-treatment-plan/${examination.examinationId}`)}
-                        >
-                          Tạo kế hoạch điều trị
-                        </Button>
-                      </td>
+          {treatmentPlans.length > 0 ? (
+            <div className="space-y-4">
+              <div className="hidden sm:block">
+                <table className="w-full table-auto">
+                  <thead>
+                    <tr className="text-left text-sm text-gray-600">
+                      <th className="pb-3 font-medium">Bệnh nhân</th>
+                      <th className="pb-3 font-medium">Phương pháp</th>
+                      <th className="pb-3 font-medium">Ngày bắt đầu</th>
+                      <th className="pb-3 font-medium">Ngày kết thúc</th>
+                      <th className="pb-3 font-medium">Trạng thái</th>
+                      <th className="pb-3 font-medium">Hành động</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="sm:hidden space-y-3">
-              {examinationShow.map((examination) => (
-                <div
-                  key={examination.examinationId}
-                  className={`p-3 rounded-lg border border-gray-100 ${
-                    examination.status === "pending" ? "bg-yellow-50" :
-                    examination.status === "in-progress" ? "bg-blue-50" :
-                    examination.status === "completed" ? "bg-green-50" : "bg-gray-50"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    {examination.status === "pending" && (
-                      <svg className="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                        <path stroke="currentColor" strokeWidth="2" d="M12 6v6l4 2" />
-                      </svg>
-                    )}
-                    {examination.status === "in-progress" && (
-                      <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                        <path stroke="currentColor" strokeWidth="2" d="M12 8v4l3 3" />
-                      </svg>
-                    )}
-                    {examination.status === "completed" && (
-                      <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                        <path stroke="currentColor" strokeWidth="2" d="M9 12l2 2 4-4" />
-                      </svg>
-                    )}
-                    <p className="font-medium text-base">{examination.patientName || "Bệnh nhân"}</p>
-                  </div>
-                  <p className="text-sm text-gray-500">Mô tả: {examination.examinationDescription}</p>
-                  <p className="text-sm text-gray-500">Ngày khám: {new Date(examination.examinationDate).toLocaleDateString("vi-VN")}</p>
-                  <div className="flex items-center justify-between mt-2">
-                    <span
-                      className={`inline-block px-2 py-1 text-sm font-medium rounded-full ${
-                        examination.status === "pending" ? "bg-yellow-100 text-yellow-800" :
-                        examination.status === "in-progress" ? "bg-blue-100 text-blue-800" :
-                        examination.status === "completed" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {examination.status === "pending" ? "Đang chờ" :
-                       examination.status === "in-progress" ? "Đang xử lý" :
-                       examination.status === "completed" ? "Hoàn thành" : examination.status}
-                    </span>
-                    <Button
-                      size="default"
-                      variant="outline"
-                      className="text-sm font-medium text-blue-600 min-w-[100px]"
-                      onClick={() => navigate(`/doctor/create-treatment-plan/${examination.examinationId}`)}
-                    >
-                      Tạo kế hoạch điều trị
-                    </Button>
-                  </div>
+                  </thead>
+                  <tbody>
+                    {treatmentPlans.slice(0, 5).map((plan) => (
+                      <motion.tr
+                        key={plan.treatmentPlanId}
+                        initial={shouldReduceMotion ? {} : { opacity: 0, y: 10 }}
+                        animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="border-t hover:bg-gray-50 transition-colors duration-200"
+                      >
+                        <td className="py-3 font-medium text-gray-800">{plan.patientDetailName}</td>
+                        <td className="py-3 text-gray-700">{plan.method}</td>
+                        <td className="py-3 text-sm text-gray-600">{new Date(plan.startDate).toLocaleDateString("vi-VN")}</td>
+                        <td className="py-3 text-sm text-gray-600">{new Date(plan.endDate).toLocaleDateString("vi-VN")}</td>
+                        <td className="py-3">
+                          <span
+                            className={`px-3 py-1 text-sm font-medium rounded-full ${
+                              plan.giaidoan === "completed" ? "bg-green-100 text-green-800" :
+                              plan.giaidoan === "in-progress" ? "bg-blue-100 text-blue-800" :
+                              plan.giaidoan === "pending" ? "bg-yellow-100 text-yellow-800" :
+                              plan.giaidoan === "cancelled" ? "bg-red-100 text-red-800" :
+                              "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {plan.giaidoan === "completed" ? "Đã hoàn thành" :
+                             plan.giaidoan === "in-progress" ? "Đang thực hiện" :
+                             plan.giaidoan === "pending" ? "Chờ xác nhận" :
+                             plan.giaidoan === "cancelled" ? "Đã hủy" : plan.giaidoan}
+                          </span>
+                        </td>
+                        <td className="py-3">
+                          {plan.giaidoan === "completed" ? (
+                            <span className="px-3 py-1 text-sm font-medium rounded-full bg-green-50 text-green-700 border border-green-200">
+                              Đã hoàn thành
+                            </span>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-blue-600 hover:bg-blue-50 font-medium border-blue-200"
+                              onClick={() => handleUpdateTreatmentPlan(plan.treatmentPlanId)}
+                            >
+                              Cập nhật
+                            </Button>
+                          )}
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="sm:hidden space-y-4">
+                {treatmentPlans.slice(0, 5).map((plan) => (
+                  <motion.div
+                    key={plan.treatmentPlanId}
+                    initial={shouldReduceMotion ? {} : { opacity: 0, y: 10 }}
+                    animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-gray-50 p-4 rounded-lg border border-gray-200"
+                  >
+                    <p className="font-semibold text-base text-gray-800">{plan.patientDetailName}</p>
+                    <p className="text-sm text-gray-600">Phương pháp: {plan.method}</p>
+                    <p className="text-sm text-gray-600">Bắt đầu: {new Date(plan.startDate).toLocaleDateString("vi-VN")}</p>
+                    <p className="text-sm text-gray-600">Kết thúc: {new Date(plan.endDate).toLocaleDateString("vi-VN")}</p>
+                    <div className="flex items-center justify-between mt-2">
+                      <span
+                        className={`px-3 py-1 text-sm font-medium rounded-full ${
+                          plan.giaidoan === "completed" ? "bg-green-100 text-green-800" :
+                          plan.giaidoan === "in-progress" ? "bg-blue-100 text-blue-800" :
+                          plan.giaidoan === "pending" ? "bg-yellow-100 text-yellow-800" :
+                          plan.giaidoan === "cancelled" ? "bg-red-100 text-red-800" :
+                          "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {plan.giaidoan === "completed" ? "Đã hoàn thành" :
+                         plan.giaidoan === "in-progress" ? "Đang thực hiện" :
+                         plan.giaidoan === "pending" ? "Chờ xác nhận" :
+                         plan.giaidoan === "cancelled" ? "Đã hủy" : plan.giaidoan}
+                      </span>
+                      {plan.giaidoan === "completed" ? (
+                        <span className="px-3 py-1 text-sm font-medium rounded-full bg-green-50 text-green-700 border border-green-200">
+                          Đã hoàn thành
+                        </span>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-blue-600 hover:bg-blue-50 font-medium border-blue-200"
+                          onClick={() => handleUpdateTreatmentPlan(plan.treatmentPlanId)}
+                        >
+                          Cập nhật
+                        </Button>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+              {treatmentPlans.length > 5 && (
+                <div className="pt-4 border-t border-gray-200 text-center">
+                  <Button
+                    variant="ghost"
+                    className="text-blue-600 hover:bg-blue-50 text-sm font-medium"
+                    onClick={() => navigate("/doctor/treatment-records")}
+                  >
+                    Xem thêm {treatmentPlans.length - 5} kế hoạch điều trị khác
+                  </Button>
                 </div>
-              ))}
+              )}
             </div>
-          </div>
-        ) : (
-          <div className="text-center py-6 sm:py-8">
-            <p className="text-sm sm:text-base text-gray-500">Không có buổi khám nào</p>
-          </div>
-        )}
-      </motion.div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Microscope className="h-8 w-8 text-gray-400" />
+              </div>
+              <p className="text-base text-gray-500 mb-4">Không có kế hoạch điều trị nào</p>
+              <Button
+                variant="outline"
+                className="text-blue-600 hover:bg-blue-50 font-medium border-blue-200"
+                onClick={() => navigate("/doctor/treatment-records")}
+              >
+                Tạo kế hoạch điều trị mới
+              </Button>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Examinations */}
+        <motion.div
+          initial={shouldReduceMotion ? {} : { opacity: 0, y: 20 }}
+          animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6"
+        >
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Danh sách buổi khám</h2>
+          {examinationShow.length > 0 ? (
+            <div className="space-y-4">
+              <div className="hidden sm:block">
+                <table className="w-full table-auto">
+                  <thead>
+                    <tr className="text-left text-sm text-gray-600">
+                      <th className="pb-3 font-medium">Bệnh nhân</th>
+                      <th className="pb-3 font-medium">Mô tả buổi khám</th>
+                      <th className="pb-3 font-medium">Ngày khám</th>
+                      <th className="pb-3 font-medium">Trạng thái</th>
+                      <th className="pb-3 font-medium">Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {examinationShow.map((examination) => (
+                      <motion.tr
+                        key={examination.examinationId}
+                        initial={shouldReduceMotion ? {} : { opacity: 0, y: 10 }}
+                        animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className={`border-t hover:bg-gray-50 transition-colors duration-200 ${
+                          examination.status === "pending" ? "bg-yellow-50" :
+                          examination.status === "in-progress" ? "bg-blue-50" :
+                          examination.status === "completed" ? "bg-green-50" :
+                          examination.status === "cancelled" ? "bg-red-50" : "bg-gray-50"
+                        }`}
+                      >
+                        <td className="py-3 font-medium text-gray-800 flex items-center gap-2">
+                          {examination.status === "pending" && (
+                            <svg className="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                              <path stroke="currentColor" strokeWidth="2" d="M12 6v6l4 2" />
+                            </svg>
+                          )}
+                          {examination.status === "in-progress" && (
+                            <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                              <path stroke="currentColor" strokeWidth="2" d="M12 8v4l3 3" />
+                            </svg>
+                          )}
+                          {examination.status === "completed" && (
+                            <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                              <path stroke="currentColor" strokeWidth="2" d="M9 12l2 2 4-4" />
+                            </svg>
+                          )}
+                          {examination.status === "cancelled" && (
+                            <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                              <path stroke="currentColor" strokeWidth="2" d="M15 9l-6 6m0-6l6 6" />
+                            </svg>
+                          )}
+                          {examination.patientName || "Bệnh nhân"}
+                        </td>
+                        <td className="py-3 text-gray-700">{examination.examinationDescription}</td>
+                        <td className="py-3 text-sm text-gray-600">{new Date(examination.examinationDate).toLocaleDateString("vi-VN")}</td>
+                        <td className="py-3">
+                          <span
+                            className={`px-3 py-1 text-sm font-medium rounded-full ${
+                              examination.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+                              examination.status === "in-progress" ? "bg-blue-100 text-blue-800" :
+                              examination.status === "completed" ? "bg-green-100 text-green-800" :
+                              examination.status === "cancelled" ? "bg-red-100 text-red-800" :
+                              "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {examination.status === "pending" ? "Đang chờ" :
+                             examination.status === "in-progress" ? "Đang xử lý" :
+                             examination.status === "completed" ? "Hoàn thành" :
+                             examination.status === "cancelled" ? "Đã hủy" : examination.status}
+                          </span>
+                        </td>
+                        <td className="py-3">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-blue-600 hover:bg-blue-50 font-medium border-blue-200"
+                            onClick={() => navigate(`/doctor/create-treatment-plan/${examination.examinationId}`)}
+                          >
+                            Tạo kế hoạch điều trị
+                          </Button>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="sm:hidden space-y-4">
+                {examinationShow.map((examination) => (
+                  <motion.div
+                    key={examination.examinationId}
+                    initial={shouldReduceMotion ? {} : { opacity: 0, y: 10 }}
+                    animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className={`p-4 rounded-lg border border-gray-200 ${
+                      examination.status === "pending" ? "bg-yellow-50" :
+                      examination.status === "in-progress" ? "bg-blue-50" :
+                      examination.status === "completed" ? "bg-green-50" :
+                      examination.status === "cancelled" ? "bg-red-50" : "bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      {examination.status === "pending" && (
+                        <svg className="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                          <path stroke="currentColor" strokeWidth="2" d="M12 6v6l4 2" />
+                        </svg>
+                      )}
+                      {examination.status === "in-progress" && (
+                        <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                          <path stroke="currentColor" strokeWidth="2" d="M12 8v4l3 3" />
+                        </svg>
+                      )}
+                      {examination.status === "completed" && (
+                        <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                          <path stroke="currentColor" strokeWidth="2" d="M9 12l2 2 4-4" />
+                        </svg>
+                      )}
+                      {examination.status === "cancelled" && (
+                        <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                          <path stroke="currentColor" strokeWidth="2" d="M15 9l-6 6m0-6l6 6" />
+                        </svg>
+                      )}
+                      <p className="font-semibold text-base text-gray-800">{examination.patientName || "Bệnh nhân"}</p>
+                    </div>
+                    <p className="text-sm text-gray-600">Mô tả: {examination.examinationDescription}</p>
+                    <p className="text-sm text-gray-600">Ngày khám: {new Date(examination.examinationDate).toLocaleDateString("vi-VN")}</p>
+                    <div className="flex items-center justify-between mt-2">
+                      <span
+                        className={`px-3 py-1 text-sm font-medium rounded-full ${
+                          examination.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+                          examination.status === "in-progress" ? "bg-blue-100 text-blue-800" :
+                          examination.status === "completed" ? "bg-green-100 text-green-800" :
+                          examination.status === "cancelled" ? "bg-red-100 text-red-800" :
+                          "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {examination.status === "pending" ? "Đang chờ" :
+                         examination.status === "in-progress" ? "Đang xử lý" :
+                         examination.status === "completed" ? "Hoàn thành" :
+                         examination.status === "cancelled" ? "Đã hủy" : examination.status}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-blue-600 hover:bg-blue-50 font-medium border-blue-200"
+                        onClick={() => navigate(`/doctor/create-treatment-plan/${examination.examinationId}`)}
+                      >
+                        Tạo kế hoạch điều trị
+                      </Button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Microscope className="h-8 w-8 text-gray-400" />
+              </div>
+              <p className="text-base text-gray-500">Không có buổi khám nào</p>
+            </div>
+          )}
+        </motion.div>
+      </div>
     </div>
   );
 };

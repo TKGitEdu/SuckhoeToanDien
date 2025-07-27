@@ -13,8 +13,10 @@ import {
   ArrowRight,
   FileBarChart,
   ListTodo,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { getDoctorTreatmentPlans, updateTreatmentPlanStandard } from "../../api/doctorApi/dashboardAPI";
 import { getTreatmentSteps, createOrUpdateTreatmentSteps } from "../../api/doctorApi/treatmentRecordAPI";
@@ -67,12 +69,15 @@ const DoctorTreatmentRecords = () => {
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [doctorInfo, setDoctorInfo] = useState<UserInfo | null>(null);
   const [updateFormData, setUpdateFormData] = useState<Partial<UpdateTreatmentPlanRequest>>({});
-const location = useLocation();
+  const location = useLocation();
   
   // Get treatmentPlanId from URL query parameters
   const queryParams = new URLSearchParams(location.search);
   const treatmentPlanIdFromUrl = queryParams.get('treatmentPlanId');
   
+  const navigate = useNavigate();
+  const [updating, setUpdating] = useState(false);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -220,6 +225,7 @@ const location = useLocation();
     if (!selectedRecord) return;
 
     try {
+      setUpdating(true); // Bắt đầu loading
       // Validate step data
       const validSteps = stepFormData.filter(step => step.stepName.trim() !== '');
       if (validSteps.length === 0) {
@@ -236,6 +242,8 @@ const location = useLocation();
         setError(null);
         setSuccessMessage("Các bước điều trị đã được cập nhật thành công!");
         
+        // Cuộn lên đầu trang để thấy thông báo
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         // Clear success message after 3 seconds
         setTimeout(() => {
           setSuccessMessage(null);
@@ -248,6 +256,8 @@ const location = useLocation();
       } else {
         setError("Không thể cập nhật các bước điều trị. Vui lòng thử lại.");
       }
+    } finally {
+      setUpdating(false); // Kết thúc loading
     }
   };
 
@@ -273,6 +283,7 @@ const location = useLocation();
     if (!selectedRecord || !doctorId) return;
 
     try {
+      setUpdating(true); // Bắt đầu loading
       // Validate form data
       const currentRecord = treatmentPlans.find(record => record.treatmentPlanId === selectedRecord);
       if (!currentRecord) {
@@ -317,7 +328,8 @@ const location = useLocation();
         setActiveTab('overview');
         setError(null); // Clear any previous errors
         setSuccessMessage("Kế hoạch điều trị đã được cập nhật thành công!");
-        
+        // Cuộn lên đầu trang để thấy thông báo
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         // Clear success message after 3 seconds
         setTimeout(() => {
           setSuccessMessage(null);
@@ -330,6 +342,8 @@ const location = useLocation();
       } else {
         setError("Không thể cập nhật kế hoạch điều trị. Vui lòng thử lại.");
       }
+    } finally {
+      setUpdating(false); // Kết thúc loading
     }
   };
 
@@ -501,9 +515,12 @@ const location = useLocation();
             </p>
           </div>
           <div className="mt-4 md:mt-0">
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <FileText className="mr-2 h-4 w-4" />
-              Tạo hồ sơ điều trị mới
+            <Button
+              className="bg-gray-400 hover:bg-gray-700"
+              onClick={() => navigate(-1)}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Trở lại
             </Button>
           </div>
         </div>
@@ -971,8 +988,22 @@ const location = useLocation();
                           <Button
                             onClick={handleUpdateTreatmentPlan}
                             className="flex-1 bg-blue-600 hover:bg-blue-700"
+                            disabled={updating}
                           >
-                            Cập nhật kế hoạch
+                            {updating ? (
+                              <span className="flex items-center justify-center">
+                                <svg className="animate-spin h-5 w-5 mr-2 text-white" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                </svg>
+                                Đang cập nhật...
+                              </span>
+                            ) : (
+                              <>
+                                <FileBarChart className="mr-2 h-4 w-4" />
+                                Cập nhật kế hoạch
+                              </>
+                            )}
                           </Button>
                           <Button 
                             variant="outline" 
@@ -1101,8 +1132,19 @@ const location = useLocation();
                                 <Button
                                   onClick={handleUpdateTreatmentSteps}
                                   className="flex-1 bg-blue-600 hover:bg-blue-700"
+                                  disabled={updating}
                                 >
-                                  Cập nhật các bước
+                                  {updating ? (
+                                    <span className="flex items-center justify-center">
+                                      <svg className="animate-spin h-5 w-5 mr-2 text-white" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                      </svg>
+                                      Đang cập nhật...
+                                    </span>
+                                  ) : (
+                                    <>Cập nhật các bước</>
+                                  )}
                                 </Button>
                                 <Button 
                                   variant="outline" 

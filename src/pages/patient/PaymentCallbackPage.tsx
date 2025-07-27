@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { bookingService } from '../../api/patientApi/paymentAPI';
 import type { Booking } from '../../api/patientApi/paymentAPI';
+import { ArrowLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const paymentMethods = [
   { id: 'zalopay', label: 'Ví ZaloPay', icon: '/src/assets/images/logo-zalopay.svg' },
   { id: 'visa', label: 'Visa/Mastercard/JCB', icon: '/src/assets/images/gold.jpg' },
-  { id: 'atm', label: 'Thẻ ATM', icon: '/src/assets/images/atm-card.gif' },// (qua ZaloPay)
+  { id: 'atm', label: 'Thẻ ATM', icon: '/src/assets/images/atm-card.gif' },
 ];
 
 const banks = [
@@ -45,16 +48,6 @@ function getCookie(name: string) {
   return match ? match[2] : null;
 }
 
-// Hàm parse query string thành object
-function parseQuery(queryString: string) {
-  const params = new URLSearchParams(queryString);
-  const obj: Record<string, string> = {};
-  params.forEach((value, key) => {
-    obj[key] = value;
-  });
-  return obj;
-}
-
 const PaymentCallbackPage: React.FC = () => {
   const searchParams = new URLSearchParams(window.location.search);
   const amount = searchParams.get('amount');
@@ -67,13 +60,13 @@ const PaymentCallbackPage: React.FC = () => {
   const pmcid = searchParams.get('pmcid');
   const paymentMethod = methodFromCookie || (pmcid === '38' ? 'zalopay' : pmcid);
 
-  // Lấy label/icon cho UI
   const methodObj = paymentMethods.find(m => m.id === paymentMethod);
   const bankObj = banks.find(b => b.id === bankcode);
 
   const isSuccess = status === '1';
   const [processing, setProcessing] = useState(isSuccess);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const bookingId = getCookie('bookingId');
@@ -123,62 +116,110 @@ const PaymentCallbackPage: React.FC = () => {
   }, [isSuccess, amount, paymentMethod, bankcode]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-green-100">
-      <div className="bg-white p-10 rounded-2xl shadow-2xl text-center max-w-md w-full border border-gray-200">
-        <div className="flex justify-center mb-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border border-gray-100"
+      >
+        <div className="flex justify-center mb-6">
           {isSuccess ? (
-            <span className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100">
-              <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100"
+            >
+              <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
-            </span>
+            </motion.span>
           ) : (
-            <span className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100">
-              <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100"
+            >
+              <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
-            </span>
+            </motion.span>
           )}
         </div>
-        <h1 className={`text-2xl font-bold mb-2 ${isSuccess ? 'text-green-600' : 'text-red-600'}`}>
-          {isSuccess ? 'Thanh toán thành công!' : 'Thanh toán thất bại'}
+        <h1 className={`text-2xl font-bold mb-4 text-center ${isSuccess ? 'text-green-700' : 'text-red-700'}`}>
+          {isSuccess ? 'Thanh Toán Thành Công!' : 'Thanh Toán Thất Bại'}
         </h1>
-        <p className="text-gray-700 mb-4">
+        <p className="text-gray-600 mb-6 text-center text-sm">
           {isSuccess
             ? processing
               ? 'Đang xác nhận giao dịch...'
               : error
                 ? error
                 : 'Cảm ơn bạn đã thanh toán. Giao dịch của bạn đã được xử lý thành công.'
-            : 'Thanh toán không thành công. Vui lòng thử lại hoặc liên hệ CSKH.'}
+            : 'Thanh toán không thành công. Vui lòng thử lại hoặc liên hệ tổng đài hỗ trợ.'}
         </p>
-        <div className="bg-gray-50 rounded-xl p-5 text-left text-sm mb-4 border border-gray-200">
-          <div className="mb-1"><span className="font-semibold">Mã giao dịch:</span> <span className="text-blue-700">{apptransid}</span></div>
-          <div className="mb-1"><span className="font-semibold">Số tiền:</span> <span className="text-green-700">{amount ? `${Number(amount).toLocaleString('vi-VN')} đ` : ''}</span></div>
-          {discountamount && <div className="mb-1"><span className="font-semibold">Khuyến mãi:</span> <span className="text-orange-700">{Number(discountamount).toLocaleString('vi-VN')} đ</span></div>}
-          {bankObj && (
-            <div className="mb-1 flex items-center">
-              <span className="font-semibold">Ngân hàng:</span>
-              <img src={bankObj.icon} alt={bankObj.name} className="w-6 h-6 mx-2 inline-block" />
-              <span className="text-gray-700">{bankObj.name}</span>
+        <div className="bg-gray-50 rounded-lg p-6 text-left text-sm mb-6 border border-gray-200">
+          <div className="space-y-3">
+            <div className="flex items-center">
+              <span className="w-1/3 font-medium text-gray-700">Mã giao dịch:</span>
+              <span className="w-2/3 text-blue-600">{apptransid}</span>
             </div>
-          )}
-          {methodObj && (
-            <div className="mb-1 flex items-center">
-              <span className="font-semibold">Phương thức thanh toán:</span>
-              <img src={methodObj.icon} alt={methodObj.label} className="w-6 h-6 mx-2 inline-block" />
-              <span className="text-gray-700">{methodObj.label}</span>
+            <div className="flex items-center">
+              <span className="w-1/3 font-medium text-gray-700">Số tiền:</span>
+              <span className="w-2/3 text-green-600">
+                {amount ? `${Number(amount).toLocaleString('vi-VN')} đ` : ''}
+              </span>
             </div>
-          )}
+            {discountamount && (
+              <div className="flex items-center">
+                <span className="w-1/3 font-medium text-gray-700">Khuyến mãi:</span>
+                <span className="w-2/3 text-orange-600">
+                  {Number(discountamount).toLocaleString('vi-VN')} đ
+                </span>
+              </div>
+            )}
+            {bankObj && (
+              <div className="flex items-center">
+                <span className="w-1/3 font-medium text-gray-700">Ngân hàng:</span>
+                <div className="w-2/3 flex items-center">
+                  <img src={bankObj.icon} alt={bankObj.name} className="w-6 h-6 mr-2" />
+                  <span className="text-gray-800">{bankObj.name}</span>
+                </div>
+              </div>
+            )}
+            {methodObj && (
+              <div className="flex items-center">
+                <span className="w-1/3 font-medium text-gray-700">Phương thức thanh toán:</span>
+                <div className="w-2/3 flex items-center">
+                  <img src={methodObj.icon} alt={methodObj.label} className="w-6 h-6 mr-2" />
+                  <span className="text-gray-800">{methodObj.label}</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-        <button
-          className="mt-2 px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
-          onClick={() => window.location.href = '/'}
+        <motion.button
+          className="w-full px-6 py-2 bg-blue-600 text-white font-medium rounded-lg shadow-md hover:bg-blue-700 hover:shadow-lg transition-all duration-200 flex items-center justify-center"
+          onClick={() => {
+            const bookingId = getCookie('bookingId');
+            if (bookingId) {
+              navigate(`/patient/appointments/${bookingId}`);
+            } else {
+              navigate('/patient/dashboard');
+            }
+          }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
-          Về trang chủ
-        </button>
-        <div className="text-xs text-gray-500 mt-4">Nếu có vấn đề với giao dịch, vui lòng liên hệ CSKH để được hỗ trợ.</div>
-      </div>
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          Xem chi tiết lịch hẹn
+        </motion.button>
+        <div className="text-xs text-gray-500 mt-4 text-center">
+          Nếu có vấn đề với giao dịch, vui lòng liên hệ tổng đài hỗ trợ.
+        </div>
+      </motion.div>
     </div>
   );
 };
