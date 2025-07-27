@@ -1,20 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   Calendar,
-  Clock,
-  MapPin,
   Phone,
   Mail,
   Award,
   BookOpen,
   Star,
-  MessageCircle,
-  FileText,
   User,
   GraduationCap,
-  Stethoscope,
   ArrowRight
 } from "lucide-react";
 import { Button } from "../components/ui/button";

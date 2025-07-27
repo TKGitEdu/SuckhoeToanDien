@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { LogOut,DollarSign, Home, Users, Settings, Beaker, List, BriefcaseMedical, CalendarDays } from "lucide-react";
+import { LogOut,DollarSign, Home, Users, Beaker, List, BriefcaseMedical, CalendarDays } from "lucide-react";
 
 type AdminLayoutProps = {
   children: ReactNode;
@@ -10,14 +9,6 @@ type AdminLayoutProps = {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("userInfo");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
