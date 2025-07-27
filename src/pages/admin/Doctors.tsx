@@ -182,7 +182,7 @@ export default function AdminDoctors() {
                   </td>
                   <td className="px-6 py-4 flex gap-2">
                     <button
-                      className="bg-indigo-500 text-white px-3 py-1 rounded hover:bg-indigo-700 transition hover:cursor-pointer"
+                     className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-2.5 py-1 text-sm rounded hover:from-indigo-700 hover:to-purple-700 transition hover:cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleEdit(doctor);
@@ -191,7 +191,7 @@ export default function AdminDoctors() {
                       Sửa
                     </button>
                     <button
-                      className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-700 transition hover:cursor-pointer"
+                      className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-2.5 py-1 text-sm rounded hover:from-indigo-700 hover:to-purple-700 transition hover:cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleViewDetails(doctor);

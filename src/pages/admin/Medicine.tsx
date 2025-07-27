@@ -6,8 +6,7 @@ const TreatmentMedications: React.FC = () => {
   const [medications, setMedications] = useState<TreatmentMedication[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
-  // State cho modal
+  const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editMedication, setEditMedication] = useState<TreatmentMedication | null>(null);
   const [form, setForm] = useState({
@@ -20,7 +19,6 @@ const TreatmentMedications: React.FC = () => {
 
   useEffect(() => {
     fetchMedications();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchMedications = async () => {
@@ -29,10 +27,15 @@ const TreatmentMedications: React.FC = () => {
       const data = await TreatmentMedicationAPI.getAllMedications();
       setMedications(data);
     } catch (err) {
-      setError('Failed to fetch medications');
+      setError('Không thể tải danh sách thuốc');
     } finally {
       setLoading(false);
     }
+  };
+
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
   };
 
   const handleOpenCreate = () => {
@@ -62,14 +65,11 @@ const TreatmentMedications: React.FC = () => {
   const handleDelete = async (medicationId: string) => {
     if (!window.confirm("Bạn có chắc muốn xóa thuốc này?")) return;
     try {
-      if (typeof TreatmentMedicationAPI.deleteMedication === "function") {
-        await TreatmentMedicationAPI.deleteMedication(medicationId);
-        setMedications((prev) => prev.filter((m) => m.medicationId !== medicationId));
-      } else {
-        alert("API xóa chưa được cài đặt!");
-      }
+      await TreatmentMedicationAPI.deleteMedication(medicationId);
+      setMedications((prev) => prev.filter((m) => m.medicationId !== medicationId));
+      showNotification("Xóa thuốc thành công!", "success");
     } catch {
-      alert("Xóa thất bại!");
+      showNotification("Xóa thuốc thất bại!", "error");
     }
   };
 
@@ -77,24 +77,16 @@ const TreatmentMedications: React.FC = () => {
     e.preventDefault();
     try {
       if (editMedication) {
-        if (typeof TreatmentMedicationAPI.updateMedcation === "function") {
-          await TreatmentMedicationAPI.updateMedcation(editMedication.medicationId, form);
-        } else {
-          alert("API cập nhật chưa được cài đặt!");
-          return;
-        }
+        await TreatmentMedicationAPI.updateMedcation(editMedication.medicationId, form);
+        showNotification("Cập nhật thuốc thành công!", "success");
       } else {
-        if (typeof TreatmentMedicationAPI.createMedication === "function") {
-          await TreatmentMedicationAPI.createMedication(form);
-        } else {
-          alert("API tạo mới chưa được cài đặt!");
-          return;
-        }
+        await TreatmentMedicationAPI.createMedication(form);
+        showNotification("Thêm thuốc thành công!", "success");
       }
       setModalOpen(false);
       fetchMedications();
     } catch {
-      alert("Lưu thất bại!");
+      showNotification(editMedication ? "Cập nhật thuốc thất bại!" : "Thêm thuốc thất bại!", "error");
     }
   };
 
@@ -118,16 +110,30 @@ const TreatmentMedications: React.FC = () => {
     <div className="p-8 bg-gradient-to-br from-blue-50 to-purple-200 min-h-screen font-sans">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-10">
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-purple-600">
-            Treatment Medications
+          <h1 className="text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-purple-600">
+            Thuốc điều trị
           </h1>
           <button
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-5 py-2 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition hover:cursor-pointer"
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 py-1.5 text-sm rounded-lg hover:from-indigo-700 hover:to-purple-700 transition hover:cursor-pointer"
             onClick={handleOpenCreate}
           >
             + Thêm thuốc
           </button>
         </div>
+
+        {notification && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`fixed top-6 right-6 z-[100] px-3 py-1.5 rounded shadow text-white ${
+              notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }`}
+          >
+            {notification.message}
+          </motion.div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="min-w-full bg-white border border-gray-200 rounded-xl shadow-lg">
             <thead className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white sticky top-0 z-10">
@@ -159,15 +165,15 @@ const TreatmentMedications: React.FC = () => {
                   <td className="px-6 py-4 text-gray-600 whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]">
                     {medication.description}
                   </td>
-                  <td className="px-6 py-4 flex gap-2">
+                  <td className="px-6 py-4 flex gap-1.5">
                     <button
-                      className="bg-indigo-500 text-white px-3 py-1 rounded-lg hover:bg-indigo-700 transition hover:cursor-pointer"
+                      className="bg-indigo-500 text-white px-2.5 py-1 text-sm rounded-lg hover:bg-indigo-600 transition hover:cursor-pointer"
                       onClick={() => handleOpenEdit(medication)}
                     >
                       Sửa
                     </button>
                     <button
-                      className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-700 transition hover:cursor-pointer"
+                      className="bg-red-500 text-white px-2.5 py-1 text-sm rounded-lg hover:bg-red-600 transition hover:cursor-pointer"
                       onClick={() => handleDelete(medication.medicationId)}
                     >
                       Xóa
@@ -195,16 +201,16 @@ const TreatmentMedications: React.FC = () => {
                 className="bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] p-6 min-w-[320px] max-w-[90vw] relative"
               >
                 <button
-                  className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                  className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl font-bold"
                   onClick={() => setModalOpen(false)}
                   aria-label="Đóng"
                 >
                   ×
                 </button>
-                <h2 className="text-xl font-bold mb-5 text-indigo-700">
+                <h2 className="text-xl font-bold mb-4 text-indigo-700">
                   {editMedication ? "Chỉnh sửa thuốc" : "Thêm thuốc mới"}
                 </h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Loại thuốc</label>
                     <input
@@ -234,17 +240,17 @@ const TreatmentMedications: React.FC = () => {
                       required
                     />
                   </div>
-                  <div className="flex justify-end gap-2 mt-5">
+                  <div className="flex justify-end gap-1.5 mt-3">
                     <button
                       type="button"
-                      className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition hover:cursor-pointer"
+                      className="bg-gray-200 text-gray-800 px-3 py-1.5 text-sm rounded-lg hover:bg-gray-300 transition hover:cursor-pointer"
                       onClick={() => setModalOpen(false)}
                     >
                       Hủy
                     </button>
                     <button
                       type="submit"
-                      className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition hover:cursor-pointer"
+                      className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 py-1.5 text-sm rounded-lg hover:from-indigo-700 hover:to-purple-700 transition hover:cursor-pointer"
                     >
                       {editMedication ? "Lưu" : "Thêm"}
                     </button>

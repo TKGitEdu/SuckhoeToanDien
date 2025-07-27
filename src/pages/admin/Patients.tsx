@@ -8,8 +8,6 @@ export default function AdminPatients() {
   const [loading, setLoading] = useState(true);
   const [bookingInfo, setBookingInfo] = useState<BookingResponse | null>(null);
   const [showBooking, setShowBooking] = useState(false);
-
-  // State cho popup chỉnh sửa
   const [editModal, setEditModal] = useState(false);
   const [editForm, setEditForm] = useState<Partial<PatientUpdateRequest>>({});
   const [successMsg, setSuccessMsg] = useState<string>("");
@@ -28,7 +26,6 @@ export default function AdminPatients() {
     fetchPatients();
   }, []);
 
-  // Hàm xem thông tin booking của patient
   const handleViewBooking = async (bookingId: string) => {
     try {
       const booking = await BookingAPI.getBookingById(bookingId);
@@ -39,7 +36,6 @@ export default function AdminPatients() {
     }
   };
 
-  // Hàm mở popup chỉnh sửa
   const handleEditPatient = (patient: Patient) => {
     setEditForm({
       patientId: patient.patientId,
@@ -56,14 +52,12 @@ export default function AdminPatients() {
     setEditModal(true);
   };
 
-  // Hàm lưu cập nhật
   const handleSavePatient = async () => {
     try {
       await patientAPI.updatePatient(editForm);
       setEditModal(false);
       setSuccessMsg("Cập nhật bệnh nhân thành công!");
       setTimeout(() => setSuccessMsg(""), 2000);
-      // Refresh lại danh sách
       const response = await patientAPI.getAllPatient();
       setPatients(response);
     } catch (err) {
@@ -91,9 +85,8 @@ export default function AdminPatients() {
           </h1>
         </div>
 
-        {/* Thông báo nhỏ */}
         {successMsg && (
-          <div className="fixed top-6 right-6 z-[100] bg-green-500 text-white px-4 py-2 rounded shadow transition">
+          <div className="fixed top-6 right-6 z-[100] bg-green-500 text-white px-3 py-1.5 rounded shadow transition">
             {successMsg}
           </div>
         )}
@@ -159,11 +152,11 @@ export default function AdminPatients() {
                         : "Chưa cập nhật"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 flex gap-2">
+                  <td className="px-6 py-4 flex gap-1.5">
                     <button
-                      className="bg-indigo-500 text-white px-3 py-1 rounded hover:bg-indigo-700 transition hover:cursor-pointer"
+                     className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-2.5 py-1 text-sm rounded hover:from-indigo-700 hover:to-purple-700 transition hover:cursor-pointer"
                       onClick={(e) => {
-                        e.stopPropagation(); // Ngăn chặn sự kiện click lan ra hàng
+                        e.stopPropagation();
                         handleEditPatient(patient);
                       }}
                     >
@@ -171,13 +164,13 @@ export default function AdminPatients() {
                     </button>
                     {patient.booking?.bookingId && (
                       <button
-                        className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 py-1 rounded hover:from-indigo-700 hover:to-purple-700 transition hover:cursor-pointer"
+                        className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-2.5 py-1 text-sm rounded hover:from-indigo-700 hover:to-purple-700 transition hover:cursor-pointer"
                         onClick={(e) => {
-                          e.stopPropagation(); // Ngăn chặn sự kiện click lan ra hàng
+                          e.stopPropagation();
                           handleViewBooking(patient.booking.bookingId);
                         }}
                       >
-                        Xem lịch hẹn
+                        Xem lịch
                       </button>
                     )}
                   </td>
@@ -187,7 +180,6 @@ export default function AdminPatients() {
           </table>
         </div>
 
-        {/* Popup chỉnh sửa bệnh nhân */}
         <AnimatePresence>
           {editModal && (
             <motion.div
@@ -201,17 +193,17 @@ export default function AdminPatients() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="bg-white p-8 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] max-w-md w-full relative"
+                className="bg-white p-6 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] max-w-md w-full relative"
               >
                 <button
-                  className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                  className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl font-bold"
                   onClick={() => setEditModal(false)}
                   aria-label="Đóng"
                 >
                   ×
                 </button>
-                <h2 className="text-xl font-bold mb-5 text-indigo-700">Cập nhật bệnh nhân</h2>
-                <div className="space-y-4">
+                <h2 className="text-xl font-bold mb-4 text-indigo-700">Cập nhật bệnh nhân</h2>
+                <div className="space-y-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Họ tên</label>
                     <input
@@ -257,15 +249,15 @@ export default function AdminPatients() {
                       onChange={e => setEditForm({ ...editForm, dateOfBirth: e.target.value })}
                     />
                   </div>
-                  <div className="flex justify-end gap-2 mt-4">
+                  <div className="flex justify-end gap-1.5 mt-3">
                     <button
-                      className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition hover:cursor-pointer"
+                      className="bg-gray-200 text-gray-800 px-3 py-1.5 text-sm rounded hover:bg-gray-300 transition hover:cursor-pointer"
                       onClick={() => setEditModal(false)}
                     >
                       Hủy
                     </button>
                     <button
-                      className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition hover:cursor-pointer"
+                      className="bg-indigo-600 text-white px-3 py-1.5 text-sm rounded hover:bg-indigo-700 transition hover:cursor-pointer"
                       onClick={handleSavePatient}
                     >
                       Lưu
@@ -277,7 +269,6 @@ export default function AdminPatients() {
           )}
         </AnimatePresence>
 
-        {/* Popup xem booking */}
         <AnimatePresence>
           {showBooking && bookingInfo && (
             <motion.div
@@ -291,17 +282,17 @@ export default function AdminPatients() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="bg-white p-6 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] max-w-md w-full relative"
+                className="bg-white p-5 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] max-w-md w-full relative"
               >
                 <button
-                  className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                  className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl font-bold"
                   onClick={() => setShowBooking(false)}
                   aria-label="Đóng"
                 >
                   ×
                 </button>
-                <h2 className="text-xl font-bold mb-5 text-indigo-700">Thông tin lịch hẹn</h2>
-                <ul className="list-disc list-inside text-sm space-y-4">
+                <h2 className="text-xl font-bold mb-4 text-indigo-700">Thông tin lịch hẹn</h2>
+                <ul className="list-disc list-inside text-sm space-y-3">
                   <li className="flex items-center"><b className="mr-3 text-gray-800">Ngày hẹn:</b> <span className="text-gray-600">{bookingInfo.dateBooking ? new Date(bookingInfo.dateBooking).toLocaleString("vi-VN") : "Chưa có"}</span></li>
                   <li className="flex items-center"><b className="mr-3 text-gray-800">Dịch vụ:</b> <span className="text-gray-600">{bookingInfo.service?.name || "Chưa có"}</span></li>
                   <li className="flex items-center"><b className="mr-3 text-gray-800">Bác sĩ:</b> <span className="text-gray-600">{bookingInfo.doctor?.doctorName || "Chưa có"}</span></li>
@@ -309,9 +300,9 @@ export default function AdminPatients() {
                   <li className="flex items-center"><b className="mr-3 text-gray-800">Trạng thái:</b> <span className={bookingInfo.status === "Confirmed" ? "text-green-600" : "text-yellow-600"}>{bookingInfo.status || "Chưa cập nhật"}</span></li>
                   <li className="flex items-center"><b className="mr-3 text-gray-800">Ghi chú:</b> <span className="text-gray-600">{bookingInfo.note || "Không có"}</span></li>
                 </ul>
-                <div className="mt-6 text-right">
+                <div className="mt-4 text-right">
                   <button
-                    className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-5 py-2 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 hover:cursor-pointer"
+                    className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 py-1.5 text-sm rounded hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 hover:cursor-pointer"
                     onClick={() => setShowBooking(false)}
                   >
                     Đóng
