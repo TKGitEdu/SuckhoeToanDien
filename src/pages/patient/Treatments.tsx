@@ -162,7 +162,7 @@ const mapToTreatment = (plan: TreatmentPlan, medications: Medication[], appointm
     appointments,
     testResults,
     stages,
-    giaidoan: plan.giaidoan
+    giaidoan: plan.giaidoan || "Không xác định"
   };
 };
 

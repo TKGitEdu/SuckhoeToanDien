@@ -18,6 +18,7 @@ import type {
 
 interface PatientDisplay extends PatientType {
   age?: number;
+  medicalHistory?: string[];
 }
 
 interface BookingDisplay extends BookingType {
