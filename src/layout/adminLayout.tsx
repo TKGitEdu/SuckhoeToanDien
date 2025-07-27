@@ -34,7 +34,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { path: "/admin/examinations", label: "Xét nghiệm", icon: <Beaker size={20} /> },
      { path: "/admin/medicines", label: "Quản lí thuốc", icon: <BriefcaseMedical size={20} /> },
     { path: "/admin/payments", label: "Giao dịch thanh toán", icon: <DollarSign size={20} /> },
-    { path: "/admin/settings", label: "Cài đặt", icon: <Settings size={20} /> },
   ];
 
   return (
@@ -60,7 +59,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </nav>
         <button
           onClick={handleLogout}
-          className="flex items-center hover:cursor-pointer gap-2 px-4 py-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors duration-200"
+          className="flex items-center bg-red-200 hover:cursor-pointer gap-2 px-4 py-2 text-black  hover:bg-red-400 rounded-md transition-colors duration-200"
         >
           <LogOut size={20} />
           Đăng xuất
