@@ -12,14 +12,5 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-  },  server: {
-    proxy: {
-      '/api': {
-        target: 'https://localhost:7147',
-        changeOrigin: true,
-        secure: false
-        // Bỏ hàm rewrite không cần thiết
-      }
-    }
-  },
+  }
 })
